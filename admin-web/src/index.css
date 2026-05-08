@@ -1,13 +1,41 @@
 @import "tailwindcss";
 
-/* Định nghĩa màu sắc App Food của bạn trực tiếp tại đây */
 @theme {
-  --color-primary: #ff5722;
-  --color-secondary: #00b14f;
+  --color-brand-primary: #E65100;
+  --color-brand-secondary: #00B14F;
+  --color-brand-bg: #FFF5F2;
+  --color-brand-card: #FFFFFF;
+  --color-brand-text: #3E2723;
+  --color-brand-text-muted: #795548;
+  --color-brand-accent: #FFCCBC;
+  
+  --font-sans: "Outfit", "Inter", sans-serif;
+  
+  --shadow-premium: 0 10px 30px -10px rgba(230, 81, 0, 0.15);
+  --shadow-glass: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
 }
 
-/* Dán các class custom (như .hero, .counter) của bạn xuống dưới này */
-.hero {
-  position: relative;
-  /* ... code cũ của bạn ... */
+@layer base {
+  body {
+    @apply bg-brand-bg text-brand-text font-sans antialiased;
+  }
+}
+
+@layer components {
+  .glass {
+    @apply bg-white/70 backdrop-blur-md border border-white/20 shadow-glass;
+  }
+  
+  .glass-dark {
+    @apply bg-black/20 backdrop-blur-md border border-white/10 shadow-glass;
+  }
+}
+
+.animate-spin-slow {
+  animation: spin 8s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
