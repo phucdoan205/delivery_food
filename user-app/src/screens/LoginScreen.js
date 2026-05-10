@@ -44,7 +44,7 @@ const LoginScreen = ({ navigation }) => {
               <View style={styles.checkbox} />
               <Text style={styles.rememberText}>Ghi nhớ đăng nhập</Text>
             </View>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
               <Text style={styles.forgotText}>Quên mật khẩu?</Text>
             </TouchableOpacity>
           </View>

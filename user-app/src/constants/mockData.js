@@ -99,6 +99,124 @@ export const USER_INFO = {
 };
 
 export const VOUCHERS = [
-  { id: 'v1', name: 'Giảm 50% Toàn menu', description: 'Áp dụng cho mọi nhà hàng đối tác', code: 'SALE50' },
-  { id: 'v2', name: 'Miễn phí vận chuyển', description: 'Giảm tối đa 15.000đ cho đơn hàng từ 100k', code: 'FREESHIP' },
+  { 
+    id: 'v1', 
+    name: 'Giảm 50% Toàn menu', 
+    description: 'Áp dụng cho mọi nhà hàng đối tác từ 14:00 - 16:00', 
+    code: 'SALE50',
+    type: 'DISCOUNT',
+    value: '50%'
+  },
+  { 
+    id: 'v2', 
+    name: 'Miễn phí vận chuyển', 
+    description: 'Giảm tối đa 15.000đ cho đơn hàng từ 100k', 
+    code: 'FREESHIP',
+    type: 'FREE_SHIP',
+    value: '15k'
+  },
+  { 
+    id: 'v3', 
+    name: 'Giảm trực tiếp 20.000đ', 
+    description: 'Áp dụng cho đơn hàng trà sữa và đồ uống từ 50.000đ', 
+    code: 'DRINK20',
+    type: 'CASH',
+    value: '20k'
+  },
+];
+
+export const ORDER_HISTORY = [
+  {
+    id: 'ord1',
+    restaurant: 'Artisan Crust Bistro',
+    image: 'https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=500&auto=format&fit=crop',
+    items: '1x Truffle Mushroom Pizza, 2x Sparkling Lemonade',
+    total: 42.50,
+    status: 'Đang đến',
+    time: '15-20 phút',
+    date: 'Hôm nay',
+    isCurrent: true,
+  },
+  {
+    id: 'ord2',
+    restaurant: 'Zen Garden Sushi',
+    image: 'https://images.unsplash.com/photo-1579871494447-9811cf80d66c?q=80&w=500&auto=format&fit=crop',
+    items: 'Dragon Roll, Miso Soup, 2 more',
+    total: 34.20,
+    status: 'Đã hoàn thành',
+    date: 'Oct 24, 2023',
+    isCurrent: false,
+  },
+  {
+    id: 'ord3',
+    restaurant: 'The Green Bowl',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=500&auto=format&fit=crop',
+    items: 'Quinoa Power Salad, Ginger Tea',
+    total: 18.90,
+    status: 'Đã hoàn thành',
+    date: 'Oct 21, 2023',
+    isCurrent: false,
+  },
+  {
+    id: 'ord4',
+    restaurant: 'Stacker Burgers',
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=500&auto=format&fit=crop',
+    items: 'Double Stack, Truffle Fries',
+    total: 22.45,
+    status: 'Đã hoàn thành',
+    date: 'Oct 18, 2023',
+    isCurrent: false,
+  },
+];
+
+export const ADDRESSES = [
+  {
+    id: 'addr1',
+    type: 'Nhà',
+    address: 'Số 45, Đường Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh',
+    isDefault: true,
+  },
+  {
+    id: 'addr2',
+    type: 'Công ty',
+    address: 'Tầng 12, Tòa nhà Bitexco Financial, 2 Hải Triều, Bến Nghé, Quận 1, TP. Hồ Chí Minh',
+    isDefault: false,
+  },
+  {
+    id: 'addr3',
+    type: 'Nhà bạn (Lan)',
+    address: 'Vinhomes Central Park, 208 Nguyễn Hữu Cảnh, Bình Thạnh, TP. Hồ Chí Minh',
+    isDefault: false,
+  },
+];
+
+export const NOTIFICATIONS = [
+  {
+    id: 'n1',
+    title: 'Trạng thái đơn hàng',
+    description: 'Cập nhật về chuẩn bị và giao hàng',
+    enabled: true,
+    icon: 'package',
+  },
+  {
+    id: 'n2',
+    title: 'Tin nhắn từ tài xế',
+    description: 'Liên lạc trực tiếp khi đang giao hàng',
+    enabled: true,
+    icon: 'message-square',
+  },
+  {
+    id: 'n3',
+    title: 'Khuyến mãi',
+    description: 'Voucher độc quyền và giảm giá hàng ngày',
+    enabled: true,
+    icon: 'ticket',
+  },
+  {
+    id: 'n4',
+    title: 'Cập nhật hệ thống',
+    description: 'Tính năng mới và bảo trì dịch vụ',
+    enabled: false,
+    icon: 'settings',
+  },
 ];

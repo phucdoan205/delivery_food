@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, TextInput } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import { ArrowLeft, CheckCircle } from 'lucide-react-native';
 
 const OTPVerificationScreen = ({ navigation }) => {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -35,10 +33,13 @@ const OTPVerificationScreen = ({ navigation }) => {
           <CustomButton 
             title="Xác nhận" 
             icon={CheckCircle}
-            onPress={() => navigation.navigate('Main')} 
+            onPress={() => navigation.navigate('ResetPassword')} 
             style={styles.confirmBtn}
           />
-          <TouchableOpacity style={styles.changeContactBtn}>
+          <TouchableOpacity
+            style={styles.changeContactBtn}
+            onPress={() => navigation.navigate('ForgotPassword')}
+          >
             <Text style={styles.changeContactText}>Thay đổi số điện thoại/email</Text>
           </TouchableOpacity>
         </View>

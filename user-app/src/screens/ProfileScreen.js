@@ -6,11 +6,11 @@ import { USER_INFO } from '../constants/mockData';
 
 const ProfileScreen = ({ navigation }) => {
   const menuItems = [
-    { icon: User, title: 'Chỉnh sửa hồ sơ', color: '#FFF1E8', iconColor: '#B23A00' },
-    { icon: MapPinIcon, title: 'Quản lý địa chỉ', color: '#E8F5E9', iconColor: '#2E7D32' },
-    { icon: Heart, title: 'Quán ăn yêu thích', color: '#FCE4EC', iconColor: '#C2185B' },
-    { icon: Bell, title: 'Cài đặt thông báo', color: '#E3F2FD', iconColor: '#1976D2' },
-    { icon: Tag, title: 'Mã giảm giá', color: '#FFF9C4', iconColor: '#FBC02D', badge: 'PRO' },
+    { icon: User, title: 'Chỉnh sửa hồ sơ', color: '#FFF1E8', iconColor: '#B23A00', screen: 'EditProfile' },
+    { icon: MapPinIcon, title: 'Quản lý địa chỉ', color: '#E8F5E9', iconColor: '#2E7D32', screen: 'Address' },
+    { icon: Heart, title: 'Quán ăn yêu thích', color: '#FCE4EC', iconColor: '#C2185B', screen: 'Favorite' },
+    { icon: Bell, title: 'Cài đặt thông báo', color: '#E3F2FD', iconColor: '#1976D2', screen: 'NotificationSettings' },
+    { icon: Tag, title: 'Mã giảm giá', color: '#FFF9C4', iconColor: '#FBC02D', badge: 'PRO', screen: 'Voucher' },
   ];
 
   return (
@@ -49,7 +49,11 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionTitle}>Cài đặt tài khoản</Text>
           {menuItems.map((item, idx) => (
-            <TouchableOpacity key={idx} style={styles.menuItem}>
+            <TouchableOpacity 
+              key={idx} 
+              style={styles.menuItem}
+              onPress={() => item.screen && navigation.navigate(item.screen)}
+            >
               <View style={[styles.menuIconContainer, { backgroundColor: item.color }]}>
                 <item.icon size={20} color={item.iconColor} />
               </View>
