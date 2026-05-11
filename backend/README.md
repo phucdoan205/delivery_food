@@ -20,21 +20,32 @@ Công nghệ:
 Hướng dẫn cài đặt:
 
 1. Cài đặt dependencies
+```
 npm install
-
+```
 2. Tạo file .env trong thư mục src/
+```
 PORT=5000
 MONGO_URI=mongodb://127.0.0.1:27017/food_delivery_db
 JWT_SECRET=your_super_strong_jwt_secret_key_2026_foodapp
 DEFAULT_PLATFORM_COMMISSION=15
 NODE_ENV=development
+```
 
-3. Chạy Server
-npm run dev     (development)
-npm start       (production)
-
-4. Tạo dữ liệu test
+3. Tạo dữ liệu test
+```
 npm run seed
+```
+
+4. Chạy Server
+- Chạy trên môi trường Development:
+```
+npm run dev
+```
+- Chạy trên môi trường Production:
+```
+npm start
+```
 
 Tài khoản test sau khi chạy seeder:
 Seller: seller@food.com / 123456
@@ -76,5 +87,3 @@ Lưu ý:
 - Shop mới tạo phải được Admin duyệt mới thêm sản phẩm được
 - Nên tạo thư mục src/uploads trước khi upload ảnh
 - Bảo mật JWT_SECRET khi deploy
-
-Backend đã hoàn thiện 100% và sẵn sàng kết nối với Frontend Expo (React Native).
