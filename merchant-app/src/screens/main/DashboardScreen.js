@@ -8,7 +8,7 @@ import { LayoutDashboard, ShoppingBag, Star, TrendingUp as TrendingUpIcon } from
 
 const { width } = Dimensions.get('window');
 
-const DashboardScreen = () => {
+const DashboardScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
@@ -20,7 +20,10 @@ const DashboardScreen = () => {
             <Text style={styles.subWelcomeText}>Hôm nay nhà hàng của bạn đang hoạt động rất tốt.</Text>
           </View>
         </View>
-        <TouchableOpacity style={styles.notificationBtn}>
+        <TouchableOpacity 
+          style={styles.notificationBtn}
+          onPress={() => navigation.navigate('Notification')}
+        >
           <Bell size={24} color={Colors.text} />
           <View style={styles.dot} />
         </TouchableOpacity>

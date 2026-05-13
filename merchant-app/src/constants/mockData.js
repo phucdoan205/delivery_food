@@ -123,3 +123,74 @@ export const TOP_SELLING_DISHES = [
   { id: "1", name: "Phở Đặc Biệt", price: "85.000đ", orders: 124, image: "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400", rank: 1 },
   { id: "2", name: "Gỏi Cuốn Tôm Thịt", price: "45.000đ", orders: 98, image: "https://images.unsplash.com/photo-1534422298391-e4f8c170db76?w=400" },
 ];
+
+export const NOTIFICATIONS = [
+  {
+    id: '1',
+    title: 'Đơn hàng mới #ORD-9922',
+    description: 'Bạn có một đơn hàng mới từ Lê Minh Hoàng. Hãy bắt đầu chuẩn bị ngay!',
+    time: 'Vừa xong',
+    type: 'order',
+    isRead: false,
+  },
+  {
+    id: '2',
+    title: 'Thanh toán thành công',
+    description: 'Kỳ thanh toán 15/05 - 21/05 đã được chuyển vào tài khoản ngân hàng của bạn.',
+    time: '2 giờ trước',
+    type: 'payment',
+    isRead: false,
+  },
+  {
+    id: '3',
+    title: 'Cập nhật hệ thống',
+    description: 'Hệ thống sẽ bảo trì vào lúc 02:00 AM ngày mai. Vui lòng lưu ý.',
+    time: '5 giờ trước',
+    type: 'system',
+    isRead: true,
+  },
+  {
+    id: '4',
+    title: 'Đánh giá mới 5 sao',
+    description: 'Khách hàng "Minh Quân" đã để lại đánh giá 5 sao cho món "Phở bò Wagyu".',
+    time: 'Hôm qua',
+    type: 'review',
+    isRead: true,
+  },
+];
+
+export const PROMOTIONS = [
+  {
+    id: '1',
+    code: 'HELLOSUMMER',
+    title: 'Chào Hè Rực Rỡ',
+    discount: '20%',
+    status: 'active',
+    usage: '145/200',
+    expiry: '30/06/2026',
+  },
+  {
+    id: '2',
+    code: 'FREESHIPBISTRO',
+    title: 'Miễn phí vận chuyển',
+    discount: '30k',
+    status: 'active',
+    usage: '890/1000',
+    expiry: '15/07/2026',
+  },
+  {
+    id: '3',
+    code: 'TRIANKHACHHANG',
+    title: 'Tri ân khách hàng cũ',
+    discount: '15%',
+    status: 'expired',
+    usage: '500/500',
+    expiry: '01/05/2026',
+  },
+];
+
+export const STAFF = [
+  { id: '1', name: 'Nguyễn Minh Hoàng', role: 'Đầu bếp trưởng', status: 'online', time: '08:00 - 17:00', image: 'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=200' },
+  { id: '2', name: 'Lê Thị Thanh Vân', role: 'Quản lý sảnh', status: 'online', time: '14:00 - 22:00', image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200' },
+  { id: '3', name: 'Trần Văn Tú', role: 'Phục vụ', status: 'offline', time: 'Ca chiều', image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200' },
+];

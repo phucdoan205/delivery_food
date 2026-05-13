@@ -1,17 +1,18 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { User, Settings, CreditCard, Users, MessageSquare, HelpCircle, LogOut, ChevronRight, Store } from 'lucide-react-native';
+import { CreditCard, Users, MessageSquare, HelpCircle, LogOut, ChevronRight, Store, Ticket, Clock } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { RESTAURANT_INFO } from '../../constants/mockData';
 
 const ProfileScreen = ({ navigation }) => {
   const menuItems = [
     { icon: Store, label: 'Thông tin nhà hàng', sub: 'Địa chỉ, SĐT, danh mục', screen: 'RestaurantInfo' },
-    { icon: Clock, label: 'Giờ hoạt động', sub: '08:00 - 22:00, Hàng ngày' },
-    { icon: CreditCard, label: 'Cài đặt thanh toán', sub: 'Ví, ngân hàng, doanh thu' },
-    { icon: Users, label: 'Quản lý nhân viên', sub: '0/100 nhân viên đang hoạt động' },
-    { icon: MessageSquare, label: 'Phản hồi khách hàng', sub: '12 đánh giá mới chưa đọc', badge: 12 },
-    { icon: HelpCircle, label: 'Hỗ trợ & Trợ giúp', sub: 'Trung tâm hỗ trợ đối tác' },
+    { icon: Clock, label: 'Giờ hoạt động', sub: '08:00 - 22:00, hàng ngày', screen: 'OperatingHours' },
+    { icon: CreditCard, label: 'Cài đặt thanh toán', sub: 'Ví, ngân hàng, doanh thu', screen: 'PaymentSettings' },
+    { icon: Users, label: 'Quản lý nhân viên', sub: '24 nhân sự, 18 người đang trực', screen: 'StaffManagement' },
+    { icon: Ticket, label: 'Chương trình khuyến mãi', sub: 'Tạo voucher, mã giảm giá', screen: 'Promotions' },
+    { icon: MessageSquare, label: 'Phản hồi khách hàng', sub: '12 đánh giá mới chưa đọc', badge: 12, screen: 'CustomerFeedback' },
+    { icon: HelpCircle, label: 'Hỗ trợ & Trợ giúp', sub: 'Trung tâm hỗ trợ đối tác', screen: 'SupportHelp' },
   ];
 
   return (
@@ -25,19 +26,17 @@ const ProfileScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.profileCard}>
-          <View style={styles.restHeader}>
-            <View style={styles.restLogoContainer}>
-              <Image source={{ uri: RESTAURANT_INFO.logo }} style={styles.restLogo} />
-              <View style={styles.statusDot} />
+          <View style={styles.restLogoContainer}>
+            <Image source={{ uri: RESTAURANT_INFO.logo }} style={styles.restLogo} />
+            <View style={styles.statusDot} />
+          </View>
+          <Text style={styles.restName}>{RESTAURANT_INFO.name}</Text>
+          <View style={styles.badgeRow}>
+            <View style={styles.restStatus}>
+              <Text style={styles.restStatusText}>MỞ CỬA</Text>
             </View>
-            <Text style={styles.restName}>{RESTAURANT_INFO.name}</Text>
-            <View style={styles.badgeRow}>
-              <View style={styles.restStatus}>
-                <Text style={styles.restStatusText}>MỞ CỬA</Text>
-              </View>
-              <View style={styles.ratingBox}>
-                <Text style={styles.ratingText}>★ 4.9</Text>
-              </View>
+            <View style={styles.ratingBox}>
+              <Text style={styles.ratingText}>★ 4.9</Text>
             </View>
           </View>
 
@@ -62,24 +61,20 @@ const ProfileScreen = ({ navigation }) => {
 
       <View style={styles.menuContainer}>
         <Text style={styles.menuTitle}>Quản trị nhà hàng</Text>
-        {menuItems.map((item, index) => (
-          <TouchableOpacity 
-            key={index} 
-            style={styles.menuItem}
-            onPress={() => item.screen && navigation.navigate(item.screen)}
-          >
-            <View style={[styles.menuIconContainer, { backgroundColor: '#FBE9E7' }]}>
+        {menuItems.map((item) => (
+          <TouchableOpacity key={item.label} style={styles.menuItem} onPress={() => navigation.navigate(item.screen)}>
+            <View style={styles.menuIconContainer}>
               <item.icon size={20} color={Colors.primary} />
             </View>
             <View style={styles.menuTextContainer}>
               <Text style={styles.menuLabel}>{item.label}</Text>
               <Text style={styles.menuSub}>{item.sub}</Text>
             </View>
-            {item.badge && (
+            {item.badge ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.badge}</Text>
               </View>
-            )}
+            ) : null}
             <ChevronRight size={20} color={Colors.textSecondary} />
           </TouchableOpacity>
         ))}
@@ -89,7 +84,7 @@ const ProfileScreen = ({ navigation }) => {
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </View>
-      <View style={{ height: 100 }} />
+      <View style={styles.bottomSpacer} />
     </ScrollView>
   );
 };
@@ -119,17 +114,15 @@ const styles = StyleSheet.create({
   menuContainer: { paddingHorizontal: 20, marginTop: 30 },
   menuTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 20 },
   menuItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.white, borderRadius: 20, padding: 15, marginBottom: 15, borderWidth: 1, borderColor: Colors.border },
-  menuIconContainer: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15 },
+  menuIconContainer: { width: 44, height: 44, borderRadius: 15, justifyContent: 'center', alignItems: 'center', marginRight: 15, backgroundColor: '#FBE9E7' },
   menuTextContainer: { flex: 1 },
   menuLabel: { fontSize: 15, fontWeight: '700', color: Colors.text },
   menuSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   badge: { backgroundColor: Colors.primary, width: 22, height: 22, borderRadius: 11, justifyContent: 'center', alignItems: 'center', marginRight: 10 },
   badgeText: { color: Colors.white, fontSize: 10, fontWeight: '800' },
   logoutBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, paddingVertical: 15 },
-  logoutText: { fontSize: 16, fontWeight: '700', color: Colors.primary, marginLeft: 10 }
+  logoutText: { fontSize: 16, fontWeight: '700', color: Colors.primary, marginLeft: 10 },
+  bottomSpacer: { height: 100 },
 });
-
-// Import Clock here since it was missing in the list but used in menuItems
-import { Clock } from 'lucide-react-native';
 
 export default ProfileScreen;

@@ -80,7 +80,7 @@ const RegisterMerchantScreen = ({ navigation }) => {
 
         <CustomButton
           title="Gửi hồ sơ đăng ký"
-          onPress={() => navigation.navigate('OTP')}
+          onPress={() => navigation.navigate('Login')}
           style={styles.registerButton}
         />
 

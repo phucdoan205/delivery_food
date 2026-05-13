@@ -10,7 +10,15 @@ import {
   OTPScreen,
   ResetPasswordScreen,
   OrderDetailScreen,
-  RestaurantInfoScreen
+  RestaurantInfoScreen,
+  NotificationScreen,
+  PromotionsScreen,
+  AddEditDishScreen,
+  OperatingHoursScreen,
+  PaymentSettingsScreen,
+  StaffManagementScreen,
+  CustomerFeedbackScreen,
+  SupportHelpScreen
 } from '../screens';
 
 const Stack = createStackNavigator();
@@ -37,6 +45,14 @@ const AppNavigator = () => {
         <Stack.Screen name="Main" component={MainTabNavigator} />
         <Stack.Screen name="OrderDetail" component={OrderDetailScreen} />
         <Stack.Screen name="RestaurantInfo" component={RestaurantInfoScreen} />
+        <Stack.Screen name="Notification" component={NotificationScreen} />
+        <Stack.Screen name="Promotions" component={PromotionsScreen} />
+        <Stack.Screen name="AddEditDish" component={AddEditDishScreen} />
+        <Stack.Screen name="OperatingHours" component={OperatingHoursScreen} />
+        <Stack.Screen name="PaymentSettings" component={PaymentSettingsScreen} />
+        <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
+        <Stack.Screen name="CustomerFeedback" component={CustomerFeedbackScreen} />
+        <Stack.Screen name="SupportHelp" component={SupportHelpScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

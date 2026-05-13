@@ -5,7 +5,7 @@ import { Colors } from '../../constants/colors';
 import { MENU_ITEMS, RESTAURANT_INFO } from '../../constants/mockData';
 import FoodItemCard from '../../components/FoodItemCard';
 
-const MenuManagementScreen = () => {
+const MenuManagementScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -25,7 +25,10 @@ const MenuManagementScreen = () => {
         <Text style={styles.title}>Quản lý món ăn</Text>
         <Text style={styles.subtitle}>Cửa hàng của bạn có 4 món ăn đang hoạt động.</Text>
 
-        <TouchableOpacity style={styles.addButton}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddEditDish')}
+        >
           <Plus size={20} color={Colors.white} />
           <Text style={styles.addButtonText}>Thêm món mới</Text>
         </TouchableOpacity>
@@ -76,11 +79,18 @@ const MenuManagementScreen = () => {
       {/* Menu List */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {MENU_ITEMS.map((item, index) => (
-          <FoodItemCard key={index} item={item} />
+          <FoodItemCard 
+            key={index} 
+            item={item} 
+            onPress={() => navigation.navigate('AddEditDish', { dish: item })} 
+          />
         ))}
         
         {/* Add New Placeholder */}
-        <TouchableOpacity style={styles.addPlaceholder}>
+        <TouchableOpacity 
+          style={styles.addPlaceholder}
+          onPress={() => navigation.navigate('AddEditDish')}
+        >
           <View style={styles.addIconCircle}>
             <Plus size={24} color={Colors.primary} />
           </View>

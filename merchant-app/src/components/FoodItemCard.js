@@ -5,7 +5,7 @@ import { Colors } from '../constants/colors';
 
 const FoodItemCard = ({ item, onPress }) => {
   return (
-    <View style={styles.container}>
+    <TouchableOpacity style={styles.container} activeOpacity={0.7} onPress={onPress}>
       <Image source={{ uri: item.image }} style={styles.image} />
       
       <View style={styles.content}>
@@ -15,9 +15,9 @@ const FoodItemCard = ({ item, onPress }) => {
               {item.status === 'active' ? 'CÒN MÓN' : 'HẾT MÓN'}
             </Text>
           </View>
-          <TouchableOpacity style={styles.editButton}>
+          <View style={styles.editButton}>
             <Edit2 size={16} color={Colors.textSecondary} />
-          </TouchableOpacity>
+          </View>
         </View>
 
         <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
@@ -35,7 +35,7 @@ const FoodItemCard = ({ item, onPress }) => {
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 };
 

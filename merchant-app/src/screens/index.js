@@ -14,6 +14,14 @@ export { default as AnalyticsScreen } from './main/AnalyticsScreen';
 export { default as ProfileScreen } from './main/ProfileScreen';
 export { default as RestaurantInfoScreen } from './main/RestaurantInfoScreen';
 export { default as OrderDetailScreen } from './main/OrderDetailScreen';
+export { default as NotificationScreen } from './main/NotificationScreen';
+export { default as PromotionsScreen } from './main/PromotionsScreen';
+export { default as AddEditDishScreen } from './main/AddEditDishScreen';
+export { default as OperatingHoursScreen } from './main/OperatingHoursScreen';
+export { default as PaymentSettingsScreen } from './main/PaymentSettingsScreen';
+export { default as StaffManagementScreen } from './main/StaffManagementScreen';
+export { default as CustomerFeedbackScreen } from './main/CustomerFeedbackScreen';
+export { default as SupportHelpScreen } from './main/SupportHelpScreen';
 
 // Placeholder for remaining screens if any
 import React from 'react';
