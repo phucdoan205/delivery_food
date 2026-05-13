@@ -1,7 +1,7 @@
-import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
-import MainTabNavigator from './MainTabNavigator';
+import React from "react";
+import { NavigationContainer } from "@react-navigation/native";
+import { createStackNavigator } from "@react-navigation/stack";
+import MainTabNavigator from "./MainTabNavigator";
 import {
   OnboardingScreen,
   LoginScreen,
@@ -18,8 +18,8 @@ import {
   PaymentSettingsScreen,
   StaffManagementScreen,
   CustomerFeedbackScreen,
-  SupportHelpScreen
-} from '../screens';
+  SupportHelpScreen,
+} from "../screens";
 
 const Stack = createStackNavigator();
 
@@ -30,7 +30,7 @@ const AppNavigator = () => {
         initialRouteName="Onboarding"
         screenOptions={{
           headerShown: false,
-          cardStyle: { backgroundColor: '#FFFFFF' },
+          cardStyle: { backgroundColor: "#FFFFFF" },
         }}
       >
         {/* Auth Flow */}
@@ -49,9 +49,18 @@ const AppNavigator = () => {
         <Stack.Screen name="Promotions" component={PromotionsScreen} />
         <Stack.Screen name="AddEditDish" component={AddEditDishScreen} />
         <Stack.Screen name="OperatingHours" component={OperatingHoursScreen} />
-        <Stack.Screen name="PaymentSettings" component={PaymentSettingsScreen} />
-        <Stack.Screen name="StaffManagement" component={StaffManagementScreen} />
-        <Stack.Screen name="CustomerFeedback" component={CustomerFeedbackScreen} />
+        <Stack.Screen
+          name="PaymentSettings"
+          component={PaymentSettingsScreen}
+        />
+        <Stack.Screen
+          name="StaffManagement"
+          component={StaffManagementScreen}
+        />
+        <Stack.Screen
+          name="CustomerFeedback"
+          component={CustomerFeedbackScreen}
+        />
         <Stack.Screen name="SupportHelp" component={SupportHelpScreen} />
       </Stack.Navigator>
     </NavigationContainer>
