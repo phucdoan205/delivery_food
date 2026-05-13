@@ -25,6 +25,8 @@ import PersonalInfoScreen from '../screens/details/PersonalInfoScreen';
 import BankAccountsScreen from '../screens/details/BankAccountsScreen';
 import SettingsScreen from '../screens/details/SettingsScreen';
 import HelpCenterScreen from '../screens/details/HelpCenterScreen';
+import SecurityScreen from '../screens/details/SecurityScreen';
+
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -86,7 +88,9 @@ const AppNavigator = () => {
         <Stack.Screen name="BankAccounts" component={BankAccountsScreen} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
+        <Stack.Screen name="Security" component={SecurityScreen} />
       </Stack.Navigator>
+
     </NavigationContainer>
   );
 };

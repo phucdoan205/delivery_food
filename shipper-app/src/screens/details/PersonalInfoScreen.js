@@ -5,8 +5,9 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import { currentUser } from '../../constants/mockData';
 
-const PersonalInfoScreen = () => {
+const PersonalInfoScreen = ({ navigation }) => {
   const InfoItem = ({ icon, label, value }) => (
+
     <View style={styles.infoItem}>
       <View style={styles.iconBox}>
         <Ionicons name={icon} size={20} color={COLORS.secondary} />
@@ -85,15 +86,13 @@ const PersonalInfoScreen = () => {
            </View>
         </View>
 
-        <TouchableOpacity style={styles.menuItem}>
+        <TouchableOpacity 
+          style={styles.menuItem}
+          onPress={() => navigation.navigate('Security')}
+        >
            <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.secondary} />
            <Text style={styles.menuText}>Mật khẩu & Bảo mật</Text>
            <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.logoutButton}>
-           <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
-           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
       </ScrollView>
     </View>
