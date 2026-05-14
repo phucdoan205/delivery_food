@@ -264,3 +264,33 @@ export const APPROVED_RESTAURANTS = [
       "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=60&h=60&fit=crop",
   },
 ];
+
+export const PENDING_DRIVERS = [
+  {
+    id: 101,
+    name: "Nguyễn Văn A",
+    phone: "0912 345 678",
+    bike: "Honda Wave - 59-X1 234.56",
+    license: "GPLX-123456",
+    address: "Quận 1, TP. HCM",
+    submittedDate: "14 Thg 05, 2026",
+    avatar: "https://i.pravatar.cc/150?u=a",
+    status: "pending",
+  },
+  {
+    id: 102,
+    name: "Trần Thị B",
+    phone: "0987 654 321",
+    bike: "Yamaha Sirius - 59-Y2 345.67",
+    license: "GPLX-654321",
+    address: "Quận 3, TP. HCM",
+    submittedDate: "13 Thg 05, 2026",
+    avatar: "https://i.pravatar.cc/150?u=b",
+    status: "pending",
+  }
+];
+
+export const APPROVED_DRIVERS = [
+  { id: 1, name: "Lê Văn Hùng", avatar: "https://i.pravatar.cc/150?u=hung", phone: "0901 234 567", status: "Đang hoạt động", rating: 4.8, orders: 1240, bike: "Honda AirBlade - 59-P1 123.45" },
+  { id: 2, name: "Phạm Minh Tuấn", avatar: "https://i.pravatar.cc/150?u=tuan", phone: "0908 765 432", status: "Ngoại tuyến", rating: 4.9, orders: 850, bike: "Yamaha Exciter - 59-S2 678.90" },
+];
