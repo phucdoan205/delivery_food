@@ -1,12 +1,35 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Share2, Heart, Minus, Plus } from 'lucide-react-native';
+import { request } from '../api/client';
 
 const FoodDetailScreen = ({ route, navigation }) => {
   const { item } = route.params;
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleAddToCart = async () => {
+    setLoading(true);
+    try {
+      await request('/cart', {
+        method: 'POST',
+        body: {
+          foodId: item.id,
+          quantity
+        }
+      });
+      Alert.alert('Thành công', 'Đã thêm vào giỏ hàng!', [
+        { text: 'Đi đến giỏ hàng', onPress: () => navigation.navigate('Cart') },
+        { text: 'Tiếp tục mua sắm', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể thêm vào giỏ hàng');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -32,12 +55,11 @@ const FoodDetailScreen = ({ route, navigation }) => {
               <Text style={styles.name}>{item.name}</Text>
               <View style={styles.restaurantRow}>
                 <View style={styles.dot} />
-                <Text style={styles.restaurantName}>Bún Chả Sinh Từ - Hàng Than</Text>
+                <Text style={styles.restaurantName}>Quán ăn đối tác</Text>
               </View>
             </View>
             <View style={styles.priceContainer}>
               <Text style={styles.price}>{item.price.toLocaleString()}đ</Text>
-              <Text style={styles.oldPrice}>75.000đ</Text>
             </View>
           </View>
 
@@ -107,7 +129,8 @@ const FoodDetailScreen = ({ route, navigation }) => {
 
         <TouchableOpacity 
           style={styles.addToCartBtn}
-          onPress={() => navigation.navigate('Cart')}
+          onPress={handleAddToCart}
+          disabled={loading}
         >
           <Text style={styles.addToCartText}>Thêm vào giỏ</Text>
           <Text style={styles.footerPrice}>{(item.price * quantity).toLocaleString()}đ</Text>

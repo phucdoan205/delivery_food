@@ -1,40 +1,76 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
-import { history } from '../../constants/mockData';
+import { request } from '../../api/client';
 
-const HistoryScreen = () => {
-  const renderItem = ({ item }) => (
-    <View style={styles.historyCard}>
-      <View style={styles.cardHeader}>
-        <View style={styles.idContainer}>
-          <Text style={styles.orderId}>#{item.id}</Text>
-          <Text style={styles.timeText}>{item.time}</Text>
+const HistoryScreen = ({ navigation }) => {
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHistory = async () => {
+    try {
+      const data = await request('/orders/shipper');
+      const completed = data.filter(o => o.status === 'completed');
+      setCompletedOrders(completed);
+    } catch (error) {
+      console.log('Error fetching completed shipper orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchHistory();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const renderItem = ({ item }) => {
+    const orderTime = item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong';
+
+    return (
+      <View style={styles.historyCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.idContainer}>
+            <Text style={styles.orderId}>#{item._id.substring(item._id.length - 6).toUpperCase()}</Text>
+            <Text style={styles.timeText}>{orderTime}</Text>
+          </View>
+          <Text style={styles.amountText}>{item.totalPrice?.toLocaleString()}đ</Text>
         </View>
-        <Text style={styles.amountText}>{item.income.toLocaleString()}đ</Text>
-      </View>
 
-      <View style={styles.timeline}>
-        <View style={styles.timelineItem}>
-          <View style={[styles.dot, { backgroundColor: '#A04000' }]} />
-          <View style={styles.line} />
-          <View style={styles.locationInfo}>
-            <Text style={styles.locationLabel}>Cửa hàng</Text>
-            <Text style={styles.locationName} numberOfLines={1}>{item.restaurant}</Text>
+        <View style={styles.timeline}>
+          <View style={styles.timelineItem}>
+            <View style={[styles.dot, { backgroundColor: '#A04000' }]} />
+            <View style={styles.line} />
+            <View style={styles.locationInfo}>
+              <Text style={styles.locationLabel}>Cửa hàng</Text>
+              <Text style={styles.locationName} numberOfLines={1}>{item.restaurantId?.name || 'Cửa hàng'}</Text>
+            </View>
+          </View>
+          <View style={styles.timelineItem}>
+            <View style={[styles.dot, { backgroundColor: COLORS.primary }]} />
+            <View style={styles.locationInfo}>
+              <Text style={styles.locationLabel}>Khách hàng</Text>
+              <Text style={styles.locationName} numberOfLines={1}>{item.deliveryAddress || 'Địa chỉ giao hàng'}</Text>
+            </View>
           </View>
         </View>
-        <View style={styles.timelineItem}>
-          <View style={[styles.dot, { backgroundColor: COLORS.primary }]} />
-          <View style={styles.locationInfo}>
-            <Text style={styles.locationLabel}>Khách hàng</Text>
-            <Text style={styles.locationName} numberOfLines={1}>{item.destination}</Text>
-          </View>
-        </View>
       </View>
-    </View>
-  );
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
 
   return (
     <View style={styles.container}>
@@ -44,7 +80,7 @@ const HistoryScreen = () => {
         rightComponent={
           <TouchableOpacity style={styles.filterButton}>
             <Ionicons name="calendar-outline" size={20} color={COLORS.text} />
-            <Text style={styles.filterText}>Tháng 10, 2023</Text>
+            <Text style={styles.filterText}>Hôm nay</Text>
           </TouchableOpacity>
         }
       />
@@ -52,30 +88,35 @@ const HistoryScreen = () => {
       <View style={styles.summaryContainer}>
          <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>TỔNG THU NHẬP HÔM NAY</Text>
-            <Text style={styles.summaryValue}>1.250.000đ</Text>
+            <Text style={styles.summaryValue}>{todayEarnings.toLocaleString()}đ</Text>
             <View style={styles.growthBadge}>
                <Ionicons name="trending-up" size={14} color={COLORS.white} />
-               <Text style={styles.growthText}>+12%</Text>
+               <Text style={styles.growthText}>+100%</Text>
             </View>
          </View>
          <View style={styles.row}>
             <View style={[styles.miniCard, { marginRight: SIZES.base }]}>
                <Text style={styles.miniLabel}>ĐƠN HOÀN THÀNH</Text>
-               <Text style={styles.miniValue}>24 <Text style={{fontSize: 14, color: COLORS.success}}>Chuyến</Text></Text>
+               <Text style={styles.miniValue}>{completedOrders.length} <Text style={{fontSize: 14, color: COLORS.success}}>Chuyến</Text></Text>
             </View>
             <View style={styles.miniCard}>
                <Text style={styles.miniLabel}>QUÃNG ĐƯỜNG</Text>
-               <Text style={styles.miniValue}>142 <Text style={{fontSize: 14, color: COLORS.secondary}}>km</Text></Text>
+               <Text style={styles.miniValue}>{completedOrders.length * 3} <Text style={{fontSize: 14, color: COLORS.secondary}}>km</Text></Text>
             </View>
          </View>
       </View>
 
       <FlatList
-        data={history}
-        keyExtractor={item => item.id}
+        data={completedOrders}
+        keyExtractor={item => item._id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={{ padding: 40, backgroundColor: COLORS.white, borderRadius: 20, alignItems: 'center' }}>
+            <Text style={{ color: COLORS.textSecondary }}>Bạn chưa hoàn thành chuyến giao hàng nào</Text>
+          </View>
+        }
       />
     </View>
   );

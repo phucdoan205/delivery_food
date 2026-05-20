@@ -1,59 +1,118 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { MapPin, Search as ChevronRight, Search as RotateCcw } from 'lucide-react-native';
-import { ORDER_HISTORY } from '../constants/mockData';
+import { request } from '../api/client';
 
 const OrderHistoryScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Hiện tại');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const renderOrderItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.orderCard}
-      onPress={() => item.isCurrent && navigation.navigate('OrderTracking')}
-    >
-      {item.isCurrent ? (
-        <>
-          <Image source={{ uri: item.image }} style={styles.currentOrderImage} />
-          <View style={styles.currentOrderInfo}>
-            <View style={styles.tagBadge}>
-              <Text style={styles.tagText}>ĐANG THỰC HIỆN</Text>
+  const fetchOrders = async () => {
+    try {
+      const data = await request('/orders/myorders');
+      setOrders(data);
+    } catch (error) {
+      console.log('Error fetching user orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchOrders();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const renderOrderItem = ({ item }) => {
+    const isCurrent = ['pending', 'confirmed', 'preparing', 'delivering'].includes(item.status);
+    const restaurantName = item.restaurantId?.name || "Nhà hàng đối tác";
+    const restaurantImage = item.restaurantId?.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=200&auto=format&fit=crop';
+    
+    // Generate text summary of items
+    const itemsSummary = item.items?.map(i => `${i.quantity}x ${i.foodId?.name || 'Món ăn'}`).join(', ') || 'Đơn hàng thực phẩm';
+    const orderDate = new Date(item.createdAt).toLocaleDateString('vi-VN', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+
+    const getStatusLabel = (status) => {
+      switch (status) {
+        case 'pending': return 'ĐANG CHỜ DUYỆT';
+        case 'confirmed': return 'ĐÃ XÁC NHẬN';
+        case 'preparing': return 'ĐANG CHUẨN BỊ';
+        case 'delivering': return 'ĐANG GIAO HÀNG';
+        case 'completed': return 'ĐÃ HOÀN THÀNH';
+        case 'cancelled': return 'ĐÃ HỦY';
+        default: return 'ĐƠN HÀNG';
+      }
+    };
+
+    return (
+      <TouchableOpacity 
+        style={styles.orderCard}
+        onPress={() => isCurrent && navigation.navigate('OrderTracking', { orderId: item._id })}
+      >
+        {isCurrent ? (
+          <>
+            <Image source={{ uri: restaurantImage }} style={styles.currentOrderImage} />
+            <View style={styles.currentOrderInfo}>
+              <View style={[styles.tagBadge, { backgroundColor: item.status === 'delivering' ? COLORS.green : COLORS.primary }]}>
+                <Text style={styles.tagText}>{getStatusLabel(item.status)}</Text>
+              </View>
+              <Text style={styles.restaurantName}>{restaurantName}</Text>
+              <Text style={styles.orderTime}>Đặt lúc {new Date(item.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</Text>
+              <View style={styles.itemsRow}>
+                <Text style={styles.orderItems} numberOfLines={1}>🍽️ {itemsSummary}</Text>
+              </View>
+              <View style={styles.priceRow}>
+                <Text style={styles.price}>{item.totalPrice.toLocaleString()}đ</Text>
+                <TouchableOpacity 
+                  style={styles.trackBtn} 
+                  onPress={() => navigation.navigate('OrderTracking', { orderId: item._id })}
+                >
+                  <MapPin size={16} color={COLORS.white} />
+                  <Text style={styles.trackBtnText}>Theo dõi</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-            <Text style={styles.restaurantName}>{item.restaurant}</Text>
-            <Text style={styles.orderTime}>Sắp đến trong {item.time}</Text>
-            <View style={styles.itemsRow}>
-              <Text style={styles.orderItems} numberOfLines={1}>🍽️ {item.items}</Text>
-            </View>
-            <View style={styles.priceRow}>
-              <Text style={styles.price}>${item.total.toFixed(2)}</Text>
-              <TouchableOpacity style={styles.trackBtn} onPress={() => navigation.navigate('OrderTracking')}>
-                <MapPin size={16} color={COLORS.white} />
-                <Text style={styles.trackBtnText}>Theo dõi</Text>
-              </TouchableOpacity>
+          </>
+        ) : (
+          <View style={styles.pastOrderContainer}>
+            <Image source={{ uri: restaurantImage }} style={styles.pastOrderImage} />
+            <View style={styles.pastOrderInfo}>
+              <View style={styles.pastOrderHeader}>
+                <Text style={styles.restaurantNameSmall}>{restaurantName}</Text>
+                <Text style={styles.orderDate}>{orderDate}</Text>
+              </View>
+              <Text style={styles.orderItemsSmall} numberOfLines={1}>{itemsSummary}</Text>
+              <View style={styles.pastOrderFooter}>
+                <Text style={styles.priceSmall}>{item.totalPrice.toLocaleString()}đ</Text>
+                <View style={[styles.tagBadge, { backgroundColor: item.status === 'completed' ? COLORS.green : '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 }]}>
+                  <Text style={[styles.tagText, { fontSize: 8, color: item.status === 'completed' ? COLORS.white : '#616161' }]}>{getStatusLabel(item.status)}</Text>
+                </View>
+              </View>
             </View>
           </View>
-        </>
-      ) : (
-        <View style={styles.pastOrderContainer}>
-          <Image source={{ uri: item.image }} style={styles.pastOrderImage} />
-          <View style={styles.pastOrderInfo}>
-            <View style={styles.pastOrderHeader}>
-              <Text style={styles.restaurantNameSmall}>{item.restaurant}</Text>
-              <Text style={styles.orderDate}>{item.date}</Text>
-            </View>
-            <Text style={styles.orderItemsSmall} numberOfLines={1}>{item.items}</Text>
-            <View style={styles.pastOrderFooter}>
-              <Text style={styles.priceSmall}>${item.total.toFixed(2)}</Text>
-              <TouchableOpacity style={styles.reorderBtn}>
-                <RotateCcw size={14} color={COLORS.primary} />
-                <Text style={styles.reorderBtnText}>Đặt lại</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      )}
-    </TouchableOpacity>
-  );
+        )}
+      </TouchableOpacity>
+    );
+  };
+
+  const currentOrders = orders.filter(o => ['pending', 'confirmed', 'preparing', 'delivering'].includes(o.status));
+  const pastOrders = orders.filter(o => ['completed', 'cancelled'].includes(o.status));
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -88,21 +147,31 @@ const OrderHistoryScreen = ({ navigation }) => {
 
         {activeTab === 'Hiện tại' && (
           <FlatList
-            data={ORDER_HISTORY.filter(o => o.isCurrent)}
+            data={currentOrders}
             renderItem={renderOrderItem}
-            keyExtractor={item => item.id}
+            keyExtractor={item => item._id}
             showsVerticalScrollIndicator={false}
             ListHeaderComponent={() => <Text style={styles.sectionTitle}>Đang giao</Text>}
+            ListEmptyComponent={() => (
+              <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.textLight }}>Không có đơn hàng hiện tại nào</Text>
+              </View>
+            )}
           />
         )}
 
         {activeTab === 'Đã xong' && (
           <FlatList
-            data={ORDER_HISTORY.filter(o => !o.isCurrent)}
+            data={pastOrders}
             renderItem={renderOrderItem}
-            keyExtractor={item => item.id}
+            keyExtractor={item => item._id}
             showsVerticalScrollIndicator={false}
-            ListHeaderComponent={() => <Text style={styles.sectionTitle}>Kỷ niệm gần đây</Text>}
+            ListHeaderComponent={() => <Text style={styles.sectionTitle}>Lịch sử đã đặt</Text>}
+            ListEmptyComponent={() => (
+              <View style={{ flex: 1, padding: 30, alignItems: 'center' }}>
+                <Text style={{ color: COLORS.textLight }}>Lịch sử trống</Text>
+              </View>
+            )}
           />
         )}
       </View>

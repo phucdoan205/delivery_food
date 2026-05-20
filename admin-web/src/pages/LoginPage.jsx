@@ -1,7 +1,46 @@
-import React from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { UtensilsCrossed, Mail, Lock, Eye, ArrowRight } from "lucide-react";
+import { request, setToken } from "../api/client";
+import toast from "react-hot-toast";
 
 const LoginPage = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error("Vui lòng nhập email và mật khẩu");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await request("/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
+
+      if (data.role !== "admin") {
+        toast.error("Bạn không có quyền truy cập vào trang Admin");
+        setLoading(false);
+        return;
+      }
+
+      setToken(data.token);
+      toast.success("Đăng nhập thành công!");
+      navigate("/");
+    } catch (error) {
+      toast.error(error.message || "Đăng nhập thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="flex w-full max-w-6xl h-[800px] bg-white rounded-[40px] overflow-hidden shadow-premium animate-in zoom-in-95 duration-700">
       {/* Left Side: Image & Glass Card */}
@@ -37,7 +76,7 @@ const LoginPage = () => {
           <p className="text-slate-500">Vui lòng đăng nhập để quản lý nền tảng của bạn.</p>
         </div>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email hoặc Tên đăng nhập</label>
             <div className="relative group">
@@ -45,9 +84,12 @@ const LoginPage = () => {
                 <Mail size={18} />
               </div>
               <input 
-                type="text" 
+                type="email" 
                 placeholder="admin@culinarycurator.com" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
+                required
               />
             </div>
           </div>
@@ -55,30 +97,35 @@ const LoginPage = () => {
           <div className="space-y-2">
             <div className="flex items-center justify-between ml-1">
               <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</label>
-              <button type="button" className="text-xs font-bold text-brand-primary hover:underline">Quên mật khẩu?</button>
             </div>
             <div className="relative group">
               <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
                 <Lock size={18} />
               </div>
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 placeholder="••••••••••••" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 className="w-full pl-12 pr-12 py-4 bg-white border border-slate-100 rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
+                required
               />
-              <button type="button" className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-brand-primary">
+              <button 
+                type="button" 
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-brand-primary"
+              >
                 <Eye size={18} />
               </button>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-1">
-            <input type="checkbox" id="remember" className="w-5 h-5 rounded-md border-slate-200 text-brand-primary focus:ring-brand-primary/20" />
-            <label htmlFor="remember" className="text-sm text-slate-500 font-medium">Ghi nhớ đăng nhập</label>
-          </div>
-
-          <button className="w-full py-4 bg-brand-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-premium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 mt-8">
-            Đăng nhập vào Bảng điều khiển
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full py-4 bg-brand-primary text-white rounded-2xl font-bold flex items-center justify-center gap-2 shadow-premium hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 mt-8 disabled:opacity-50"
+          >
+            {loading ? "Đang xử lý..." : "Đăng nhập vào Bảng điều khiển"}
             <ArrowRight size={20} />
           </button>
         </form>
@@ -87,10 +134,6 @@ const LoginPage = () => {
           <p className="text-[10px] text-slate-400 leading-relaxed uppercase tracking-widest font-bold">
             © 2024 Culinary Curator Admin Console. Bảo mật bởi chuẩn mã hóa 256-bit.
           </p>
-          <div className="flex items-center justify-center gap-6 mt-4">
-            <button className="text-[10px] font-bold text-brand-primary uppercase tracking-widest hover:underline">Trung tâm trợ giúp</button>
-            <button className="text-[10px] font-bold text-brand-primary uppercase tracking-widest hover:underline">Quy định bảo mật</button>
-          </div>
         </div>
       </div>
     </div>

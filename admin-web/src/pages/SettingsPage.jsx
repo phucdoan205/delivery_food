@@ -392,7 +392,13 @@ const SettingsPage = () => {
             <ExternalLink className="text-[#D98C72]" size={18} />
           </button>
 
-          <button className="flex items-center justify-center gap-3 p-5 bg-[#FFEBE5] rounded-[24px] hover:bg-[#FFD6C9] transition-all group">
+          <button 
+            onClick={() => {
+              localStorage.removeItem("token");
+              window.location.href = "/login";
+            }}
+            className="flex items-center justify-center gap-3 p-5 bg-[#FFEBE5] rounded-[24px] hover:bg-[#FFD6C9] transition-all group"
+          >
             <LogOut
               className="text-[#D32F2F] group-hover:-translate-x-1 transition-transform"
               size={20}

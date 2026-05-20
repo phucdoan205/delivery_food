@@ -36,6 +36,7 @@ const getOrderById = async (req, res) => {
   const order = await Order.findById(req.params.id)
     .populate('userId', 'fullName email')
     .populate('restaurantId', 'name address')
+    .populate('shipperId', 'fullName phone')
     .populate('items.foodId', 'name price')
 
   if (order) {
@@ -82,10 +83,35 @@ const getMerchantOrders = async (req, res) => {
   res.json(orders)
 }
 
+const getAllOrdersAdmin = async (req, res) => {
+  const orders = await Order.find({})
+    .populate('userId', 'fullName email')
+    .populate('restaurantId', 'name address')
+    .populate('shipperId', 'fullName phone')
+    .sort({ createdAt: -1 })
+  res.json(orders)
+}
+
+const getShipperOrders = async (req, res) => {
+  const orders = await Order.find({
+    $or: [
+      { status: 'preparing' },
+      { status: 'delivering', shipperId: req.user._id },
+      { status: 'completed', shipperId: req.user._id }
+    ]
+  })
+  .populate('userId', 'fullName phone address')
+  .populate('restaurantId', 'name address')
+  .sort({ createdAt: -1 })
+  res.json(orders)
+}
+
 module.exports = {
   createOrder,
   getOrderById,
   updateOrderStatus,
   getMyOrders,
-  getMerchantOrders
+  getMerchantOrders,
+  getAllOrdersAdmin,
+  getShipperOrders
 }

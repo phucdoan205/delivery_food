@@ -1,19 +1,101 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView, Dimensions, ActivityIndicator, Alert } from 'react-native';
 
 const { width } = Dimensions.get('window');
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, User, Phone, Mail, Lock, Search as Camera } from 'lucide-react-native';
 import CustomInput from '../components/CustomInput';
 import CustomButton from '../components/CustomButton';
-import { USER_INFO } from '../constants/mockData';
+import { request } from '../api/client';
+import { pickAndUploadImage } from '../utils/cloudinary';
 
 const EditProfileScreen = ({ navigation }) => {
-  const [name, setName] = useState(USER_INFO.name);
-  const [phone, setPhone] = useState(USER_INFO.phone);
-  const [email, setEmail] = useState(USER_INFO.email);
-  const [currentPassword, setCurrentPassword] = useState('********');
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatar, setAvatar] = useState('');
   const [newPassword, setNewPassword] = useState('');
+
+  const fetchProfile = async () => {
+    try {
+      const data = await request('/auth/profile');
+      setName(data.fullName || '');
+      setPhone(data.phone || '');
+      setEmail(data.email || '');
+      setAvatar(data.avatar || '');
+    } catch (error) {
+      console.log('Error fetching profile inside EditProfileScreen:', error);
+      Alert.alert('Lỗi', 'Không thể tải thông tin tài khoản');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handleSave = async () => {
+    if (!name.trim()) {
+      Alert.alert('Lỗi', 'Họ và tên không được để trống');
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const updateData = {
+        fullName: name,
+        phone,
+        avatar
+      };
+
+      if (newPassword.trim()) {
+        updateData.password = newPassword;
+      }
+
+      await request('/auth/profile', {
+        method: 'PUT',
+        body: updateData
+      });
+
+      Alert.alert('Thành công', 'Cập nhật tài khoản thành công!', [
+        { text: 'OK', onPress: () => navigation.goBack() }
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể lưu thay đổi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const handlePickAvatar = async () => {
+    try {
+      setUploadingImage(true);
+      const url = await pickAndUploadImage();
+      if (url) {
+        setAvatar(url);
+        Alert.alert('Thành công', 'Đã tải ảnh lên. Hãy nhấn Lưu thay đổi.');
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const profileAvatar = avatar || 'https://images.unsplash.com/photo-1627087820883-7a102b79179a?q=80&w=200&auto=format&fit=crop';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,14 +110,17 @@ const EditProfileScreen = ({ navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarContainer}>
           <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1627087820883-7a102b79179a?q=80&w=200&auto=format&fit=crop' }} 
+            source={{ uri: profileAvatar }} 
             style={styles.avatar} 
           />
-          <TouchableOpacity style={styles.cameraBtn}>
-            <Camera size={16} color={COLORS.white} />
+          <TouchableOpacity style={styles.cameraBtn} onPress={handlePickAvatar} disabled={uploadingImage}>
+            {uploadingImage ? (
+              <ActivityIndicator size="small" color={COLORS.white} />
+            ) : (
+              <Camera size={16} color={COLORS.white} />
+            )}
           </TouchableOpacity>
           <Text style={styles.userName}>{name}</Text>
-          <Text style={styles.userSince}>Thành viên từ 2023</Text>
         </View>
 
         <View style={styles.section}>
@@ -67,7 +152,7 @@ const EditProfileScreen = ({ navigation }) => {
             <Text style={styles.label}>EMAIL</Text>
             <CustomInput
               value={email}
-              onChangeText={setEmail}
+              editable={false}
               placeholder="Email"
               keyboardType="email-address"
             />
@@ -77,22 +162,11 @@ const EditProfileScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Lock size={18} color={COLORS.primary} />
-            <Text style={styles.sectionTitle}>Bảo mật</Text>
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>MẬT KHẨU HIỆN TẠI</Text>
-            <CustomInput
-              value={currentPassword}
-              onChangeText={setCurrentPassword}
-              placeholder="********"
-              secureTextEntry
-              showEyeIcon
-            />
+            <Text style={styles.sectionTitle}>Đổi mật khẩu</Text>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>MẬT KHẨU MỚI</Text>
+            <Text style={styles.label}>MẬT KHẨU MỚI (ĐỂ TRỐNG NẾU KHÔNG ĐỔI)</Text>
             <CustomInput
               value={newPassword}
               onChangeText={setNewPassword}
@@ -104,8 +178,9 @@ const EditProfileScreen = ({ navigation }) => {
         </View>
 
         <CustomButton 
-          title="Lưu thay đổi" 
-          onPress={() => navigation.goBack()} 
+          title={saving ? "Đang lưu..." : "Lưu thay đổi"} 
+          onPress={handleSave} 
+          disabled={saving}
           style={styles.saveBtn}
         />
         

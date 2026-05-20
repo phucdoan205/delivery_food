@@ -1,33 +1,73 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { Search, Plus, Filter, ArrowUpDown } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { MENU_ITEMS, RESTAURANT_INFO } from '../../constants/mockData';
 import FoodItemCard from '../../components/FoodItemCard';
+import { request } from '../../api/client';
 
 const MenuManagementScreen = ({ navigation }) => {
+  const [restaurant, setRestaurant] = useState(null);
+  const [menuItems, setMenuItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const fetchMenu = async () => {
+    try {
+      const rest = await request('/restaurants/mine');
+      setRestaurant(rest);
+      const foods = await request(`/foods/restaurant/${rest._id}`);
+      setMenuItems(foods);
+    } catch (error) {
+      console.log('Error fetching menu items:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchMenu();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const filteredItems = menuItems.filter(item => 
+    item.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  const activeCount = menuItems.filter(i => i.isAvailable !== false).length;
+  const inactiveCount = menuItems.filter(i => i.isAvailable === false).length;
+
   return (
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.restInfo}>
-            <Text style={styles.restName}>{RESTAURANT_INFO.name}</Text>
+            <Text style={styles.restName}>{restaurant?.name || 'Cửa hàng'}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>Mở cửa</Text>
+              <Text style={styles.statusText}>{restaurant?.status === 'approved' ? 'Hoạt động' : 'Chờ duyệt'}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.profileBtn}>
+          <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
             <Text style={styles.profileIcon}>👤</Text>
           </TouchableOpacity>
         </View>
         
         <Text style={styles.title}>Quản lý món ăn</Text>
-        <Text style={styles.subtitle}>Cửa hàng của bạn có 4 món ăn đang hoạt động.</Text>
+        <Text style={styles.subtitle}>Cửa hàng của bạn có {menuItems.length} món ăn trong thực đơn.</Text>
 
         <TouchableOpacity 
           style={styles.addButton}
-          onPress={() => navigation.navigate('AddEditDish')}
+          onPress={() => navigation.navigate('AddEditDish', { restaurantId: restaurant?._id })}
         >
           <Plus size={20} color={Colors.white} />
           <Text style={styles.addButtonText}>Thêm món mới</Text>
@@ -39,57 +79,53 @@ const MenuManagementScreen = ({ navigation }) => {
         <View style={styles.searchBar}>
           <Search size={20} color={Colors.textSecondary} />
           <TextInput 
-            placeholder="Tìm kiếm tên món hoặc mã món..." 
+            placeholder="Tìm kiếm tên món..." 
             style={styles.searchInput}
             placeholderTextColor="#A0A0A0"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
           />
-        </View>
-        <View style={styles.filterRow}>
-          <TouchableOpacity style={styles.filterBtn}>
-            <Filter size={18} color={Colors.textSecondary} />
-            <Text style={styles.filterText}>Lọc</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterBtn}>
-            <ArrowUpDown size={18} color={Colors.textSecondary} />
-            <Text style={styles.filterText}>Sắp xếp</Text>
-          </TouchableOpacity>
         </View>
       </View>
 
       {/* Stats Summary */}
       <View style={styles.summarySection}>
         <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>TỔNG SỐ</Text>
-          <Text style={styles.summaryValue}>48</Text>
+          <Text style={styles.summaryLabel}>TỔNG SỐ MÓN</Text>
+          <Text style={styles.summaryValue}>{menuItems.length}</Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>ĐANG BÁN</Text>
-          <Text style={[styles.summaryValue, { color: '#2ECC71' }]}>42</Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>MÓN MỚI</Text>
-          <Text style={[styles.summaryValue, { color: '#F1C40F' }]}>24</Text>
+          <Text style={[styles.summaryValue, { color: '#2ECC71' }]}>{activeCount}</Text>
         </View>
         <View style={styles.summaryItem}>
           <Text style={styles.summaryLabel}>HẾT MÓN</Text>
-          <Text style={[styles.summaryValue, { color: '#E53935' }]}>06</Text>
+          <Text style={[styles.summaryValue, { color: '#E53935' }]}>{inactiveCount}</Text>
         </View>
       </View>
 
       {/* Menu List */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {MENU_ITEMS.map((item, index) => (
-          <FoodItemCard 
-            key={index} 
-            item={item} 
-            onPress={() => navigation.navigate('AddEditDish', { dish: item })} 
-          />
-        ))}
+        {filteredItems.map((item, index) => {
+          const mappedItem = {
+            ...item,
+            status: item.isAvailable !== false ? 'active' : 'inactive',
+            views: 180 + (index * 12),
+            likes: 42 + (index * 3)
+          };
+          return (
+            <FoodItemCard 
+              key={index} 
+              item={mappedItem} 
+              onPress={() => navigation.navigate('AddEditDish', { dish: item, restaurantId: restaurant?._id })} 
+            />
+          );
+        })}
         
         {/* Add New Placeholder */}
         <TouchableOpacity 
           style={styles.addPlaceholder}
-          onPress={() => navigation.navigate('AddEditDish')}
+          onPress={() => navigation.navigate('AddEditDish', { restaurantId: restaurant?._id })}
         >
           <View style={styles.addIconCircle}>
             <Plus size={24} color={Colors.primary} />

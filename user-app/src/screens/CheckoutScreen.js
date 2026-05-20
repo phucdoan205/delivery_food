@@ -1,10 +1,62 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, MapPin, ChevronRight, CreditCard, DollarSign } from 'lucide-react-native';
+import { request } from '../api/client';
 
-const CheckoutScreen = ({ navigation }) => {
-  const [paymentMethod, setPaymentMethod] = useState('momo');
+const CheckoutScreen = ({ route, navigation }) => {
+  const { cart } = route.params || {};
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [loading, setLoading] = useState(false);
+
+  const items = cart?.items || [];
+  const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
+  const shippingFee = subtotal > 0 ? 15000 : 0;
+  const discount = shippingFee + (paymentMethod === 'momo' ? 15000 : 0);
+  const total = Math.max(0, subtotal + shippingFee - discount);
+
+  const handlePlaceOrder = async () => {
+    if (items.length === 0) {
+      Alert.alert('Lỗi', 'Không có sản phẩm trong giỏ hàng');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const orderItems = items.map(item => ({
+        foodId: item.foodId?._id || item.foodId,
+        quantity: item.quantity,
+        price: item.foodId?.price || 0
+      }));
+
+      const restaurantId = items[0]?.foodId?.restaurantId?._id || items[0]?.foodId?.restaurantId;
+
+      await request('/orders', {
+        method: 'POST',
+        body: {
+          restaurantId,
+          items: orderItems,
+          totalPrice: total,
+          deliveryAddress: "123 Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
+          paymentMethod
+        }
+      });
+
+      Alert.alert('Thành công', 'Đơn hàng của bạn đã được ghi nhận!', [
+        {
+          text: 'Xem đơn hàng',
+          onPress: () => navigation.reset({
+            index: 0,
+            routes: [{ name: 'Main', state: { routes: [{ name: 'Lịch sử' }] } }]
+          })
+        }
+      ]);
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể đặt hàng, vui lòng thử lại');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -23,7 +75,7 @@ const CheckoutScreen = ({ navigation }) => {
           </View>
           <View style={styles.addressCard}>
             <View style={styles.addressInfo}>
-              <Text style={styles.userName}>Nguyễn Văn A | 090 123 4567</Text>
+              <Text style={styles.userName}>Khách hàng | 090 123 4567</Text>
               <Text style={styles.addressDetail}>123 Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</Text>
             </View>
             <Image 
@@ -90,23 +142,25 @@ const CheckoutScreen = ({ navigation }) => {
           <View style={styles.summaryCard}>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Tổng tiền món</Text>
-              <Text style={styles.summaryValue}>130.000đ</Text>
+              <Text style={styles.summaryValue}>{subtotal.toLocaleString()}đ</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Phí giao hàng (2.5km)</Text>
-              <Text style={styles.summaryValue}>15.000đ</Text>
+              <Text style={styles.summaryValue}>{shippingFee.toLocaleString()}đ</Text>
             </View>
             <View style={styles.summaryItem}>
               <Text style={styles.summaryLabel}>Giảm giá phí giao hàng</Text>
-              <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{shippingFee.toLocaleString()}đ</Text>
             </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Khuyến mãi MoMo</Text>
-              <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
-            </View>
+            {paymentMethod === 'momo' && (
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Khuyến mãi MoMo</Text>
+                <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
+              </View>
+            )}
             <View style={[styles.summaryItem, styles.totalRow]}>
               <Text style={styles.totalLabel}>Tổng thanh toán</Text>
-              <Text style={styles.totalValue}>115.000đ</Text>
+              <Text style={styles.totalValue}>{total.toLocaleString()}đ</Text>
             </View>
           </View>
         </View>
@@ -115,11 +169,12 @@ const CheckoutScreen = ({ navigation }) => {
       <View style={styles.footer}>
         <View>
           <Text style={styles.footerTotalLabel}>Tổng cộng</Text>
-          <Text style={styles.footerTotalValue}>115.000đ</Text>
+          <Text style={styles.footerTotalValue}>{total.toLocaleString()}đ</Text>
         </View>
         <TouchableOpacity 
           style={styles.orderBtn}
-          onPress={() => alert('Đặt hàng thành công!')}
+          onPress={handlePlaceOrder}
+          disabled={loading}
         >
           <Text style={styles.orderText}>Đặt hàng ngay</Text>
         </TouchableOpacity>

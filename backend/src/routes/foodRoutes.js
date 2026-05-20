@@ -1,38 +1,18 @@
 const express = require('express')
 const router = express.Router()
 const {
+  getFoods,
   getFoodsByRestaurant,
   createFood,
   updateFood,
+  deleteFood,
   getCategories,
   createCategory
 } = require('../controllers/foodController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
 
-/**
- * @swagger
- * tags:
- *   name: Foods
- *   description: Food menu and category management
- */
-
-/**
- * @swagger
- * /api/foods/restaurant/{restaurantId}:
- *   get:
- *     summary: Get all food items for a specific restaurant
- *     tags: [Foods]
- *     parameters:
- *       - in: path
- *         name: restaurantId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of food items retrieved
- */
+router.get('/', getFoods)
 router.get('/restaurant/:restaurantId', getFoodsByRestaurant)
 
 /**
@@ -106,7 +86,9 @@ router.post('/', protect, authorize('merchant', 'admin'), createFood)
  *       200:
  *         description: Food item updated
  */
-router.put('/:id', protect, authorize('merchant', 'admin'), updateFood)
+router.route('/:id')
+  .put(protect, authorize('merchant', 'admin'), updateFood)
+  .delete(protect, authorize('merchant', 'admin'), deleteFood)
 
 /**
  * @swagger

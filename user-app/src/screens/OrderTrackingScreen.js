@@ -1,9 +1,85 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Bell, HelpCircle, Phone, MessageSquare, ChevronRight, MapPin } from 'lucide-react-native';
+import { request } from '../api/client';
+import MapTilerView from '../components/MapTilerView';
 
-const OrderTrackingScreen = ({ navigation }) => {
+const OrderTrackingScreen = ({ route, navigation }) => {
+  const { orderId } = route.params || {};
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrderDetails = async (showLoading = false) => {
+    if (showLoading) setLoading(true);
+    try {
+      let targetId = orderId;
+      if (!targetId) {
+        // Fallback to fetch latest order if none passed
+        const ordersList = await request('/orders/myorders');
+        if (ordersList && ordersList.length > 0) {
+          targetId = ordersList[0]._id;
+        } else {
+          setLoading(false);
+          return;
+        }
+      }
+
+      const data = await request(`/orders/${targetId}`);
+      setOrder(data);
+    } catch (error) {
+      console.log('Error fetching order details for tracking:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrderDetails(true);
+    
+    // Set up polling every 5 seconds to update status automatically
+    const interval = setInterval(() => {
+      fetchOrderDetails(false);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [orderId]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  if (!order) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={{ color: COLORS.textLight, marginBottom: 15 }}>Không tìm thấy đơn hàng nào cần theo dõi</Text>
+        <TouchableOpacity style={{ padding: 12, backgroundColor: COLORS.primary, borderRadius: 20 }} onPress={() => navigation.goBack()}>
+          <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Quay lại</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const isStepActive = (step) => {
+    const status = order.status;
+    if (step === 1) return ['pending', 'confirmed', 'preparing', 'delivering', 'completed'].includes(status);
+    if (step === 2) return ['preparing', 'delivering', 'completed'].includes(status);
+    if (step === 3) return ['delivering', 'completed'].includes(status);
+    if (step === 4) return ['completed'].includes(status);
+    return false;
+  };
+
+  const getStepIconColor = (step) => {
+    return isStepActive(step) ? COLORS.primary : COLORS.border;
+  };
+
+  const itemsCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const itemsText = order.items?.map(i => `${i.quantity}x ${i.foodId?.name || 'Món ăn'}`).join(', ') || '';
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -16,17 +92,14 @@ const OrderTrackingScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.mapContainer}>
-        <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop' }} 
-          style={styles.mapImage} 
+        <MapTilerView 
+          center={[106.660172, 10.762622]} 
+          zoom={13} 
+          markers={[
+            { id: 1, lat: 10.762622, lng: 106.660172, title: 'Nhà', color: '#10B981' },
+            { id: 2, lat: 10.772622, lng: 106.650172, title: 'Shipper', color: '#EF4444' }
+          ]} 
         />
-        <View style={styles.driverMarker}>
-          <View style={styles.driverPulse} />
-          <View style={styles.driverIcon}><Text>🛵</Text></View>
-        </View>
-        <View style={styles.homeMarker}>
-          <View style={styles.homeIcon}><Text>🏠</Text></View>
-        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.bottomSheet}>
@@ -35,62 +108,78 @@ const OrderTrackingScreen = ({ navigation }) => {
             <Text style={{ fontSize: 24 }}>🕒</Text>
           </View>
           <View style={styles.etaInfo}>
-            <Text style={styles.etaLabel}>Thời gian dự kiến</Text>
-            <Text style={styles.etaValue}>15 - 20 phút</Text>
+            <Text style={styles.etaLabel}>Trạng thái đơn</Text>
+            <Text style={styles.etaValue}>
+              {order.status === 'pending' && 'Chờ cửa hàng xác nhận'}
+              {order.status === 'confirmed' && 'Cửa hàng đã nhận đơn'}
+              {order.status === 'preparing' && 'Đang chuẩn bị món'}
+              {order.status === 'delivering' && 'Tài xế đang giao hàng'}
+              {order.status === 'completed' && 'Giao hàng thành công'}
+              {order.status === 'cancelled' && 'Đã hủy đơn'}
+            </Text>
           </View>
           <View style={styles.distanceInfo}>
-            <Text style={styles.distLabel}>KHOẢNG CÁCH</Text>
-            <Text style={styles.distValue}>2.4 km</Text>
+            <Text style={styles.distLabel}>TỔNG TIỀN</Text>
+            <Text style={styles.distValue}>{order.totalPrice?.toLocaleString()}đ</Text>
           </View>
         </View>
 
         <View style={styles.statusSection}>
           <View style={styles.statusLine} />
           <View style={styles.statusRow}>
-            <View style={[styles.statusDot, styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>✓</Text></View>
-            <View style={[styles.statusDot, styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>🍳</Text></View>
-            <View style={[styles.statusDot, styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>🛵</Text></View>
-            <View style={styles.statusDot} />
+            <View style={[styles.statusDot, isStepActive(1) && styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>✓</Text></View>
+            <View style={[styles.statusDot, isStepActive(2) && styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>🍳</Text></View>
+            <View style={[styles.statusDot, isStepActive(3) && styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>🛵</Text></View>
+            <View style={[styles.statusDot, isStepActive(4) && styles.activeDot]}><Text style={{ color: COLORS.white, fontSize: 10 }}>✓</Text></View>
           </View>
           <View style={styles.statusLabels}>
-            <Text style={styles.activeStatusLabel}>Đã nhận đơn</Text>
-            <Text style={styles.activeStatusLabel}>Đang chuẩn bị</Text>
-            <Text style={styles.activeStatusLabel}>Đang giao</Text>
-            <Text style={styles.statusLabel}>Hoàn thành</Text>
+            <Text style={isStepActive(1) ? styles.activeStatusLabel : styles.statusLabel}>Đã nhận</Text>
+            <Text style={isStepActive(2) ? styles.activeStatusLabel : styles.statusLabel}>Chuẩn bị</Text>
+            <Text style={isStepActive(3) ? styles.activeStatusLabel : styles.statusLabel}>Đang giao</Text>
+            <Text style={isStepActive(4) ? styles.activeStatusLabel : styles.statusLabel}>Hoàn thành</Text>
           </View>
         </View>
 
-        <View style={styles.driverCard}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=100&auto=format&fit=crop' }} 
-            style={styles.driverAvatar} 
-          />
-          <View style={styles.driverInfo}>
-            <Text style={styles.driverName}>Nguyễn Văn Nam</Text>
-            <Text style={styles.vehicleInfo}>🛵 Wave Alpha • 29-S1 234.56</Text>
+        {order.shipperId ? (
+          <View style={styles.driverCard}>
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=100&auto=format&fit=crop' }} 
+              style={styles.driverAvatar} 
+            />
+            <View style={styles.driverInfo}>
+              <Text style={styles.driverName}>{order.shipperId.fullName}</Text>
+              <Text style={styles.vehicleInfo}>🛵 Tài xế giao hàng • {order.shipperId.phone}</Text>
+            </View>
+            <View style={styles.driverActions}>
+              <TouchableOpacity style={styles.driverActionBtn} onPress={() => Alert.alert('Tính năng', 'Tính năng nhắn tin đang phát triển')}><MessageSquare size={20} color={COLORS.green} /></TouchableOpacity>
+              <TouchableOpacity style={[styles.driverActionBtn, { backgroundColor: COLORS.primary }]} onPress={() => Alert.alert('Gọi tài xế', `Đang gọi đến số: ${order.shipperId.phone}`)}><Phone size={20} color={COLORS.white} /></TouchableOpacity>
+            </View>
           </View>
-          <View style={styles.driverActions}>
-            <TouchableOpacity style={styles.driverActionBtn}><MessageSquare size={20} color={COLORS.green} /></TouchableOpacity>
-            <TouchableOpacity style={[styles.driverActionBtn, { backgroundColor: COLORS.primary }]}><Phone size={20} color={COLORS.white} /></TouchableOpacity>
+        ) : (
+          <View style={[styles.driverCard, { backgroundColor: '#F5F5F5' }]}>
+            <View style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }}>
+              <Text style={{ fontWeight: 'bold', color: COLORS.textSecondary }}>
+                {order.status === 'preparing' ? 'Cửa hàng đang làm món...' : 'Đang tìm kiếm tài xế thích hợp...'}
+              </Text>
+            </View>
           </View>
-        </View>
+        )}
 
         <View style={styles.orderDetailsCard}>
           <View style={styles.orderHeader}>
             <Text style={styles.orderTitle}>Chi tiết đơn hàng</Text>
-            <TouchableOpacity><Text style={styles.viewOrder}>XEM ĐƠN</Text></TouchableOpacity>
           </View>
           <View style={styles.orderItem}>
             <View style={styles.itemIcon}><Text>🍱</Text></View>
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName}>Cơm Tấm Phúc Lộc Thọ</Text>
-              <Text style={styles.itemMeta}>2 món • Cơm tấm sườn bì chả...</Text>
+              <Text style={styles.itemName} numberOfLines={1}>{order.restaurantId?.name || 'Nhà hàng'}</Text>
+              <Text style={styles.itemMeta} numberOfLines={1}>{itemsCount} món • {itemsText}</Text>
             </View>
-            <Text style={styles.itemPrice}>115.000đ</Text>
+            <Text style={styles.itemPrice}>{order.totalPrice?.toLocaleString()}đ</Text>
           </View>
           <View style={styles.addrRow}>
             <MapPin size={16} color={COLORS.primary} />
-            <Text style={styles.addrText}>123 Lê Lợi, Phường Bến Thành, Quận 1</Text>
+            <Text style={styles.addrText}>{order.deliveryAddress}</Text>
           </View>
         </View>
       </ScrollView>

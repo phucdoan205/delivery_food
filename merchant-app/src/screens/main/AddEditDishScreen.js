@@ -1,18 +1,125 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Camera, Plus, Trash2, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
+import { request } from '../../api/client';
+import { pickAndUploadImage } from '../../utils/cloudinary';
 
 const AddEditDishScreen = ({ navigation, route }) => {
-  const isEdit = route.params?.dish !== undefined;
-  const dish = route.params?.dish;
+  const { dish, restaurantId } = route.params || {};
+  const isEdit = dish !== undefined;
 
   const [name, setName] = useState(dish?.name || '');
   const [price, setPrice] = useState(dish?.price?.toString() || '');
   const [description, setDescription] = useState(dish?.description || '');
-  const [category, setCategory] = useState(dish?.category || 'Món chính');
-  const [isAvailable, setIsAvailable] = useState(dish?.status === 'active' || true);
+  const [isAvailable, setIsAvailable] = useState(dish?.isAvailable !== false);
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(dish?.categoryId?._id || dish?.categoryId || null);
+  const [imageUri, setImageUri] = useState(dish?.image || '');
+  const [loading, setLoading] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const cats = await request('/foods/categories');
+        setCategories(cats);
+        if (!selectedCategory && cats.length > 0) {
+          setSelectedCategory(cats[0]._id);
+        }
+      } catch (error) {
+        console.log('Error loading categories:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  const handleSave = async () => {
+    if (!name || !price || !description) {
+      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ thông tin món ăn');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const foodData = {
+        name,
+        price: parseFloat(price),
+        description,
+        isAvailable,
+        categoryId: selectedCategory,
+        restaurantId: restaurantId || dish?.restaurantId,
+        image: imageUri || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=400"
+      };
+
+      if (isEdit) {
+        await request(`/foods/${dish._id}`, {
+          method: 'PUT',
+          body: foodData
+        });
+        Alert.alert('Thành công', 'Cập nhật món ăn thành công');
+      } else {
+        await request('/foods', {
+          method: 'POST',
+          body: foodData
+        });
+        Alert.alert('Thành công', 'Thêm món ăn mới thành công');
+      }
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể lưu món ăn, vui lòng thử lại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    Alert.alert(
+      'Xác nhận xóa',
+      'Bạn có chắc chắn muốn xóa món ăn này ra khỏi thực đơn không?',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        {
+          text: 'Xóa',
+          style: 'destructive',
+          onPress: async () => {
+            setLoading(true);
+            try {
+              await request(`/foods/${dish._id}`, {
+                method: 'DELETE'
+              });
+              Alert.alert('Thành công', 'Đã xóa món ăn');
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Lỗi', error.message || 'Không thể xóa món ăn');
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const getCategoryName = () => {
+    const found = categories.find(c => c._id === selectedCategory);
+    return found ? found.name : 'Chọn danh mục';
+  };
+
+  const handlePickImage = async () => {
+    try {
+      setUploadingImage(true);
+      const url = await pickAndUploadImage([4, 3]); // Food aspect ratio 4:3
+      if (url) {
+        setImageUri(url);
+      }
+    } catch (error) {
+      Alert.alert('Lỗi', error.message);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -26,17 +133,23 @@ const AddEditDishScreen = ({ navigation, route }) => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Image Upload Area */}
-        <TouchableOpacity style={styles.imageUpload}>
-          {dish?.image ? (
-            <Image source={{ uri: dish.image }} style={styles.dishImage} />
+        <TouchableOpacity style={styles.imageUpload} onPress={handlePickImage} disabled={uploadingImage}>
+          {imageUri ? (
+            <Image source={{ uri: imageUri }} style={styles.dishImage} />
           ) : (
             <View style={styles.uploadPlaceholder}>
-              <Camera size={32} color={Colors.textSecondary} />
-              <Text style={styles.uploadText}>Thêm hình ảnh món ăn</Text>
+              {uploadingImage ? (
+                <ActivityIndicator size="large" color={Colors.primary} />
+              ) : (
+                <>
+                  <Camera size={32} color={Colors.textSecondary} />
+                  <Text style={styles.uploadText}>Thêm hình ảnh món ăn</Text>
+                </>
+              )}
             </View>
           )}
           <View style={styles.editIcon}>
-            <Camera size={16} color={Colors.white} />
+            {uploadingImage ? <ActivityIndicator size="small" color={Colors.white} /> : <Camera size={16} color={Colors.white} />}
           </View>
         </TouchableOpacity>
 
@@ -65,8 +178,15 @@ const AddEditDishScreen = ({ navigation, route }) => {
             </View>
             <View style={{ flex: 1, marginLeft: 10 }}>
               <Text style={styles.label}>Danh mục</Text>
-              <TouchableOpacity style={styles.categoryPicker}>
-                <Text style={styles.categoryText}>{category}</Text>
+              <TouchableOpacity 
+                style={styles.categoryPicker}
+                onPress={() => {
+                  if (categories.length === 0) return;
+                  const nextIndex = (categories.findIndex(c => c._id === selectedCategory) + 1) % categories.length;
+                  setSelectedCategory(categories[nextIndex]._id);
+                }}
+              >
+                <Text style={styles.categoryText}>{getCategoryName()}</Text>
                 <ChevronRight size={18} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
@@ -98,31 +218,22 @@ const AddEditDishScreen = ({ navigation, route }) => {
           />
         </View>
 
-        {/* Options/Toppings Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tùy chọn & Topping</Text>
-            <TouchableOpacity style={styles.addOptionBtn}>
-              <Plus size={16} color={Colors.primary} />
-              <Text style={styles.addOptionText}>Thêm</Text>
-            </TouchableOpacity>
-          </View>
-          
-          <View style={styles.emptyOptions}>
-            <Text style={styles.emptyOptionsText}>Chưa có tùy chọn nào cho món này</Text>
-          </View>
-        </View>
-
         <View style={styles.buttonContainer}>
-          <CustomButton
-            title={isEdit ? "Cập nhật món ăn" : "Thêm vào thực đơn"}
-            onPress={() => navigation.goBack()}
-          />
-          {isEdit && (
-            <TouchableOpacity style={styles.deleteBtn}>
-              <Trash2 size={20} color={Colors.error} />
-              <Text style={styles.deleteBtnText}>Xóa món ăn</Text>
-            </TouchableOpacity>
+          {loading ? (
+            <ActivityIndicator size="large" color={Colors.primary} />
+          ) : (
+            <>
+              <CustomButton
+                title={isEdit ? "Cập nhật món ăn" : "Thêm vào thực đơn"}
+                onPress={handleSave}
+              />
+              {isEdit && (
+                <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete}>
+                  <Trash2 size={20} color={Colors.error} />
+                  <Text style={styles.deleteBtnText}>Xóa món ăn</Text>
+                </TouchableOpacity>
+              )}
+            </>
           )}
         </View>
         

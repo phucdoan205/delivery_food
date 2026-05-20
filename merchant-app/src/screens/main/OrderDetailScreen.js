@@ -1,37 +1,81 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { ChevronLeft, MessageSquare, Phone, MapPin, Clock, CreditCard, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
+import { request } from '../../api/client';
 
 const { width } = Dimensions.get('window');
 
 const OrderDetailScreen = ({ navigation, route }) => {
-  // Using fixed mock data for now, would normally come from route.params
-  const order = {
-    id: 'JTL-8629',
-    status: 'new',
-    customer: {
-      name: 'Lê Minh Hoàng',
-      phone: '+84 901 234 567',
-      address: '245/10 Bùi Nguyễn Trãi, Phường Nguyễn Cư Trinh, Quận 1, TP. Hồ Chí Minh',
-      avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=200'
-    },
-    items: [
-      { name: 'Bún Chả Hà Nội Đặc Biệt', quantity: 1, price: 85000, note: 'Ghi chú: Nhiều rau khoai, ít bún', image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200' },
-      { name: 'Nem Cua Bể Hải Phòng', quantity: 2, price: 45000, image: 'https://images.unsplash.com/photo-1621852003470-320a162a4b0c?w=200' },
-      { name: 'Trà Đá Chanh Sả', quantity: 2, price: 30000, note: 'Ghi chú: Không đường', image: 'https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=200' }
-    ],
-    time: '18:45',
-    eta: '19:15 (30p)',
-    payment: 'Chuyển khoản',
-    note: '"Vui lòng giao trước 19:15 vì khách có cuộc họp. Shipper để đồ ở quầy lễ tân nếu không gọi được. Cảm ơn!"',
-    summary: {
-      subtotal: 235000,
-      fee: 25000,
-      discount: -15000,
-      total: 245000
+  const { orderId } = route.params || {};
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrderDetail = async () => {
+    try {
+      const data = await request(`/orders/${orderId}`);
+      setOrder(data);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể tải thông tin đơn hàng');
+      console.log('Error loading order detail:', error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchOrderDetail();
+  }, [orderId]);
+
+  const handleUpdateStatus = async (nextStatus) => {
+    try {
+      setLoading(true);
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: nextStatus }
+      });
+      Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
+      fetchOrderDetail();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái đơn hàng');
+      setLoading(false);
+    }
+  };
+
+  if (loading || !order) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'pending': return 'CHỜ DUYỆT';
+      case 'confirmed': return 'ĐÃ XÁC NHẬN';
+      case 'preparing': return 'ĐANG CHUẨN BỊ';
+      case 'delivering': return 'ĐANG GIAO';
+      case 'completed': return 'ĐÃ HOÀN THÀNH';
+      case 'cancelled': return 'ĐÃ HỦY';
+      default: return status.toUpperCase();
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'pending':
+      case 'confirmed': return '#E67E22';
+      case 'preparing': return '#3498DB';
+      case 'delivering':
+      case 'completed': return '#2ECC71';
+      default: return '#E53935';
+    }
+  };
+
+  // Build items array
+  const items = order.items || [];
+  const orderTime = order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong';
 
   return (
     <View style={styles.container}>
@@ -41,10 +85,10 @@ const OrderDetailScreen = ({ navigation, route }) => {
           <ChevronLeft size={24} color={Colors.text} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Chi tiết đơn hàng #{order.id}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>Chi tiết đơn #{order._id.substring(order._id.length - 6).toUpperCase()}</Text>
         </View>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>MỚI</Text>
+        <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
+          <Text style={styles.statusText}>{getStatusLabel(order.status)}</Text>
         </View>
       </View>
 
@@ -52,11 +96,14 @@ const OrderDetailScreen = ({ navigation, route }) => {
         {/* Customer Info */}
         <View style={styles.customerCard}>
           <View style={styles.customerTop}>
-            <Image source={{ uri: order.customer.avatar }} style={styles.avatar} />
+            <Image 
+              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' }} 
+              style={styles.avatar} 
+            />
             <View style={styles.customerInfo}>
-              <Text style={styles.customerName}>{order.customer.name}</Text>
-              <Text style={styles.customerPhone}>{order.customer.phone}</Text>
-              <Text style={styles.customerType}>Khách hàng thân thiết</Text>
+              <Text style={styles.customerName}>{order.userId?.fullName || 'Khách hàng'}</Text>
+              <Text style={styles.customerPhone}>+84 900 000 000</Text>
+              <Text style={styles.customerType}>Khách hàng trên hệ thống</Text>
             </View>
             <TouchableOpacity style={styles.messageBtn}>
               <MessageSquare size={20} color={Colors.primary} />
@@ -69,7 +116,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
             </View>
             <View style={styles.addressInfo}>
               <Text style={styles.addressLabel}>ĐỊA CHỈ GIAO HÀNG</Text>
-              <Text style={styles.addressText}>{order.customer.address}</Text>
+              <Text style={styles.addressText}>{order.deliveryAddress || 'Chưa cung cấp địa chỉ'}</Text>
             </View>
           </View>
         </View>
@@ -78,26 +125,15 @@ const OrderDetailScreen = ({ navigation, route }) => {
         <View style={styles.detailsGrid}>
           <View style={styles.detailBox}>
             <Text style={styles.detailLabel}>THỜI GIAN ĐẶT</Text>
-            <Text style={styles.detailValue}>{order.time}</Text>
+            <Text style={styles.detailValue}>{orderTime}</Text>
           </View>
           <View style={styles.detailBox}>
-            <Text style={styles.detailLabel}>DỰ KIẾN GIAO</Text>
-            <Text style={[styles.detailValue, { color: '#2ECC71' }]}>{order.eta}</Text>
+            <Text style={styles.detailLabel}>LOẠI THANH TOÁN</Text>
+            <Text style={[styles.detailValue, { color: '#F1C40F' }]}>{order.paymentMethod === 'cash' ? 'Tiền mặt' : 'Online'}</Text>
           </View>
           <View style={styles.detailBox}>
-            <Text style={styles.detailLabel}>THANH TOÁN</Text>
-            <Text style={[styles.detailValue, { color: '#F1C40F' }]}>{order.payment}</Text>
-          </View>
-        </View>
-
-        {/* Map Preview Placeholder */}
-        <View style={styles.mapContainer}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?w=600' }} 
-            style={styles.mapImage} 
-          />
-          <View style={styles.mapOverlay}>
-            <Text style={styles.mapOverlayText}>MAP PREVIEW</Text>
+            <Text style={styles.detailLabel}>TRẠNG THÁI</Text>
+            <Text style={[styles.detailValue, { color: getStatusColor(order.status) }]}>{getStatusLabel(order.status)}</Text>
           </View>
         </View>
 
@@ -106,55 +142,38 @@ const OrderDetailScreen = ({ navigation, route }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Danh sách món ăn</Text>
           </View>
-          {order.items.map((item, index) => (
+          {items.map((item, index) => (
             <View key={index} style={styles.itemRow}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
+              <Image 
+                source={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200' }} 
+                style={styles.itemImage} 
+              />
               <View style={styles.itemContent}>
                 <View style={styles.itemHeader}>
-                  <Text style={styles.itemName}>{item.name}</Text>
-                  <Text style={styles.itemPrice}>{item.price.toLocaleString()}đ</Text>
+                  <Text style={styles.itemName}>{item.foodId?.name || 'Món ăn'}</Text>
+                  <Text style={styles.itemPrice}>{item.price?.toLocaleString()}đ</Text>
                 </View>
                 <Text style={styles.itemQty}>Số lượng: {item.quantity < 10 ? `0${item.quantity}` : item.quantity}</Text>
-                {item.note && (
-                  <View style={styles.itemNoteBadge}>
-                    <Text style={styles.itemNoteText}>{item.note}</Text>
-                  </View>
-                )}
               </View>
             </View>
           ))}
         </View>
 
-        {/* Order Note */}
-        <View style={styles.noteBox}>
-          <View style={styles.noteIcon}>
-            <Text>📝</Text>
-          </View>
-          <View style={styles.noteContent}>
-            <Text style={styles.noteLabel}>GHI CHÚ CHUNG CỦA ĐƠN HÀNG</Text>
-            <Text style={styles.noteText}>{order.note}</Text>
-          </View>
-        </View>
-
         {/* Summary */}
         <View style={styles.summaryBox}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tạm tính (3 món)</Text>
-            <Text style={styles.summaryValue}>{order.summary.subtotal.toLocaleString()}đ</Text>
+            <Text style={styles.summaryLabel}>Tạm tính ({items.length} món)</Text>
+            <Text style={styles.summaryValue}>{order.totalPrice?.toLocaleString()}đ</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Phí dịch vụ & Vận chuyển</Text>
-            <Text style={styles.summaryValue}>{order.summary.fee.toLocaleString()}đ</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Giảm giá voucher</Text>
-            <Text style={[styles.summaryValue, { color: '#2ECC71' }]}>-{Math.abs(order.summary.discount).toLocaleString()}đ</Text>
+            <Text style={styles.summaryLabel}>Phí giao hàng & Dịch vụ</Text>
+            <Text style={styles.summaryValue}>0đ</Text>
           </View>
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
             <View style={styles.totalValueContainer}>
-              <Text style={styles.totalValue}>{order.summary.total.toLocaleString()}đ</Text>
+              <Text style={styles.totalValue}>{order.totalPrice?.toLocaleString()}đ</Text>
               <Text style={styles.totalVat}>đã bao gồm thuế và phí</Text>
             </View>
           </View>
@@ -164,14 +183,32 @@ const OrderDetailScreen = ({ navigation, route }) => {
       </ScrollView>
 
       {/* Action Footer */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.secondaryBtn}>
-          <Text style={styles.secondaryBtnText}>Từ chối</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.primaryBtn}>
-          <Text style={styles.primaryBtnText}>Chấp nhận đơn hàng</Text>
-        </TouchableOpacity>
-      </View>
+      {order.status === 'pending' && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={styles.secondaryBtn} onPress={() => handleUpdateStatus('cancelled')}>
+            <Text style={styles.secondaryBtnText}>Từ chối</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => handleUpdateStatus('confirmed')}>
+            <Text style={styles.primaryBtnText}>Chấp nhận</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {order.status === 'confirmed' && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={() => handleUpdateStatus('preparing')}>
+            <Text style={styles.primaryBtnText}>Bắt đầu làm món</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {order.status === 'preparing' && (
+        <View style={styles.footer}>
+          <TouchableOpacity style={[styles.primaryBtn, { flex: 1 }]} onPress={() => handleUpdateStatus('delivering')}>
+            <Text style={styles.primaryBtnText}>Chuẩn bị xong - Giao Shipper</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };

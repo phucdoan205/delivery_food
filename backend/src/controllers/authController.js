@@ -81,8 +81,66 @@ const getUserProfile = async (req, res) => {
   }
 }
 
+const getAllUsers = async (req, res) => {
+  const users = await User.find({}).select('-password')
+  res.json(users)
+}
+
+const updateUserStatus = async (req, res) => {
+  const { status } = req.body
+  const user = await User.findById(req.params.id)
+
+  if (user) {
+    user.status = status || user.status
+    const updatedUser = await user.save()
+    res.json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      status: updatedUser.status
+    })
+  } else {
+    res.status(404).json({ message: 'User not found' })
+  }
+}
+
+const updateUserProfile = async (req, res) => {
+  const user = await User.findById(req.user._id)
+
+  if (user) {
+    user.fullName = req.body.fullName || user.fullName
+    user.phone = req.body.phone || user.phone
+    user.avatar = req.body.avatar || user.avatar
+    user.address = req.body.address || user.address
+
+    if (req.body.password) {
+      const salt = await bcrypt.genSalt(10)
+      user.password = await bcrypt.hash(req.body.password, salt)
+    }
+
+    const updatedUser = await user.save()
+
+    res.json({
+      _id: updatedUser._id,
+      fullName: updatedUser.fullName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      role: updatedUser.role,
+      avatar: updatedUser.avatar,
+      address: updatedUser.address,
+      status: updatedUser.status
+    })
+  } else {
+    res.status(404).json({ message: 'User not found' })
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  updateUserStatus
 }

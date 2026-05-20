@@ -3,6 +3,14 @@ const Category = require('../models/Category')
 
 // --- FOOD CONTROLLERS ---
 
+// @desc    Get all foods
+// @route   GET /api/foods
+// @access  Public
+const getFoods = async (req, res) => {
+  const foods = await Food.find({}).populate('restaurantId').populate('categoryId')
+  res.json(foods)
+}
+
 // @desc    Get all foods for a restaurant
 // @route   GET /api/foods/restaurant/:restaurantId
 // @access  Public
@@ -77,10 +85,26 @@ const createCategory = async (req, res) => {
   res.status(201).json(createdCategory)
 }
 
+// @desc    Delete a food item
+// @route   DELETE /api/foods/:id
+// @access  Private/Merchant/Admin
+const deleteFood = async (req, res) => {
+  const food = await Food.findById(req.params.id)
+
+  if (food) {
+    await food.deleteOne()
+    res.json({ message: 'Food item removed' })
+  } else {
+    res.status(404).json({ message: 'Food not found' })
+  }
+}
+
 module.exports = {
+  getFoods,
   getFoodsByRestaurant,
   createFood,
   updateFood,
+  deleteFood,
   getCategories,
   createCategory
 }

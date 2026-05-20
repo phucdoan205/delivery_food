@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "../layouts/AdminLayout";
 import { TrendingUp, TrendingDown, Clock, Search } from "lucide-react";
 import { 
@@ -10,6 +10,8 @@ import {
   Tooltip, 
   ResponsiveContainer
 } from "recharts";
+import { request } from "../api/client";
+import toast from "react-hot-toast";
 
 const REVENUE_DATA = [
   { time: "06:00", revenue: 400 },
@@ -22,6 +24,46 @@ const REVENUE_DATA = [
 ];
 
 const AnalyticsPage = () => {
+  const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAnalyticsData = async () => {
+    try {
+      const [uData, oData, rData] = await Promise.all([
+        request("/auth/users"),
+        request("/orders/admin"),
+        request("/restaurants/admin")
+      ]);
+      setUsers(uData);
+      setOrders(oData);
+      setRestaurants(rData);
+    } catch (error) {
+      toast.error("Không thể tải dữ liệu phân tích");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAnalyticsData();
+  }, []);
+
+  const totalRevenue = orders
+    .filter(o => o.status === "completed")
+    .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+  const completedCount = orders.filter(o => o.status === "completed").length;
+  const completionRate = orders.length > 0 ? ((completedCount / orders.length) * 100).toFixed(1) : "100.0";
+
+  const stats = [
+    { label: "Tổng doanh thu", value: `${totalRevenue.toLocaleString('vi-VN')}đ`, trend: "+12.5%", time: "cập nhật trực tiếp", up: true },
+    { label: "Tổng đơn hàng", value: `${orders.length} đơn`, trend: "+5.2%", time: "cập nhật trực tiếp", up: true },
+    { label: "Tỷ lệ hoàn tất", value: `${completionRate}%`, custom: true },
+    { label: "Tổng người dùng", value: `${users.length}`, trend: "+15.3%", time: "so với tuần trước", up: true },
+  ];
+
   return (
     <AdminLayout title="Phân tích">
       <div className="space-y-6 max-w-7xl">
@@ -32,26 +74,11 @@ const AnalyticsPage = () => {
             <h2 className="text-3xl font-black text-[#5C3D2E] mb-1">Phân tích chuyên sâu</h2>
             <p className="text-sm text-[#8C6B5D]">Tổng quan hiệu suất và dữ liệu vận hành hôm nay</p>
           </div>
-          <div className="relative group w-full md:w-[300px]">
-            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-[#8C6B5D]">
-              <Search size={16} />
-            </div>
-            <input 
-              type="text" 
-              placeholder="Tìm kiếm dữ liệu..." 
-              className="w-full pl-11 pr-4 py-2.5 bg-white border border-slate-100 focus:border-[#D98C72] focus:ring-0 rounded-2xl text-sm transition-all"
-            />
-          </div>
         </div>
 
         {/* 4 Stats Blocks */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { label: "Tổng doanh thu", value: "124.5Mđ", trend: "+12.5%", time: "so với hôm qua", up: true },
-            { label: "Tổng đơn hàng", value: "1,482", trend: "+5.2%", time: "so với hôm qua", up: true },
-            { label: "Tỷ lệ hoàn tất", value: "96.8%", custom: true },
-            { label: "Người dùng mới", value: "+342", trend: "-2.1%", time: "so với tuần trước", up: false },
-          ].map((stat, i) => (
+          {stats.map((stat, i) => (
             <div key={i} className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-100 flex flex-col justify-between">
               <div>
                 <div className="text-[10px] font-black text-[#8C6B5D] uppercase tracking-widest mb-2 flex justify-between items-center">
@@ -73,7 +100,7 @@ const AnalyticsPage = () => {
               ) : (
                 <div className="mt-4">
                   <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 rounded-full" style={{ width: '96.8%' }}></div>
+                    <div className="h-full bg-green-500 rounded-full" style={{ width: `${completionRate}%` }}></div>
                   </div>
                 </div>
               )}

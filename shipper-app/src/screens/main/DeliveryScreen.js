@@ -1,21 +1,75 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
-import { currentOrder } from '../../constants/mockData';
+import { request } from '../../api/client';
+import MapTilerView from '../../components/MapTilerView';
 
 const { width, height } = Dimensions.get('window');
 
 const DeliveryScreen = ({ navigation }) => {
+  const [activeOrders, setActiveOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchActiveDeliveries = async () => {
+    try {
+      const data = await request('/orders/shipper');
+      // Filter for currently active orders (delivering status)
+      const delivering = data.filter(o => o.status === 'delivering');
+      setActiveOrders(delivering);
+    } catch (error) {
+      console.log('Error fetching active shipper deliveries:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchActiveDeliveries();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleCompleteOrder = async (orderId) => {
+    try {
+      setLoading(true);
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: 'completed' }
+      });
+      Alert.alert('Thành công', 'Đơn hàng đã được giao thành công!');
+      fetchActiveDeliveries();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái đơn hàng');
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const order = activeOrders[0]; // Take the first active order
+
   return (
     <View style={styles.container}>
-      {/* Map Placeholder */}
-      <Image 
-        source={{ uri: 'https://images.unsplash.com/photo-1569336415962-a4bd9f6dfc0f?q=80&w=1200&auto=format&fit=crop' }} 
-        style={styles.map}
-      />
+      <View style={styles.map}>
+        <MapTilerView 
+          center={[106.660172, 10.762622]} 
+          zoom={13} 
+          markers={[
+            { id: 1, lat: 10.762622, lng: 106.660172, title: 'Bạn', color: '#3B82F6' },
+            { id: 2, lat: 10.772622, lng: 106.650172, title: 'Điểm đến', color: '#10B981' }
+          ]} 
+        />
+      </View>
 
       <Header 
         showBack={false}
@@ -23,61 +77,73 @@ const DeliveryScreen = ({ navigation }) => {
         style={styles.header}
         rightComponent={
           <View style={styles.incomeBadge}>
-            <Text style={styles.incomeText}>$142.50</Text>
+            <Text style={styles.incomeText}>GIAO</Text>
           </View>
         }
       />
 
       <View style={styles.bottomContainer}>
-         <View style={styles.orderCard}>
+        {!order ? (
+          <View style={[styles.orderCard, { alignItems: 'center', paddingVertical: 40 }]}>
+            <Ionicons name="bicycle" size={48} color={COLORS.textSecondary} />
+            <Text style={[styles.resName, { marginTop: 10, fontSize: 18 }]}>Bạn không có đơn nào đang giao</Text>
+            <Text style={{ color: COLORS.textSecondary, marginTop: 5, textAlign: 'center' }}>
+              Hãy sang tab "Sẵn sàng" để nhận đơn mới!
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.orderCard}>
             <View style={styles.orderHeader}>
                <View style={styles.tag}>
-                  <Ionicons name="star" size={14} color={COLORS.white} />
-                  <Text style={styles.tagText}>ĐƠN HÀNG MỚI CAO CẤP</Text>
+                  <Ionicons name="bicycle" size={14} color={COLORS.white} />
+                  <Text style={styles.tagText}>ĐANG VẬN CHUYỂN</Text>
                </View>
                <View style={styles.timer}>
                   <Ionicons name="time-outline" size={14} color={COLORS.primary} />
-                  <Text style={styles.timerText}>0:45</Text>
+                  <Text style={styles.timerText}>Vừa xong</Text>
                </View>
             </View>
 
             <View style={styles.restaurantRow}>
-               <Image source={{ uri: 'https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=200&auto=format&fit=crop' }} style={styles.resImage} />
+               <Image source={{ uri: order.restaurantId?.image || 'https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=200' }} style={styles.resImage} />
                <View style={styles.resInfo}>
-                  <Text style={styles.resName}>{currentOrder.restaurant.name}</Text>
+                  <Text style={styles.resName}>{order.restaurantId?.name || 'Cửa hàng'}</Text>
                   <View style={styles.resStats}>
                      <Ionicons name="navigate-outline" size={14} color={COLORS.textSecondary} />
-                     <Text style={styles.resStatsText}>1.2 km  /  3.5 km</Text>
+                     <Text style={styles.resStatsText}>{order.deliveryAddress || 'Địa chỉ giao hàng'}</Text>
                   </View>
                </View>
             </View>
 
             <View style={styles.incomeSection}>
-               <Text style={styles.incomeLabel}>THU NHẬP DỰ KIẾN</Text>
+               <Text style={styles.incomeLabel}>TỔNG CỘNG TIỀN THU KHÁCH</Text>
                <View style={styles.incomeRow}>
-                  <Text style={styles.incomeValue}>35.000đ</Text>
-                  <View style={styles.bonusTag}>
-                     <Text style={styles.bonusTagText}>+5.000đ Thưởng</Text>
+                  <Text style={styles.incomeValue}>{order.totalPrice?.toLocaleString()}đ</Text>
+                  <View style={[styles.bonusTag, { backgroundColor: order.paymentMethod === 'cash' ? COLORS.primary : COLORS.success }]}>
+                     <Text style={styles.bonusTagText}>
+                       {order.paymentMethod === 'cash' ? 'Thu Tiền Mặt' : 'Đã Thanh Toán Online'}
+                     </Text>
                   </View>
                </View>
             </View>
 
             <View style={styles.actions}>
                <CustomButton 
-                  title="Từ chối" 
+                  title="Chi tiết đơn" 
                   type="outline" 
                   style={styles.rejectButton} 
-                  textStyle={{ color: COLORS.error }}
-                  icon={<Ionicons name="close" size={20} color={COLORS.error} style={{marginRight: 8}} />}
+                  textStyle={{ color: COLORS.primary }}
+                  onPress={() => navigation.navigate('DeliveryDetail', { orderId: order._id })}
                />
                <CustomButton 
-                  title="Chấp nhận" 
+                  title="Hoàn thành giao" 
                   style={styles.acceptButton}
                   icon={<Ionicons name="checkmark" size={20} color={COLORS.white} style={{marginRight: 8}} />}
-                  onPress={() => navigation.navigate('History')} // Just for demo
+                  onPress={() => handleCompleteOrder(order._id)}
                />
             </View>
-         </View>
+          </View>
+        )}
       </View>
     </View>
   );

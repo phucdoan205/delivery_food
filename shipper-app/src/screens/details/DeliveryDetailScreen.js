@@ -7,7 +7,64 @@ import { currentOrder } from '../../constants/mockData';
 
 const { width } = Dimensions.get('window');
 
-const DeliveryDetailScreen = ({ navigation }) => {
+import { request } from '../../api/client';
+import { Alert, ActivityIndicator } from 'react-native';
+
+const DeliveryDetailScreen = ({ navigation, route }) => {
+  const { orderId } = route.params || {};
+  const [order, setOrder] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const fetchOrderDetail = async () => {
+    try {
+      const data = await request(`/orders/${orderId}`);
+      setOrder(data);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể tải thông tin chi tiết đơn hàng');
+      console.log('Error fetching order detail:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    if (orderId) {
+      fetchOrderDetail();
+    }
+  }, [orderId]);
+
+  const handleUpdateStatus = async (nextStatus) => {
+    try {
+      setLoading(true);
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: nextStatus }
+      });
+      Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
+      fetchOrderDetail();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái');
+      setLoading(false);
+    }
+  };
+
+  if (loading || !order) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'preparing': return 'ĐANG CHUẨN BỊ MÓN';
+      case 'delivering': return 'ĐANG GIAO HÀNG';
+      case 'completed': return 'ĐÃ HOÀN THÀNH GIAO';
+      default: return status.toUpperCase();
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* Map Preview */}
@@ -19,9 +76,10 @@ const DeliveryDetailScreen = ({ navigation }) => {
       <Header 
         title="Giao hàng"
         style={styles.header}
+        navigation={navigation}
         rightComponent={
           <View style={styles.incomeBadge}>
-            <Text style={styles.incomeBadgeText}>$142.50</Text>
+            <Text style={styles.incomeBadgeText}>CHI TIẾT</Text>
           </View>
         }
       />
@@ -29,8 +87,8 @@ const DeliveryDetailScreen = ({ navigation }) => {
       <View style={styles.topBanner}>
          <Ionicons name="arrow-undo" size={24} color={COLORS.success} />
          <View style={styles.bannerInfo}>
-            <Text style={styles.bannerDistance}>450 M</Text>
-            <Text style={styles.bannerText}>Rẽ phải vào Đường Lê Lợi</Text>
+            <Text style={styles.bannerDistance}>#{order._id.substring(order._id.length - 6).toUpperCase()}</Text>
+            <Text style={styles.bannerText}>Nhà hàng: {order.restaurantId?.name || 'Cửa hàng'}</Text>
          </View>
       </View>
 
@@ -39,74 +97,89 @@ const DeliveryDetailScreen = ({ navigation }) => {
             <View style={styles.cardHeader}>
                <View style={styles.statusRow}>
                   <View style={styles.dot} />
-                  <Text style={styles.statusText}>ĐANG ĐI ĐẾN KHÁCH HÀNG</Text>
+                  <Text style={styles.statusText}>{getStatusText(order.status)}</Text>
                </View>
                <View style={styles.timeBox}>
-                  <Text style={styles.timeValue}>8</Text>
-                  <Text style={styles.timeLabel}>Phút</Text>
-                  <Text style={styles.timeEstimate}>DỰ KIẾN: 12:45</Text>
+                  <Text style={styles.timeValue}>{order.totalPrice?.toLocaleString()}</Text>
+                  <Text style={styles.timeLabel}>đ</Text>
+                  <Text style={styles.timeEstimate}>{order.paymentMethod === 'cash' ? 'TIỀN MẶT' : 'ONLINE'}</Text>
                </View>
             </View>
 
             <View style={styles.customerRow}>
                <Image source={{ uri: 'https://i.pravatar.cc/150?u=a' }} style={styles.customerAvatar} />
                <View style={styles.customerInfo}>
-                  <Text style={styles.customerName}>{currentOrder.customer.name}</Text>
-                  <Text style={styles.customerAddress} numberOfLines={1}>{currentOrder.customer.address}</Text>
+                  <Text style={styles.customerName}>{order.userId?.fullName || 'Khách hàng'}</Text>
+                  <Text style={styles.customerAddress} numberOfLines={1}>{order.deliveryAddress || 'Địa chỉ giao hàng'}</Text>
                </View>
                <View style={styles.actionButtons}>
                   <TouchableOpacity style={styles.actionButton}>
                      <Ionicons name="call" size={20} color={COLORS.success} />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={[styles.actionButton, { marginLeft: 10, backgroundColor: 'rgba(0,0,0,0.05)' }]}>
-                     <Ionicons name="chatbubble" size={20} color={COLORS.text} />
                   </TouchableOpacity>
                </View>
             </View>
 
             <View style={styles.steps}>
                <View style={styles.stepItem}>
-                  <View style={[styles.stepDot, { backgroundColor: COLORS.success }]}>
+                  <View style={[styles.stepDot, { backgroundColor: ['preparing', 'delivering', 'completed'].includes(order.status) ? COLORS.success : COLORS.border }]}>
                      <Ionicons name="checkmark" size={12} color={COLORS.white} />
                   </View>
                   <View style={styles.stepLine} />
                   <View style={styles.stepContent}>
                      <Text style={styles.stepTitle}>Đã lấy hàng</Text>
-                     <Text style={styles.stepTime}>Nhà hàng Bếp Việt • 11:30</Text>
+                     <Text style={styles.stepTime}>{order.restaurantId?.name || 'Nhà hàng'}</Text>
                   </View>
                </View>
                <View style={styles.stepItem}>
-                  <View style={[styles.stepDot, { backgroundColor: COLORS.primary }]}>
+                  <View style={[styles.stepDot, { backgroundColor: ['delivering', 'completed'].includes(order.status) ? COLORS.success : COLORS.border }]}>
                      <Ionicons name="bicycle" size={12} color={COLORS.white} />
                   </View>
                   <View style={[styles.stepLine, { backgroundColor: COLORS.border }]} />
                   <View style={styles.stepContent}>
                      <Text style={styles.stepTitle}>Đang giao</Text>
-                     <Text style={styles.stepTime}>Dự kiến đến lúc 11:45</Text>
+                     <Text style={styles.stepTime}>{order.deliveryAddress || 'Địa chỉ khách hàng'}</Text>
                   </View>
                </View>
                <View style={styles.stepItem}>
-                  <View style={[styles.stepDot, { backgroundColor: COLORS.border }]}>
+                  <View style={[styles.stepDot, { backgroundColor: order.status === 'completed' ? COLORS.success : COLORS.border }]}>
                      <View style={styles.innerDot} />
                   </View>
                   <View style={styles.stepContent}>
-                     <Text style={[styles.stepTitle, { color: COLORS.textLight }]}>Đã giao</Text>
-                     <Text style={styles.stepTime}>Chưa hoàn thành</Text>
+                     <Text style={[styles.stepTitle, order.status !== 'completed' && { color: COLORS.textLight }]}>Đã giao thành công</Text>
+                     <Text style={styles.stepTime}>{order.status === 'completed' ? 'Hoàn thành' : 'Chưa hoàn thành'}</Text>
                   </View>
                </View>
             </View>
 
-            <TouchableOpacity 
-              style={styles.completeButton}
-              onPress={() => navigation.navigate('Main')}
-            >
-               <View style={styles.sliderThumb}>
-                  <Ionicons name="chevron-forward-outline" size={24} color={COLORS.white} />
-                  <Ionicons name="chevron-forward-outline" size={24} color={COLORS.white} style={{marginLeft: -15}} />
-               </View>
-               <Text style={styles.completeText}>TRƯỢT ĐỂ HOÀN THÀNH</Text>
-               <Ionicons name="sparkles" size={20} color={COLORS.secondary} style={styles.sparkle} />
-            </TouchableOpacity>
+            {order.status === 'preparing' && (
+              <TouchableOpacity 
+                style={styles.completeButton}
+                onPress={() => handleUpdateStatus('delivering')}
+              >
+                 <View style={styles.sliderThumb}>
+                    <Ionicons name="chevron-forward-outline" size={24} color={COLORS.white} />
+                 </View>
+                 <Text style={styles.completeText}>NHẬN HÀNG & BẮT ĐẦU GIAO</Text>
+              </TouchableOpacity>
+            )}
+
+            {order.status === 'delivering' && (
+              <TouchableOpacity 
+                style={[styles.completeButton, { backgroundColor: '#E8F8F5', borderColor: COLORS.success }]}
+                onPress={() => handleUpdateStatus('completed')}
+              >
+                 <View style={[styles.sliderThumb, { backgroundColor: COLORS.success }]}>
+                    <Ionicons name="chevron-forward-outline" size={24} color={COLORS.white} />
+                 </View>
+                 <Text style={[styles.completeText, { color: COLORS.success }]}>TRƯỢT ĐỂ HOÀN THÀNH GIAO</Text>
+              </TouchableOpacity>
+            )}
+
+            {order.status === 'completed' && (
+              <View style={{ height: 50, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ color: COLORS.success, fontWeight: '700' }}>ĐƠN HÀNG ĐÃ HOÀN THÀNH</Text>
+              </View>
+            )}
          </View>
       </View>
     </View>

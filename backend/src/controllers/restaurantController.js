@@ -82,10 +82,26 @@ const deleteRestaurant = async (req, res) => {
   }
 }
 
+const getAllRestaurantsAdmin = async (req, res) => {
+  const restaurants = await Restaurant.find({}).populate('ownerId', 'fullName email')
+  res.json(restaurants)
+}
+
+const getMyRestaurant = async (req, res) => {
+  const restaurant = await Restaurant.findOne({ ownerId: req.user._id })
+  if (restaurant) {
+    res.json(restaurant)
+  } else {
+    res.status(404).json({ message: 'Restaurant not found' })
+  }
+}
+
 module.exports = {
   getRestaurants,
   getRestaurantById,
   createRestaurant,
   updateRestaurant,
-  deleteRestaurant
+  deleteRestaurant,
+  getAllRestaurantsAdmin,
+  getMyRestaurant
 }

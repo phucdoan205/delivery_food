@@ -5,6 +5,8 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import { currentUser } from '../../constants/mockData';
 
+import { setToken } from '../../api/client';
+
 const ProfileScreen = ({ navigation }) => {
   const MenuItem = ({ icon, title, onPress, color = COLORS.text }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
@@ -15,6 +17,14 @@ const ProfileScreen = ({ navigation }) => {
       <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
     </TouchableOpacity>
   );
+
+  const handleLogout = () => {
+    setToken('');
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Login' }],
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -59,8 +69,8 @@ const ProfileScreen = ({ navigation }) => {
            <View style={styles.expInfo}>
               <Text style={styles.expLabel}>Thâm niên</Text>
               <Text style={styles.expValue}>{currentUser.vehicle.experience}</Text>
-           </View>
-           <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
+            </View>
+            <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
         </View>
 
         <View style={styles.section}>
@@ -93,7 +103,7 @@ const ProfileScreen = ({ navigation }) => {
            </View>
         </View>
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
            <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
            <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>

@@ -3,9 +3,13 @@ const router = express.Router()
 const {
   registerUser,
   loginUser,
-  getUserProfile
+  getUserProfile,
+  updateUserProfile,
+  getAllUsers,
+  updateUserStatus
 } = require('../controllers/authController')
 const { protect } = require('../middlewares/authMiddleware')
+const { authorize } = require('../middlewares/roleMiddleware')
 
 /**
  * @swagger
@@ -86,5 +90,23 @@ router.post('/login', loginUser)
  *         description: Not authorized
  */
 router.get('/profile', protect, getUserProfile)
+router.put('/profile', protect, updateUserProfile)
+
+/**
+ * @swagger
+ * /api/auth/users:
+ *   get:
+ *     summary: Get all users (Admin only)
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of users retrieved
+ *       403:
+ *         description: Not authorized
+ */
+router.get('/users', protect, authorize('admin'), getAllUsers)
+router.put('/users/:id/status', protect, authorize('admin'), updateUserStatus)
 
 module.exports = router

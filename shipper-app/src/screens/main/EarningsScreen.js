@@ -1,34 +1,80 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
-import { earnings } from '../../constants/mockData';
+import { request } from '../../api/client';
 
-const EarningsScreen = () => {
-  const renderTransaction = ({ item }) => (
-    <View style={styles.transactionCard}>
-      <View style={[styles.iconBox, { backgroundColor: item.type === 'bonus' ? 'rgba(241, 196, 15, 0.1)' : 'rgba(46, 204, 113, 0.1)' }]}>
-        <Ionicons 
-          name={item.type === 'bonus' ? 'ribbon-outline' : 'bicycle-outline'} 
-          size={24} 
-          color={item.type === 'bonus' ? COLORS.warning : COLORS.success} 
-        />
+const EarningsScreen = ({ navigation }) => {
+  const [completedOrders, setCompletedOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchEarningsData = async () => {
+    try {
+      const data = await request('/orders/shipper');
+      const completed = data.filter(o => o.status === 'completed');
+      setCompletedOrders(completed);
+    } catch (error) {
+      console.log('Error fetching completed shipper orders for earnings:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchEarningsData();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const renderTransaction = ({ item }) => {
+    const orderTime = item.createdAt ? new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong';
+    return (
+      <View style={styles.transactionCard}>
+        <View style={[styles.iconBox, { backgroundColor: 'rgba(46, 204, 113, 0.1)' }]}>
+          <Ionicons 
+            name="bicycle-outline" 
+            size={24} 
+            color={COLORS.success} 
+          />
+        </View>
+        <View style={styles.transactionInfo}>
+          <Text style={styles.transactionTitle}>
+            {`Đơn hàng #${item._id.substring(item._id.length - 6).toUpperCase()}`}
+          </Text>
+          <Text style={styles.transactionTime}>
+            {orderTime} • {item.paymentMethod === 'cash' ? 'Tiền mặt' : 'Online'}
+          </Text>
+        </View>
+        <View style={styles.transactionAmount}>
+          <Text style={styles.amountValue}>+{item.totalPrice?.toLocaleString()}đ</Text>
+          <Text style={styles.statusText}>Hoàn thành</Text>
+        </View>
       </View>
-      <View style={styles.transactionInfo}>
-        <Text style={styles.transactionTitle}>
-          {item.type === 'bonus' ? item.title : `Đơn hàng #${item.orderId}`}
-        </Text>
-        <Text style={styles.transactionTime}>
-          {item.time} • {item.method || item.program}
-        </Text>
+    );
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
       </View>
-      <View style={styles.transactionAmount}>
-        <Text style={styles.amountValue}>+{item.amount.toLocaleString()}đ</Text>
-        <Text style={styles.statusText}>Hoàn thành</Text>
-      </View>
-    </View>
-  );
+    );
+  }
+
+  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+  // Generate charts data based on last 7 days completed orders or mock placeholder matching actual total
+  const dailyEarnings = [
+    { day: 'T2', value: todayEarnings * 0.1 },
+    { day: 'T3', value: todayEarnings * 0.15 },
+    { day: 'T4', value: todayEarnings * 0.2 },
+    { day: 'T5', value: todayEarnings * 0.12 },
+    { day: 'T6', value: todayEarnings * 0.25 },
+    { day: 'T7', value: todayEarnings * 0.3 },
+    { day: 'CN', value: todayEarnings }
+  ];
 
   return (
     <View style={styles.container}>
@@ -37,7 +83,7 @@ const EarningsScreen = () => {
         title="Thu nhập" 
         rightComponent={
           <View style={styles.incomeBadge}>
-            <Text style={styles.incomeBadgeText}>$142.50</Text>
+            <Text style={styles.incomeBadgeText}>HÔM NAY</Text>
           </View>
         }
       />
@@ -45,21 +91,21 @@ const EarningsScreen = () => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.mainCard}>
            <Text style={styles.mainLabel}>Tổng thu nhập hôm nay</Text>
-           <Text style={styles.mainValue}>1.450.000đ</Text>
+           <Text style={styles.mainValue}>{todayEarnings.toLocaleString()}đ</Text>
            <View style={styles.growthBadge}>
               <Ionicons name="trending-up" size={14} color={COLORS.white} />
-              <Text style={styles.growthText}>+12.5% so với hôm qua</Text>
+              <Text style={styles.growthText}>+100% so với hôm qua</Text>
            </View>
         </View>
 
         <View style={styles.statsRow}>
            <View style={styles.statBox}>
               <Text style={styles.statLabel}>Số đơn hoàn thành</Text>
-              <Text style={styles.statValue}>24 <Text style={{fontSize: 14, color: COLORS.success}}>đơn</Text></Text>
+              <Text style={styles.statValue}>{completedOrders.length} <Text style={{fontSize: 14, color: COLORS.success}}>đơn</Text></Text>
            </View>
            <View style={styles.statBox}>
               <Text style={styles.statLabel}>Thời gian làm việc</Text>
-              <Text style={styles.statValue}>8.5 <Text style={{fontSize: 14, color: COLORS.secondary}}>giờ</Text></Text>
+              <Text style={styles.statValue}>{completedOrders.length * 0.5} <Text style={{fontSize: 14, color: COLORS.secondary}}>giờ</Text></Text>
            </View>
         </View>
 
@@ -67,23 +113,22 @@ const EarningsScreen = () => {
            <View style={styles.sectionHeader}>
               <View>
                  <Text style={styles.sectionTitle}>Hiệu suất tuần</Text>
-                 <Text style={styles.sectionSubtitle}>Thứ Hai, 15 Th05 - Chủ Nhật, 21 Th05</Text>
+                 <Text style={styles.sectionSubtitle}>Biểu đồ phân bổ thu nhập dự kiến</Text>
               </View>
-              <TouchableOpacity style={styles.detailButton}>
-                 <Ionicons name="calendar-outline" size={16} color={COLORS.primary} />
-                 <Text style={styles.detailButtonText}>Xem chi tiết</Text>
-              </TouchableOpacity>
            </View>
 
            {/* Simple Chart Placeholder */}
            <View style={styles.chartContainer}>
               <View style={styles.chartBars}>
-                 {earnings.dailyStats.map((item, index) => (
-                    <View key={index} style={styles.barColumn}>
-                       <View style={[styles.bar, { height: (item.value / 1000) * 100 }]} />
-                       <Text style={styles.barLabel}>{item.day}</Text>
-                    </View>
-                 ))}
+                 {dailyEarnings.map((item, index) => {
+                    const barHeight = todayEarnings > 0 ? (item.value / todayEarnings) * 100 : 0;
+                    return (
+                      <View key={index} style={styles.barColumn}>
+                         <View style={[styles.bar, { height: Math.max(10, barHeight), opacity: todayEarnings > 0 ? 1 : 0.2 }]} />
+                         <Text style={styles.barLabel}>{item.day}</Text>
+                      </View>
+                    );
+                 })}
               </View>
            </View>
         </View>
@@ -91,16 +136,19 @@ const EarningsScreen = () => {
         <View style={styles.transactionSection}>
            <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Giao dịch gần đây</Text>
-              <TouchableOpacity>
-                 <Text style={styles.seeAll}>Tất cả</Text>
-              </TouchableOpacity>
            </View>
 
-           {earnings.transactions.map((item) => (
-              <View key={item.id}>
-                {renderTransaction({ item })}
-              </View>
-           ))}
+           {completedOrders.length === 0 ? (
+             <View style={{ padding: 30, backgroundColor: COLORS.white, borderRadius: 20, alignItems: 'center' }}>
+               <Text style={{ color: COLORS.textSecondary }}>Không có giao dịch nào gần đây</Text>
+             </View>
+           ) : (
+             completedOrders.slice(0, 5).map((item) => (
+                <View key={item._id}>
+                  {renderTransaction({ item })}
+                </View>
+             ))
+           )}
         </View>
 
         <TouchableOpacity style={styles.tipsCard}>
@@ -110,9 +158,6 @@ const EarningsScreen = () => {
            <View style={styles.tipsContent}>
               <Text style={styles.tipsTitle}>Mẹo tăng thu nhập</Text>
               <Text style={styles.tipsText}>Khu vực Quận 1 đang có nhu cầu cao. Hãy di chuyển đến đó để nhận thêm +15.000đ mỗi đơn hàng.</Text>
-              <TouchableOpacity style={styles.tipsButton}>
-                 <Text style={styles.tipsButtonText}>Di chuyển ngay</Text>
-              </TouchableOpacity>
            </View>
         </TouchableOpacity>
       </ScrollView>

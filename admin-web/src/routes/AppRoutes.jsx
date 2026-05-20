@@ -9,6 +9,15 @@ import DriversPage from "../pages/DriversPage";
 import AnalyticsPage from "../pages/AnalyticsPage";
 import SettingsPage from "../pages/SettingsPage";
 import AuthLayout from "../layouts/AuthLayout";
+import { getToken } from "../api/client";
+
+const ProtectedRoute = ({ children }) => {
+  const token = getToken();
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+};
 
 const AppRoutes = () => {
   return (
@@ -24,13 +33,13 @@ const AppRoutes = () => {
       />
 
       {/* Admin Routes */}
-      <Route path="/" element={<DashboardPage />} />
-      <Route path="/users" element={<UsersPage />} />
-      <Route path="/restaurants" element={<RestaurantsPage />} />
-      <Route path="/orders" element={<OrdersPage />} />
-      <Route path="/drivers" element={<DriversPage />} />
-      <Route path="/analytics" element={<AnalyticsPage />} />
-      <Route path="/settings" element={<SettingsPage />} />
+      <Route path="/" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+      <Route path="/restaurants" element={<ProtectedRoute><RestaurantsPage /></ProtectedRoute>} />
+      <Route path="/orders" element={<ProtectedRoute><OrdersPage /></ProtectedRoute>} />
+      <Route path="/drivers" element={<ProtectedRoute><DriversPage /></ProtectedRoute>} />
+      <Route path="/analytics" element={<ProtectedRoute><AnalyticsPage /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

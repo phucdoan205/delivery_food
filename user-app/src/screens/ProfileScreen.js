@@ -1,10 +1,42 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { MapPin, ChevronRight, User, MapPin as MapPinIcon, Heart, Bell, Tag, LogOut, ArrowLeft } from 'lucide-react-native';
-import { USER_INFO } from '../constants/mockData';
+import { request, setToken } from '../api/client';
 
 const ProfileScreen = ({ navigation }) => {
+  const [profile, setProfile] = useState(null);
+  const [ordersCount, setOrdersCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProfileData = async () => {
+    try {
+      const profileData = await request('/auth/profile');
+      setProfile(profileData);
+      
+      const ordersList = await request('/orders/myorders');
+      if (ordersList) {
+        setOrdersCount(ordersList.length);
+      }
+    } catch (error) {
+      console.log('Error loading user profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchProfileData();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleLogout = () => {
+    setToken('');
+    navigation.replace('Login');
+  };
+
   const menuItems = [
     { icon: User, title: 'Chỉnh sửa hồ sơ', color: '#FFF1E8', iconColor: '#B23A00', screen: 'EditProfile' },
     { icon: MapPinIcon, title: 'Quản lý địa chỉ', color: '#E8F5E9', iconColor: '#2E7D32', screen: 'Address' },
@@ -13,14 +45,24 @@ const ProfileScreen = ({ navigation }) => {
     { icon: Tag, title: 'Mã giảm giá', color: '#FFF9C4', iconColor: '#FBC02D', badge: 'PRO', screen: 'Voucher' },
   ];
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const userAvatar = profile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop';
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.locationHeader}>
           <MapPin size={16} color={COLORS.primary} />
-          <Text style={styles.locationText}>Vị trí hiện tại</Text>
+          <Text style={styles.locationText} numberOfLines={1}>{profile?.address || 'Vui lòng cập nhật địa chỉ'}</Text>
           <View style={styles.avatarMiniContainer}>
-            <Image source={{ uri: USER_INFO.avatar }} style={styles.avatarMini} />
+            <Image source={{ uri: userAvatar }} style={styles.avatarMini} />
           </View>
         </View>
       </View>
@@ -28,20 +70,20 @@ const ProfileScreen = ({ navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.profileCard}>
           <View style={styles.avatarContainer}>
-            <Image source={{ uri: USER_INFO.avatar }} style={styles.avatar} />
+            <Image source={{ uri: userAvatar }} style={styles.avatar} />
           </View>
-          <Text style={styles.userName}>{USER_INFO.name}</Text>
-          <Text style={styles.userEmail}>{USER_INFO.email}</Text>
+          <Text style={styles.userName}>{profile?.fullName || 'Khách hàng'}</Text>
+          <Text style={styles.userEmail}>{profile?.email || ''}</Text>
           
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statLabel}>ĐƠN HÀNG</Text>
-              <Text style={styles.statValue}>{USER_INFO.orders}</Text>
+              <Text style={styles.statValue}>{ordersCount}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statLabel}>ĐIỂM</Text>
-              <Text style={styles.statValue}>{USER_INFO.points}</Text>
+              <Text style={styles.statLabel}>VAI TRÒ</Text>
+              <Text style={styles.statValue}>{(profile?.role || 'User').toUpperCase()}</Text>
             </View>
           </View>
         </View>
@@ -67,7 +109,7 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
           ))}
           
-          <TouchableOpacity style={styles.logoutBtn} onPress={() => navigation.replace('Login')}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
             <View style={[styles.menuIconContainer, { backgroundColor: '#FFE8E8' }]}>
               <LogOut size={20} color="#D32F2F" />
             </View>

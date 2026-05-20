@@ -1,66 +1,167 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, ChevronRight, Minus, Plus, Tag } from 'lucide-react-native';
+import { request } from '../api/client';
 
 const CartScreen = ({ navigation }) => {
-  const cartItems = [
-    {
-      id: '1',
-      name: 'Steak Bò Wagyu Cao Cấp',
-      description: 'Chín vừa, sốt tiêu đen, khoai tây nghiền',
-      price: 450000,
-      quantity: 1,
-      image: 'https://images.unsplash.com/photo-1546241072-48010ad28c2c?q=80&w=200&auto=format&fit=crop',
-    },
-    {
-      id: '2',
-      name: 'Salad Cá Hồi Na Uy',
-      description: 'Rau mầm hữu cơ, sốt mè rang',
-      price: 185000,
-      quantity: 2,
-      image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?q=80&w=200&auto=format&fit=crop',
-    },
-  ];
+  const [cart, setCart] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchCart = async () => {
+    try {
+      const data = await request('/cart');
+      setCart(data);
+    } catch (error) {
+      console.log('Error fetching cart:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCart();
+  }, []);
+
+  const handleUpdateQuantity = async (foodId, change) => {
+    const item = cart?.items?.find(i => (i.foodId?._id || i.foodId) === foodId);
+    if (!item) return;
+
+    const newQuantity = item.quantity + change;
+    if (newQuantity <= 0) {
+      handleRemoveItem(foodId);
+      return;
+    }
+
+    try {
+      const updatedCart = await request('/cart', {
+        method: 'POST',
+        body: { foodId, quantity: change }
+      });
+      setCart(updatedCart);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể cập nhật số lượng');
+    }
+  };
+
+  const handleRemoveItem = async (foodId) => {
+    try {
+      const updatedCart = await request(`/cart/${foodId}`, {
+        method: 'DELETE'
+      });
+      setCart(updatedCart);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể xoá món ăn');
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      await request('/cart', { method: 'DELETE' });
+      setCart({ items: [] });
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể xoá giỏ hàng');
+    }
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const items = cart?.items || [];
+  const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
+  const shippingFee = subtotal > 0 ? 15000 : 0;
+  const discount = shippingFee; // Free ship for demo
+  const total = subtotal + shippingFee - discount;
+
+  // Find a representative restaurant name if items exist
+  const firstItem = items[0];
+  const restaurantName = firstItem?.foodId?.restaurantId?.name || "Cửa hàng đối tác";
+  const restaurantAddress = firstItem?.foodId?.restaurantId?.address || "Hà Nội, Việt Nam";
+  const restaurantImage = firstItem?.foodId?.restaurantId?.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=100&auto=format&fit=crop';
+
+  if (items.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color={COLORS.text} /></TouchableOpacity>
+          <Text style={styles.headerTitle}>Giỏ hàng của tôi</Text>
+          <View style={{ width: 40 }} />
+        </View>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Image 
+            source={{ uri: 'https://cdn-icons-png.flaticon.com/512/11329/11329060.png' }} 
+            style={{ width: 120, height: 120, opacity: 0.5, marginBottom: 20 }} 
+          />
+          <Text style={{ fontSize: 16, fontWeight: 'bold', color: COLORS.text, marginBottom: 8 }}>Giỏ hàng của bạn đang trống</Text>
+          <Text style={{ fontSize: 14, color: COLORS.textLight, textAlign: 'center', marginBottom: 24 }}>Hãy quay lại trang chủ và khám phá các món ăn ngon nhé.</Text>
+          <TouchableOpacity 
+            style={{ backgroundColor: COLORS.primary, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24 }}
+            onPress={() => navigation.navigate('Trang chủ')}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: 'bold' }}>Mua sắm ngay</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><ArrowLeft size={24} color={COLORS.text} /></TouchableOpacity>
         <Text style={styles.headerTitle}>Giỏ hàng của tôi</Text>
-        <TouchableOpacity><Text style={styles.clearAll}>Xoá tất cả</Text></TouchableOpacity>
+        <TouchableOpacity onPress={handleClearCart}><Text style={styles.clearAll}>Xoá tất cả</Text></TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.restaurantSection}>
           <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=100&auto=format&fit=crop' }} 
+            source={{ uri: restaurantImage }} 
             style={styles.restaurantThumb} 
           />
           <View style={styles.restaurantInfo}>
-            <Text style={styles.restaurantName}>The Gourmet Bistro - Quận 1</Text>
-            <Text style={styles.restaurantAddr}>123 Lê Lợi, Phường Bến Thành</Text>
+            <Text style={styles.restaurantName}>{restaurantName}</Text>
+            <Text style={styles.restaurantAddr}>{restaurantAddress}</Text>
           </View>
           <ChevronRight size={20} color={COLORS.textLight} />
         </View>
 
-        {cartItems.map((item) => (
-          <View key={item.id} style={styles.cartItem}>
-            <Image source={{ uri: item.image }} style={styles.itemImage} />
-            <View style={styles.itemDetails}>
-              <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-              <Text style={styles.itemDesc} numberOfLines={1}>{item.description}</Text>
-              <View style={styles.itemFooter}>
-                <Text style={styles.itemPrice}>{item.price.toLocaleString()}đ</Text>
-                <View style={styles.quantityControls}>
-                  <TouchableOpacity style={styles.qBtn}><Minus size={14} color={COLORS.text} /></TouchableOpacity>
-                  <Text style={styles.qText}>{item.quantity}</Text>
-                  <TouchableOpacity style={styles.qBtn}><Plus size={14} color={COLORS.text} /></TouchableOpacity>
+        {items.map((item) => {
+          const food = item.foodId;
+          if (!food) return null;
+          return (
+            <View key={food._id} style={styles.cartItem}>
+              <Image source={{ uri: food.image }} style={styles.itemImage} />
+              <View style={styles.itemDetails}>
+                <Text style={styles.itemName} numberOfLines={1}>{food.name}</Text>
+                <Text style={styles.itemDesc} numberOfLines={1}>{food.description}</Text>
+                <View style={styles.itemFooter}>
+                  <Text style={styles.itemPrice}>{food.price.toLocaleString()}đ</Text>
+                  <View style={styles.quantityControls}>
+                    <TouchableOpacity 
+                      style={styles.qBtn}
+                      onPress={() => handleUpdateQuantity(food._id, -1)}
+                    >
+                      <Minus size={14} color={COLORS.text} />
+                    </TouchableOpacity>
+                    <Text style={styles.qText}>{item.quantity}</Text>
+                    <TouchableOpacity 
+                      style={styles.qBtn}
+                      onPress={() => handleUpdateQuantity(food._id, 1)}
+                    >
+                      <Plus size={14} color={COLORS.text} />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        ))}
+          );
+        })}
 
         <View style={styles.voucherSection}>
           <View style={styles.sectionHeader}>
@@ -81,23 +182,23 @@ const CartScreen = ({ navigation }) => {
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>CHI TIẾT ĐƠN HÀNG</Text>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tạm tính (3 món)</Text>
-            <Text style={styles.summaryValue}>820.000đ</Text>
+            <Text style={styles.summaryLabel}>Tạm tính ({items.length} món)</Text>
+            <Text style={styles.summaryValue}>{subtotal.toLocaleString()}đ</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Phí giao hàng (2.4 km)</Text>
-            <Text style={styles.summaryValue}>15.000đ</Text>
+            <Text style={styles.summaryValue}>{shippingFee.toLocaleString()}đ</Text>
           </View>
           <View style={styles.summaryRow}>
             <View style={styles.discountRow}>
               <Text style={styles.summaryLabel}>Giảm giá phí giao hàng </Text>
               <View style={styles.freeBadge}><Text style={styles.freeText}>FREE</Text></View>
             </View>
-            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{discount.toLocaleString()}đ</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
-            <Text style={styles.totalValue}>820.000đ</Text>
+            <Text style={styles.totalValue}>{total.toLocaleString()}đ</Text>
           </View>
         </View>
 
@@ -110,11 +211,11 @@ const CartScreen = ({ navigation }) => {
       <View style={styles.footer}>
         <View>
           <Text style={styles.totalFooterLabel}>Tổng thanh toán</Text>
-          <Text style={styles.totalFooterValue}>820.000đ</Text>
+          <Text style={styles.totalFooterValue}>{total.toLocaleString()}đ</Text>
         </View>
         <TouchableOpacity 
           style={styles.payBtn}
-          onPress={() => navigation.navigate('Checkout')}
+          onPress={() => navigation.navigate('Checkout', { cart })}
         >
           <Text style={styles.payText}>Thanh toán ngay</Text>
         </TouchableOpacity>

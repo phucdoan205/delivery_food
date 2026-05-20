@@ -1,18 +1,57 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, Switch, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, Switch, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import StatCard from '../../components/StatCard';
 import OrderCard from '../../components/OrderCard';
-import { currentUser, newOrders } from '../../constants/mockData';
+import { request } from '../../api/client';
+import MapTilerView from '../../components/MapTilerView';
 
 const ReadyScreen = ({ navigation }) => {
   const [isOnline, setIsOnline] = useState(true);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await request('/orders/shipper');
+      setOrders(data);
+    } catch (error) {
+      console.log('Error fetching shipper orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchOrders();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleAcceptOrder = async (orderId) => {
+    try {
+      setLoading(true);
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: 'delivering' }
+      });
+      Alert.alert('Thành công', 'Bạn đã nhận đơn hàng này. Chuyển đến trang Giao hàng.');
+      navigation.navigate('Delivery');
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể nhận đơn hàng này');
+      fetchOrders();
+    }
+  };
 
   const renderHeader = () => (
     <View style={styles.header}>
       <View style={styles.userInfo}>
-        <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
+        <Image 
+          source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200' }} 
+          style={styles.avatar} 
+        />
         <View style={styles.userText}>
           <Text style={styles.userName}>Crave & Co. Driver</Text>
           <View style={styles.onlineBadge}>
@@ -30,28 +69,30 @@ const ReadyScreen = ({ navigation }) => {
     </View>
   );
 
-  const renderStats = () => (
-    <View style={styles.statsContainer}>
-      <StatCard 
-        label="Thu nhập hôm nay" 
-        value={currentUser.stats.todayIncome.toLocaleString() + 'đ'} 
-        style={styles.statCard}
-      />
-      <StatCard 
-        label="Số đơn đã giao" 
-        value={currentUser.stats.todayOrders.toString()} 
-        style={styles.statCard}
-      />
-    </View>
-  );
+  const renderStats = () => {
+    const todayOrdersCount = orders.filter(o => o.status === 'completed').length;
+    const todayEarnings = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+    return (
+      <View style={styles.statsContainer}>
+        <StatCard 
+          label="Thu nhập hôm nay" 
+          value={todayEarnings.toLocaleString() + 'đ'} 
+          style={styles.statCard}
+        />
+        <StatCard 
+          label="Số đơn đã giao" 
+          value={todayOrdersCount.toString()} 
+          style={styles.statCard}
+        />
+      </View>
+    );
+  };
 
   const renderMapPreview = () => (
     <View style={styles.mapContainer}>
-      <Image 
-        source={{ uri: 'https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?q=80&w=800&auto=format&fit=crop' }} 
-        style={styles.mapImage}
-      />
-      <View style={styles.mapOverlay}>
+      <MapTilerView center={[106.660172, 10.762622]} zoom={12} markers={[{ id: 1, lat: 10.762622, lng: 106.660172, title: 'Vị trí hiện tại', color: '#3B82F6' }]} />
+      <View pointerEvents="none" style={styles.mapOverlay}>
         <View style={styles.locationBadge}>
           <Ionicons name="navigate" size={16} color={COLORS.primary} />
           <Text style={styles.locationText}>Quận 1, TP.HCM</Text>
@@ -59,6 +100,17 @@ const ReadyScreen = ({ navigation }) => {
       </View>
     </View>
   );
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  // Filter available orders (status is preparing)
+  const availableOrders = orders.filter(o => o.status === 'preparing');
 
   return (
     <View style={styles.container}>
@@ -73,18 +125,36 @@ const ReadyScreen = ({ navigation }) => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Đơn hàng mới</Text>
           <View style={styles.badge}>
-            <Text style={styles.badgeText}>{newOrders.length} ĐANG CHỜ</Text>
+            <Text style={styles.badgeText}>{availableOrders.length} ĐANG CHỜ</Text>
           </View>
         </View>
 
-        {newOrders.map((order) => (
-          <OrderCard 
-            key={order.id} 
-            order={order} 
-            onAccept={() => navigation.navigate('PickupConfirmation')}
-            onReject={() => {}}
-          />
-        ))}
+        {availableOrders.length === 0 ? (
+          <View style={{ padding: 40, backgroundColor: COLORS.white, borderRadius: 20, alignItems: 'center', marginTop: 10 }}>
+            <Text style={{ color: COLORS.textSecondary }}>Không có đơn hàng mới nào gần bạn</Text>
+          </View>
+        ) : (
+          availableOrders.map((order) => {
+            const mappedOrder = {
+              id: order._id,
+              restaurant: order.restaurantId?.name || 'Cửa hàng',
+              address: order.deliveryAddress || 'Địa chỉ giao hàng',
+              distance: '2.5 km',
+              duration: '10 phút',
+              image: order.restaurantId?.image || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400',
+              bonus: 10000
+            };
+            return (
+              <OrderCard 
+                key={order._id} 
+                order={mappedOrder} 
+                onPress={() => navigation.navigate('DeliveryDetail', { orderId: order._id })}
+                onAccept={() => handleAcceptOrder(order._id)}
+                onReject={() => {}}
+              />
+            );
+          })
+        )}
 
         <TouchableOpacity style={styles.hotZoneCard}>
           <View style={styles.hotZoneInfo}>

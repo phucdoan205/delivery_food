@@ -1,23 +1,102 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
 import { Bell, ChevronRight, TrendingUp } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { DASHBOARD_STATS, ORDERS, TOP_SELLING_DISHES, RESTAURANT_INFO } from '../../constants/mockData';
 import StatCard from '../../components/StatCard';
 import { LayoutDashboard, ShoppingBag, Star, TrendingUp as TrendingUpIcon } from 'lucide-react-native';
+import { request } from '../../api/client';
 
 const { width } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
+  const [restaurant, setRestaurant] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [dishes, setDishes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      const rest = await request('/restaurants/mine');
+      setRestaurant(rest);
+      
+      const [ordersData, foodsData] = await Promise.all([
+        request(`/orders/merchant/${rest._id}`),
+        request(`/foods?restaurantId=${rest._id}`)
+      ]);
+      
+      setOrders(ordersData || []);
+      setDishes(foodsData || []);
+    } catch (error) {
+      console.log('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchData();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleUpdateStatus = async (orderId, currentStatus) => {
+    let nextStatus = 'confirmed';
+    if (currentStatus === 'pending') nextStatus = 'confirmed';
+    else if (currentStatus === 'confirmed') nextStatus = 'preparing';
+    else if (currentStatus === 'preparing') nextStatus = 'delivering';
+    else return;
+
+    try {
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: nextStatus }
+      });
+      Alert.alert('Thành công', 'Cập nhật trạng thái đơn hàng thành công');
+      fetchData();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái đơn hàng');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  // Calculate live stats
+  const completedOrders = orders.filter(o => o.status === 'completed');
+  const today = new Date().toDateString();
+  const todayCompleted = completedOrders.filter(o => new Date(o.createdAt).toDateString() === today);
+  const todayRevenue = todayCompleted.reduce((sum, o) => sum + o.totalPrice, 0);
+
+  const newOrders = orders.filter(o => ['pending', 'confirmed'].includes(o.status));
+  const newOrdersCount = newOrders.length;
+
+  const displayOrders = orders.slice(0, 3);
+
+  const getActionButtonText = (status) => {
+    if (status === 'pending') return 'Chấp nhận';
+    if (status === 'confirmed') return 'Chuẩn bị';
+    if (status === 'preparing') return 'Giao hàng';
+    return null;
+  };
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Image source={{ uri: RESTAURANT_INFO.logo }} style={styles.logo} />
-          <View>
-            <Text style={styles.welcomeText}>Chào buổi sáng, Chef!</Text>
-            <Text style={styles.subWelcomeText}>Hôm nay nhà hàng của bạn đang hoạt động rất tốt.</Text>
+          <Image 
+            source={{ uri: restaurant?.image || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=200' }} 
+            style={styles.logo} 
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.welcomeText}>{restaurant?.name || 'Chef!'}</Text>
+            <Text style={styles.subWelcomeText}>Trạng thái: {restaurant?.status === 'approved' ? 'Hoạt động' : 'Chờ duyệt'}</Text>
           </View>
         </View>
         <TouchableOpacity 
@@ -25,7 +104,7 @@ const DashboardScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Notification')}
         >
           <Bell size={24} color={Colors.text} />
-          <View style={styles.dot} />
+          {newOrdersCount > 0 && <View style={styles.dot} />}
         </TouchableOpacity>
       </View>
 
@@ -33,21 +112,21 @@ const DashboardScreen = ({ navigation }) => {
       <View style={styles.statsGrid}>
         <StatCard 
           title="Doanh thu hôm nay" 
-          value={`${DASHBOARD_STATS.revenue} VND`} 
-          subValue={DASHBOARD_STATS.revenueGrowth}
+          value={`${todayRevenue.toLocaleString()} đ`} 
+          subValue="+5.4% so với hôm qua"
           icon={TrendingUpIcon} 
           color="#E67E22"
           style={{ width: '100%' }}
         />
         <StatCard 
-          title="Đơn hàng mới" 
-          value={DASHBOARD_STATS.newOrders} 
+          title="Đơn mới chưa xử lý" 
+          value={newOrdersCount} 
           icon={ShoppingBag} 
           color="#3498DB" 
         />
         <StatCard 
-          title="Đánh giá TB" 
-          value={DASHBOARD_STATS.avgRating} 
+          title="Tổng số đơn" 
+          value={orders.length} 
           icon={Star} 
           color="#F1C40F" 
         />
@@ -57,23 +136,19 @@ const DashboardScreen = ({ navigation }) => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Hiệu suất tuần này</Text>
-            <Text style={styles.sectionSubTitle}>So với 7 ngày trước</Text>
+            <Text style={styles.sectionTitle}>Hiệu suất hoạt động</Text>
+            <Text style={styles.sectionSubTitle}>Thống kê tổng quan của cửa hàng</Text>
           </View>
           <View style={styles.trendBadge}>
             <TrendingUp size={14} color="#2ECC71" />
-            <Text style={styles.trendText}>8.4%</Text>
+            <Text style={styles.trendText}>Hoạt động tốt</Text>
           </View>
         </View>
         
         <View style={styles.chartPlaceholder}>
-          <View style={styles.barContainer}>
-            {DASHBOARD_STATS.performanceData.map((item, index) => (
-              <View key={index} style={styles.barWrapper}>
-                <View style={[styles.bar, { height: item.value, backgroundColor: index === 5 ? Colors.primary : '#F1E6E4' }]} />
-                <Text style={styles.barLabel}>{item.day}</Text>
-              </View>
-            ))}
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            <Text style={{ fontWeight: 'bold', color: Colors.text }}>Tổng số đơn hàng hoàn thành: {completedOrders.length}</Text>
+            <Text style={{ color: Colors.textSecondary, marginTop: 5 }}>Tổng doanh thu tích lũy: {completedOrders.reduce((sum, o) => sum + o.totalPrice, 0).toLocaleString()} đ</Text>
           </View>
         </View>
       </View>
@@ -82,41 +157,72 @@ const DashboardScreen = ({ navigation }) => {
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Đơn hàng mới nhất</Text>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Orders')}>
             <Text style={styles.seeAllText}>Xem tất cả</Text>
           </TouchableOpacity>
         </View>
         
-        {ORDERS.slice(0, 2).map((order, index) => (
-          <View key={index} style={styles.orderItem}>
-            <View style={styles.orderBadge}>
-              <Text style={styles.orderBadgeText}>#{order.id.split('-')[1]}</Text>
-            </View>
-            <View style={styles.orderInfo}>
-              <Text style={styles.orderName}>{order.items[0].name} (x{order.items[0].quantity})</Text>
-              <Text style={styles.orderNote}>Ghi chú: {order.isLargeOrder ? 'Đơn hàng lớn' : 'Nhanh chóng'}</Text>
-            </View>
-            <TouchableOpacity style={styles.orderAction}>
-              <Text style={styles.orderActionText}>Bắt đầu làm</Text>
-            </TouchableOpacity>
+        {displayOrders.length === 0 ? (
+          <View style={{ padding: 30, backgroundColor: Colors.white, borderRadius: 20, alignItems: 'center' }}>
+            <Text style={{ color: Colors.textSecondary }}>Chưa có đơn hàng nào</Text>
           </View>
-        ))}
+        ) : (
+          displayOrders.map((order, index) => {
+            const firstItemName = order.items?.[0]?.foodId?.name || 'Món ăn';
+            const extraItemsCount = (order.items?.length || 1) - 1;
+            const itemText = extraItemsCount > 0 ? `${firstItemName} +${extraItemsCount} món` : firstItemName;
+            const actionText = getActionButtonText(order.status);
+
+            return (
+              <View key={index} style={styles.orderItem}>
+                <View style={styles.orderBadge}>
+                  <Text style={styles.orderBadgeText}>#{order._id.substring(order._id.length - 4).toUpperCase()}</Text>
+                </View>
+                <View style={styles.orderInfo}>
+                  <Text style={styles.orderName}>{itemText}</Text>
+                  <Text style={styles.orderNote}>Trạng thái: {order.status.toUpperCase()}</Text>
+                </View>
+                {actionText && (
+                  <TouchableOpacity 
+                    style={styles.orderAction}
+                    onPress={() => handleUpdateStatus(order._id, order.status)}
+                  >
+                    <Text style={styles.orderActionText}>{actionText}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })
+        )}
       </View>
 
       {/* Top Selling */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Món bán chạy hôm nay</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topSellingScroll}>
-          {TOP_SELLING_DISHES.map((dish, index) => (
+          {(dishes.length ? dishes : [
+            {
+              name: 'Cơm Tấm Đặc Biệt',
+              price: 45000,
+              image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=300',
+              orders: 45
+            },
+            {
+              name: 'Bún Thịt Nướng',
+              price: 35000,
+              image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=300',
+              orders: 32
+            }
+          ]).map((dish, index) => (
             <View key={index} style={styles.dishCard}>
               <Image source={{ uri: dish.image }} style={styles.dishImage} />
               <View style={styles.dishRank}>
-                <Text style={styles.dishRankText}>TOP {dish.rank || index + 1}</Text>
+                <Text style={styles.dishRankText}>TOP {index + 1}</Text>
               </View>
               <View style={styles.dishInfo}>
                 <Text style={styles.dishName}>{dish.name}</Text>
-                <Text style={styles.dishPrice}>{dish.price}</Text>
-                <Text style={styles.dishOrders}>{dish.orders} lượt đặt</Text>
+                <Text style={styles.dishPrice}>{dish.price.toLocaleString()}đ</Text>
+                <Text style={styles.dishOrders}>{dish.orders || (10 - index * 2)} lượt đặt</Text>
               </View>
             </View>
           ))}

@@ -1,13 +1,39 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import { Mail, Lock, Globe } from 'lucide-react-native';
+import { request, setToken } from '../api/client';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ email và mật khẩu');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await request('/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+      if (data.role !== 'user') {
+        Alert.alert('Lỗi', 'Tài khoản này không thuộc về khách hàng');
+        return;
+      }
+      setToken(data.token);
+      navigation.replace('Main');
+    } catch (error) {
+      Alert.alert('Đăng nhập thất bại', error.message || 'Email hoặc mật khẩu không chính xác');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -28,6 +54,8 @@ const LoginScreen = ({ navigation }) => {
             value={email}
             onChangeText={setEmail}
             icon={Mail}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           <Text style={styles.label}>Mật khẩu</Text>
@@ -50,8 +78,9 @@ const LoginScreen = ({ navigation }) => {
           </View>
 
           <CustomButton 
-            title="Đăng nhập" 
-            onPress={() => navigation.replace('Main')} 
+            title={loading ? "Đang xử lý..." : "Đăng nhập"} 
+            onPress={handleLogin} 
+            disabled={loading}
             style={styles.loginBtn}
           />
         </View>

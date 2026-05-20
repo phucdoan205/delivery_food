@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "../layouts/AdminLayout";
-import { PENDING_DRIVERS, APPROVED_DRIVERS } from "../utils/mockData";
 import {
   Search,
   Filter,
@@ -23,60 +22,78 @@ import {
   Plus,
   Truck
 } from "lucide-react";
+import { request } from "../api/client";
+import toast from "react-hot-toast";
 
 const DriversPage = () => {
   const [activeTab, setActiveTab] = useState("pending"); // default = pending
-  const [pendingList, setPendingList] = useState(PENDING_DRIVERS);
-  const [approvedList, setApprovedList] = useState(APPROVED_DRIVERS);
+  const [drivers, setDrivers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchPending, setSearchPending] = useState("");
   const [searchApproved, setSearchApproved] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [toast, setToast] = useState(null);
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const fetchDrivers = async () => {
+    try {
+      const data = await request("/auth/users");
+      const shipperList = data.filter(u => u.role === "shipper");
+      setDrivers(shipperList);
+    } catch (error) {
+      toast.error("Không thể tải danh sách tài xế");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleApprove = (driver) => {
-    setPendingList((prev) => prev.filter((d) => d.id !== driver.id));
-    setApprovedList((prev) => [
-      {
-        id: driver.id,
-        name: driver.name,
-        avatar: driver.avatar,
-        phone: driver.phone,
-        status: "Đang hoạt động",
-        rating: 5.0, // Default rating for new drivers
-        orders: 0,
-        bike: driver.bike,
-      },
-      ...prev,
-    ]);
-    showToast(`✅ Đã phê duyệt tài xế "${driver.name}" thành công!`, "success");
-    setActiveTab("info"); // Switch to info tab
+  useEffect(() => {
+    fetchDrivers();
+  }, []);
+
+  const handleApprove = async (driver) => {
+    try {
+      await request(`/auth/users/${driver._id}/status`, {
+        method: "PUT",
+        body: { status: "active" }
+      });
+      toast.success(`Đã phê duyệt tài xế "${driver.fullName}" thành công!`);
+      fetchDrivers();
+      setActiveTab("info");
+    } catch (error) {
+      toast.error("Phê duyệt thất bại: " + error.message);
+    }
   };
 
-  const handleReject = (driver) => {
-    setPendingList((prev) => prev.filter((d) => d.id !== driver.id));
-    showToast(`❌ Đã từ chối tài xế "${driver.name}".`, "error");
+  const handleReject = async (driver) => {
+    try {
+      await request(`/auth/users/${driver._id}/status`, {
+        method: "PUT",
+        body: { status: "banned" }
+      });
+      toast.success(`Đã từ chối/khóa tài xế "${driver.fullName}".`);
+      fetchDrivers();
+    } catch (error) {
+      toast.error("Thao tác thất bại: " + error.message);
+    }
   };
+
+  const pendingList = drivers.filter(d => d.status === "pending");
+  const approvedList = drivers.filter(d => d.status === "active" || d.status === "banned");
 
   const filteredPending = pendingList.filter(
     (d) =>
-      d.name.toLowerCase().includes(searchPending.toLowerCase()) ||
-      d.phone.includes(searchPending)
+      d.fullName?.toLowerCase().includes(searchPending.toLowerCase()) ||
+      d.phone?.includes(searchPending)
   );
 
   const filteredApproved = approvedList.filter((d) => {
     const matchSearch =
-      d.name.toLowerCase().includes(searchApproved.toLowerCase()) ||
-      d.phone.includes(searchApproved);
+      d.fullName?.toLowerCase().includes(searchApproved.toLowerCase()) ||
+      d.phone?.includes(searchApproved);
     const matchFilter =
       filterStatus === "all" ||
-      (filterStatus === "active" && d.status === "Đang hoạt động") ||
-      (filterStatus === "offline" && d.status === "Ngoại tuyến") ||
-      (filterStatus === "blocked" && d.status === "Đã khóa");
+      (filterStatus === "active" && d.status === "active") ||
+      (filterStatus === "offline" && d.status === "offline") ||
+      (filterStatus === "blocked" && d.status === "banned");
     return matchSearch && matchFilter;
   });
 
@@ -246,7 +263,9 @@ const DriversPage = () => {
               </div>
 
               {/* Driver Cards Grid */}
-              {filteredPending.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-16 text-slate-400 text-sm">Đang tải dữ liệu...</div>
+              ) : filteredPending.length === 0 ? (
                 <div className="text-center py-16">
                   <CheckCircle
                     size={48}
@@ -263,18 +282,18 @@ const DriversPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredPending.map((driver) => (
                     <div
-                      key={driver.id}
+                      key={driver._id}
                       className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
                     >
                       <div className="p-5">
                         <div className="flex items-center gap-4 mb-4">
                            <img
-                            src={driver.avatar}
-                            alt={driver.name}
+                            src={driver.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${driver.fullName}`}
+                            alt={driver.fullName}
                             className="w-16 h-16 rounded-2xl object-cover shadow-sm"
                           />
                           <div>
-                            <h3 className="text-lg font-black text-brand-text">{driver.name}</h3>
+                            <h3 className="text-lg font-black text-brand-text">{driver.fullName}</h3>
                             <div className="flex items-center gap-2 text-slate-500 mt-1">
                               <Phone size={13} className="text-brand-primary" />
                               <span className="text-xs font-medium">{driver.phone}</span>
@@ -289,7 +308,7 @@ const DriversPage = () => {
                               className="text-brand-primary flex-shrink-0"
                             />
                             <span className="text-xs font-medium truncate">
-                              {driver.address}
+                              {driver.address || 'Quận 1, TP. HCM'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-slate-500">
@@ -298,7 +317,7 @@ const DriversPage = () => {
                               className="text-brand-primary flex-shrink-0"
                             />
                             <span className="text-xs font-medium">
-                              {driver.bike}
+                              {driver.bike || 'Honda Wave - 59-X1 234.56'}
                             </span>
                           </div>
                         </div>
@@ -316,7 +335,7 @@ const DriversPage = () => {
                               </span>
                             </div>
                             <div className="text-xs font-black text-brand-text">
-                              {driver.license}
+                              {driver.license || 'GPLX-123456'}
                             </div>
                           </div>
                           <div className="bg-brand-bg rounded-2xl p-3">
@@ -330,7 +349,7 @@ const DriversPage = () => {
                               </span>
                             </div>
                             <div className="text-xs font-black text-brand-text">
-                              {driver.submittedDate}
+                              {driver.createdAt ? new Date(driver.createdAt).toLocaleDateString() : '20/05/2026'}
                             </div>
                           </div>
                         </div>
@@ -387,7 +406,6 @@ const DriversPage = () => {
                   >
                     <option value="all">Tất cả trạng thái</option>
                     <option value="active">Đang hoạt động</option>
-                    <option value="offline">Ngoại tuyến</option>
                     <option value="blocked">Đã khóa</option>
                   </select>
                 </div>
@@ -395,26 +413,28 @@ const DriversPage = () => {
 
               {/* Table or Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {filteredApproved.length === 0 ? (
+                {loading ? (
+                  <div className="col-span-1 lg:col-span-2 text-center py-12 text-slate-400 text-sm">Đang tải...</div>
+                ) : filteredApproved.length === 0 ? (
                   <div className="col-span-1 lg:col-span-2 text-center py-12 text-slate-400 text-sm">
                     Không tìm thấy tài xế nào.
                   </div>
                 ) : (
                   filteredApproved.map((driver) => (
-                    <div key={driver.id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 relative overflow-hidden group">
+                    <div key={driver._id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 relative overflow-hidden group">
                       <div className="flex items-start gap-5 relative z-10">
                         <div className="relative">
-                          <img src={driver.avatar} alt={driver.name} className="w-20 h-20 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform duration-500" />
-                          <div className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 border-[3px] border-white rounded-full ${driver.status === 'Đang hoạt động' ? 'bg-green-500' : 'bg-slate-300'}`}></div>
+                          <img src={driver.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${driver.fullName}`} alt={driver.fullName} className="w-20 h-20 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform duration-500" />
+                          <div className={`absolute -bottom-1.5 -right-1.5 w-5 h-5 border-[3px] border-white rounded-full ${driver.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></div>
                         </div>
                         
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
-                            <h3 className="text-lg font-bold text-brand-text">{driver.name}</h3>
+                            <h3 className="text-lg font-bold text-brand-text">{driver.fullName}</h3>
                             <span className={`text-[10px] font-black px-2 py-1 rounded-lg uppercase ${
-                              driver.status === 'Đang hoạt động' ? 'bg-green-50 text-green-600' : 'bg-slate-50 text-slate-400'
+                              driver.status === 'active' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                             }`}>
-                              {driver.status}
+                              {driver.status === 'active' ? 'Đang hoạt động' : 'Đã khóa'}
                             </span>
                           </div>
                           
@@ -425,11 +445,11 @@ const DriversPage = () => {
                             </div>
                             <div className="flex items-center gap-1.5 text-slate-400">
                               <Star size={13} className="text-yellow-500 fill-yellow-500" />
-                              <span className="text-xs font-bold text-brand-text">{driver.rating}</span>
+                              <span className="text-xs font-bold text-brand-text">{driver.rating || '5.0'}</span>
                             </div>
                             <div className="flex items-center gap-1.5 text-slate-400 col-span-2">
                               <Truck size={13} className="text-brand-primary" />
-                              <span className="text-xs font-medium">{driver.bike}</span>
+                              <span className="text-xs font-medium">{driver.bike || 'Honda Wave - 59-X1 234.56'}</span>
                             </div>
                           </div>
 
@@ -437,12 +457,24 @@ const DriversPage = () => {
                             <div className="flex items-center gap-6">
                               <div>
                                 <div className="text-[9px] font-bold text-slate-400 uppercase">TỔNG ĐƠN</div>
-                                <div className="text-sm font-black text-brand-text">{driver.orders}</div>
+                                <div className="text-sm font-black text-brand-text">{driver.orders || 0}</div>
                               </div>
                             </div>
-                            <button className="px-3 py-1.5 bg-brand-bg text-brand-primary rounded-xl text-xs font-bold hover:bg-brand-primary hover:text-white transition-all">
-                              Chi tiết
-                            </button>
+                            {driver.status === 'active' ? (
+                              <button 
+                                onClick={() => handleReject(driver)}
+                                className="px-3 py-1.5 bg-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all"
+                              >
+                                Khóa tài xế
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleApprove(driver)}
+                                className="px-3 py-1.5 bg-green-50 text-green-500 rounded-xl text-xs font-bold hover:bg-green-500 hover:text-white transition-all"
+                              >
+                                Mở khóa
+                              </button>
+                            )}
                           </div>
                         </div>
                       </div>

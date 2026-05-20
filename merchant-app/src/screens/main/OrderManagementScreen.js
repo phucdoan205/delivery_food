@@ -1,17 +1,82 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { Search, Plus, Star, Clock } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { Clock, Star } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { ORDERS, RESTAURANT_INFO } from '../../constants/mockData';
 import OrderCard from '../../components/OrderCard';
+import { request } from '../../api/client';
 
-const OrderManagementScreen = () => {
+const OrderManagementScreen = ({ navigation }) => {
+  const [restaurant, setRestaurant] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('new');
   
+  const fetchOrders = async () => {
+    try {
+      const rest = await request('/restaurants/mine');
+      setRestaurant(rest);
+      const ordersData = await request(`/orders/merchant/${rest._id}`);
+      setOrders(ordersData);
+    } catch (error) {
+      console.log('Error fetching orders:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchOrders();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const handleUpdateStatus = async (orderId, currentStatus) => {
+    let nextStatus = 'confirmed';
+    if (currentStatus === 'pending') nextStatus = 'confirmed';
+    else if (currentStatus === 'confirmed') nextStatus = 'preparing';
+    else if (currentStatus === 'preparing') nextStatus = 'delivering';
+    else return;
+
+    try {
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: nextStatus }
+      });
+      Alert.alert('Thành công', 'Cập nhật trạng thái đơn hàng thành công');
+      fetchOrders();
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái đơn hàng');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
+  // Filter orders by active tab
+  // new: pending, confirmed
+  // preparing: preparing
+  // ready: delivering, completed, cancelled
+  const filteredOrders = orders.filter(o => {
+    if (activeTab === 'new') return ['pending', 'confirmed'].includes(o.status);
+    if (activeTab === 'preparing') return o.status === 'preparing';
+    if (activeTab === 'ready') return ['delivering', 'completed', 'cancelled'].includes(o.status);
+    return false;
+  });
+
+  const newCount = orders.filter(o => ['pending', 'confirmed'].includes(o.status)).length;
+  const preparingCount = orders.filter(o => o.status === 'preparing').length;
+  const readyCount = orders.filter(o => ['delivering', 'completed'].includes(o.status)).length;
+
   const tabs = [
-    { id: 'new', label: 'MỚI (4)', count: 4 },
-    { id: 'preparing', label: 'ĐANG CHUẨN BỊ (2)', count: 2 },
-    { id: 'ready', label: 'SẴN SÀNG', count: 0 },
+    { id: 'new', label: `MỚI (${newCount})` },
+    { id: 'preparing', label: `ĐANG CHUẨN BỊ (${preparingCount})` },
+    { id: 'ready', label: `SẴN SÀNG (${readyCount})` },
   ];
 
   return (
@@ -20,10 +85,10 @@ const OrderManagementScreen = () => {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View style={styles.restInfo}>
-            <Image source={{ uri: RESTAURANT_INFO.logo }} style={styles.restLogo} />
-            <Text style={styles.restName}>{RESTAURANT_INFO.name}</Text>
+            {restaurant?.image && <Image source={{ uri: restaurant.image }} style={styles.restLogo} />}
+            <Text style={styles.restName}>{restaurant?.name || 'Cửa hàng'}</Text>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusText}>Mở cửa</Text>
+              <Text style={styles.statusText}>{restaurant?.status === 'approved' ? 'Hoạt động' : 'Chờ duyệt'}</Text>
             </View>
           </View>
         </View>
@@ -48,25 +113,36 @@ const OrderManagementScreen = () => {
 
       {/* Order List */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-        {ORDERS.filter(o => activeTab === 'new' ? o.status === 'new' : o.status === activeTab).map((order, index) => (
-          <OrderCard key={index} order={order} />
-        ))}
+        {filteredOrders.length === 0 ? (
+          <View style={{ padding: 40, backgroundColor: Colors.white, borderRadius: 20, alignItems: 'center', marginTop: 10 }}>
+            <Text style={{ color: Colors.textSecondary }}>Không có đơn hàng nào thuộc mục này</Text>
+          </View>
+        ) : (
+          filteredOrders.map((order, index) => (
+            <OrderCard 
+              key={index} 
+              order={order} 
+              onPress={() => navigation.navigate('OrderDetail', { orderId: order._id })}
+              onStatusChange={handleUpdateStatus}
+            />
+          ))
+        )}
 
         {/* Stats Summary at bottom */}
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>Hiệu suất hôm nay</Text>
-          <Text style={styles.summarySub}>Bạn đã hoàn thành 42 đơn hàng tuyệt vời.</Text>
+          <Text style={styles.summarySub}>Bạn có {orders.filter(o => o.status === 'completed').length} đơn hàng hoàn thành.</Text>
           
           <View style={styles.statsRow}>
             <View style={styles.mainStat}>
-              <Text style={styles.mainStatValue}>98%</Text>
-              <Text style={styles.mainStatTrend}>+5.2%</Text>
+              <Text style={styles.mainStatValue}>100%</Text>
+              <Text style={styles.mainStatTrend}>Hoàn thành tốt</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.subStats}>
               <View style={styles.subStatItem}>
                 <Clock size={16} color="#2ECC71" />
-                <Text style={styles.subStatValue}>18 phút</Text>
+                <Text style={styles.subStatValue}>15 phút</Text>
                 <Text style={styles.subStatLabel}>CHUẨN BỊ TB</Text>
               </View>
               <View style={styles.subStatItem}>
@@ -78,10 +154,6 @@ const OrderManagementScreen = () => {
           </View>
         </View>
       </ScrollView>
-
-      <TouchableOpacity style={styles.fab}>
-        <Plus size={30} color={Colors.white} />
-      </TouchableOpacity>
     </View>
   );
 };

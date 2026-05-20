@@ -1,14 +1,53 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
-import { MapPin, Search, Bell, ChevronRight } from 'lucide-react-native';
-import { CATEGORIES, RESTAURANTS, FOOD_ITEMS } from '../constants/mockData';
+import { MapPin, Search as SearchIcon, Bell, ChevronRight } from 'lucide-react-native';
+import { CATEGORIES as mockCategories, RESTAURANTS as mockRestaurants, FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import CategoryChip from '../components/CategoryChip';
 import RestaurantCard from '../components/RestaurantCard';
 import FoodCard from '../components/FoodCard';
+import { request } from '../api/client';
 
 const HomeScreen = ({ navigation }) => {
-  const [selectedCategory, setSelectedCategory] = useState('1');
+  const [categories, setCategories] = useState([]);
+  const [foodItems, setFoodItems] = useState([]);
+  const [restaurants, setRestaurants] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchHomeData = async () => {
+    try {
+      const [cats, foods, rests, profileData] = await Promise.all([
+        request('/foods/categories'),
+        request('/foods'),
+        request('/restaurants'),
+        request('/auth/profile').catch(() => null)
+      ]);
+      setCategories(cats.length ? cats : mockCategories);
+      setFoodItems(foods.length ? foods : mockFoods);
+      setRestaurants(rests.length ? rests : mockRestaurants);
+      if (profileData) {
+        setProfile(profileData);
+      }
+      if (cats.length) setSelectedCategory(cats[0]._id || cats[0].id);
+    } catch (error) {
+      console.log('Error fetching home data, falling back to mocks:', error);
+      setCategories(mockCategories);
+      setFoodItems(mockFoods);
+      setRestaurants(mockRestaurants);
+      setSelectedCategory(mockCategories[0].id);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchHomeData();
+    });
+    return unsubscribe;
+  }, [navigation]);
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -16,12 +55,12 @@ const HomeScreen = ({ navigation }) => {
         <MapPin size={20} color={COLORS.primary} />
         <View style={styles.locationTextContainer}>
           <Text style={styles.locationLabel}>Giao đến:</Text>
-          <Text style={styles.locationValue} numberOfLines={1}>123 Lê Lợi, Quận 1</Text>
+          <Text style={styles.locationValue} numberOfLines={1}>{profile?.address || 'Vui lòng chọn địa chỉ'}</Text>
         </View>
       </View>
       <View style={styles.headerIcons}>
-        <TouchableOpacity style={styles.iconBtn}>
-          <Search size={20} color={COLORS.text} />
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Tìm kiếm')}>
+          <SearchIcon size={20} color={COLORS.text} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn}>
           <Bell size={20} color={COLORS.text} />
@@ -54,6 +93,37 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  // Map MongoDB fields to the keys expected by children components
+  const normalizedRestaurants = restaurants.map(res => ({
+    id: res._id || res.id,
+    name: res.name,
+    address: res.address,
+    image: res.image,
+    rating: res.rating || 4.8,
+    reviews: res.reviews || 250,
+    time: res.time || '20-30 phút',
+    distance: res.distance || '1.5km',
+    tags: res.tags || ['Đối tác']
+  }));
+
+  const normalizedFoods = foodItems.map(food => ({
+    id: food._id || food.id,
+    name: food.name,
+    description: food.description,
+    price: food.price,
+    image: food.image,
+    restaurantId: food.restaurantId?._id || food.restaurantId || '',
+    isPopular: food.isPopular || true
+  }));
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -61,15 +131,15 @@ const HomeScreen = ({ navigation }) => {
 
         <View style={styles.categorySection}>
           <FlatList
-            data={CATEGORIES}
+            data={categories}
             horizontal
             showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item._id || item.id}
             renderItem={({ item }) => (
               <CategoryChip
-                category={item}
-                isSelected={selectedCategory === item.id}
-                onPress={() => setSelectedCategory(item.id)}
+                category={{ id: item._id || item.id, name: item.name, icon: item.icon || 'utensils' }}
+                isSelected={selectedCategory === (item._id || item.id)}
+                onPress={() => setSelectedCategory(item._id || item.id)}
               />
             )}
             contentContainerStyle={styles.categoryList}
@@ -81,17 +151,20 @@ const HomeScreen = ({ navigation }) => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Món ngon đang hot</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate('Tìm kiếm')}>
               <ChevronRight size={20} color={COLORS.text} />
             </TouchableOpacity>
           </View>
           <FlatList
-            data={FOOD_ITEMS}
+            data={normalizedFoods}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <TouchableOpacity style={styles.hotItemCard}>
+              <TouchableOpacity 
+                style={styles.hotItemCard}
+                onPress={() => navigation.navigate('FoodDetail', { item })}
+              >
                 <Image source={{ uri: item.image }} style={styles.hotItemImage} />
                 <View style={styles.hotItemInfo}>
                   <Text style={styles.hotItemName} numberOfLines={1}>{item.name}</Text>
@@ -108,11 +181,12 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>Dành cho bạn</Text>
             <Text style={styles.sectionSubtitle}>Dựa trên thói quen</Text>
           </View>
-          {FOOD_ITEMS.slice(0, 2).map((item) => (
+          {normalizedFoods.slice(0, 2).map((item) => (
             <FoodCard 
               key={item.id} 
               item={item} 
               onPress={() => navigation.navigate('FoodDetail', { item })} 
+              onAddPress={() => navigation.navigate('FoodDetail', { item })}
             />
           ))}
         </View>
@@ -121,7 +195,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Nhà hàng nổi bật</Text>
           </View>
-          {RESTAURANTS.map((restaurant) => (
+          {normalizedRestaurants.map((restaurant) => (
             <RestaurantCard 
               key={restaurant.id} 
               restaurant={restaurant} 

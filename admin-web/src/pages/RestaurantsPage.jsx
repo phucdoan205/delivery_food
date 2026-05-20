@@ -1,6 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import AdminLayout from "../layouts/AdminLayout";
-import { PENDING_RESTAURANTS, APPROVED_RESTAURANTS } from "../utils/mockData";
 import {
   Search,
   Filter,
@@ -22,6 +21,8 @@ import {
   Download,
   Plus,
 } from "lucide-react";
+import { request } from "../api/client";
+import toast from "react-hot-toast";
 
 // Category badge colors
 const CATEGORY_STYLES = {
@@ -34,65 +35,73 @@ const CATEGORY_STYLES = {
 
 const RestaurantsPage = () => {
   const [activeTab, setActiveTab] = useState("pending"); // default = pending
-  const [pendingList, setPendingList] = useState(PENDING_RESTAURANTS);
-  const [approvedList, setApprovedList] = useState(APPROVED_RESTAURANTS);
+  const [restaurants, setRestaurants] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchPending, setSearchPending] = useState("");
   const [searchApproved, setSearchApproved] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [toast, setToast] = useState(null);
 
-  const showToast = (message, type = "success") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  const fetchRestaurants = async () => {
+    try {
+      const data = await request("/restaurants/admin");
+      setRestaurants(data);
+    } catch (error) {
+      toast.error("Không thể tải danh sách cửa hàng");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Approve: move from pending to approved
-  const handleApprove = (restaurant) => {
-    setPendingList((prev) => prev.filter((r) => r.id !== restaurant.id));
-    setApprovedList((prev) => [
-      {
-        id: restaurant.id,
-        name: restaurant.name,
-        category: restaurant.category,
-        rating: restaurant.rating,
-        address: restaurant.address,
-        ownerName: restaurant.ownerName,
-        phone: restaurant.phone,
-        email: restaurant.email,
-        revenue: "—",
-        status: "Hoạt động",
-        approvedDate: new Date().toLocaleDateString("vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-        image: restaurant.image,
-      },
-      ...prev,
-    ]);
-    showToast(`✅ Đã phê duyệt "${restaurant.name}" thành công!`, "success");
+  useEffect(() => {
+    fetchRestaurants();
+  }, []);
+
+  // Approve: update status to approved
+  const handleApprove = async (restaurant) => {
+    try {
+      await request(`/restaurants/${restaurant._id}`, {
+        method: "PUT",
+        body: { status: "approved" },
+      });
+      toast.success(`Đã phê duyệt "${restaurant.name}" thành công!`);
+      fetchRestaurants();
+      setActiveTab("info");
+    } catch (error) {
+      toast.error("Phê duyệt thất bại: " + error.message);
+    }
   };
 
-  // Reject: remove from pending
-  const handleReject = (restaurant) => {
-    setPendingList((prev) => prev.filter((r) => r.id !== restaurant.id));
-    showToast(`❌ Đã từ chối "${restaurant.name}".`, "error");
+  // Reject: update status to rejected
+  const handleReject = async (restaurant) => {
+    try {
+      await request(`/restaurants/${restaurant._id}`, {
+        method: "PUT",
+        body: { status: "rejected" },
+      });
+      toast.success(`Đã từ chối "${restaurant.name}".`);
+      fetchRestaurants();
+    } catch (error) {
+      toast.error("Thao tác thất bại: " + error.message);
+    }
   };
+
+  const pendingList = restaurants.filter(r => r.status === "pending");
+  const approvedList = restaurants.filter(r => r.status === "approved" || r.status === "rejected");
 
   const filteredPending = pendingList.filter(
     (r) =>
-      r.name.toLowerCase().includes(searchPending.toLowerCase()) ||
-      r.address.toLowerCase().includes(searchPending.toLowerCase()),
+      r.name?.toLowerCase().includes(searchPending.toLowerCase()) ||
+      r.address?.toLowerCase().includes(searchPending.toLowerCase()),
   );
 
   const filteredApproved = approvedList.filter((r) => {
     const matchSearch =
-      r.name.toLowerCase().includes(searchApproved.toLowerCase()) ||
-      r.email.toLowerCase().includes(searchApproved.toLowerCase());
+      r.name?.toLowerCase().includes(searchApproved.toLowerCase()) ||
+      r.ownerId?.email?.toLowerCase().includes(searchApproved.toLowerCase());
     const matchFilter =
       filterStatus === "all" ||
-      (filterStatus === "active" && r.status === "Hoạt động") ||
-      (filterStatus === "paused" && r.status === "Tạm dừng");
+      (filterStatus === "active" && r.status === "approved") ||
+      (filterStatus === "paused" && r.status === "rejected");
     return matchSearch && matchFilter;
   });
 
@@ -292,7 +301,9 @@ const RestaurantsPage = () => {
               </div>
 
               {/* Restaurant Cards Grid */}
-              {filteredPending.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-16 text-slate-400 text-sm">Đang tải dữ liệu...</div>
+              ) : filteredPending.length === 0 ? (
                 <div className="text-center py-16">
                   <CheckCircle
                     size={48}
@@ -309,25 +320,22 @@ const RestaurantsPage = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredPending.map((res) => (
                     <div
-                      key={res.id}
+                      key={res._id}
                       className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
                     >
                       {/* Image */}
                       <div className="relative h-44 overflow-hidden">
                         <img
-                          src={res.image}
+                          src={res.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4'}
                           alt={res.name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                         {/* Category Badge */}
                         <div
-                          className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                            CATEGORY_STYLES[res.categoryType] ||
-                            CATEGORY_STYLES.default
-                          }`}
+                          className="absolute top-3 left-3 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-orange-100 text-orange-700"
                         >
-                          {res.category}
+                          {res.category || 'Đồ ăn'}
                         </div>
                         {/* Rating */}
                         <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full flex items-center gap-1">
@@ -336,7 +344,7 @@ const RestaurantsPage = () => {
                             className="text-yellow-500 fill-yellow-500"
                           />
                           <span className="text-xs font-black text-brand-text">
-                            {res.rating}
+                            {res.rating || '5.0'}
                           </span>
                         </div>
                         {/* Name overlay */}
@@ -356,7 +364,7 @@ const RestaurantsPage = () => {
                               className="text-brand-primary flex-shrink-0"
                             />
                             <span className="text-xs font-medium truncate">
-                              {res.address}
+                              {res.address || 'Quận 1, TP. HCM'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-slate-500">
@@ -365,7 +373,7 @@ const RestaurantsPage = () => {
                               className="text-brand-primary flex-shrink-0"
                             />
                             <span className="text-xs font-medium">
-                              {res.phone}
+                              {res.phone || '0901234567'}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 text-slate-500">
@@ -373,8 +381,8 @@ const RestaurantsPage = () => {
                               size={13}
                               className="text-brand-primary flex-shrink-0"
                             />
-                            <span className="text-xs font-medium">
-                              {res.email}
+                            <span className="text-xs font-medium truncate">
+                              {res.ownerId?.email || 'merchant@culinarycurator.com'}
                             </span>
                           </div>
                         </div>
@@ -392,7 +400,7 @@ const RestaurantsPage = () => {
                               </span>
                             </div>
                             <div className="text-xs font-black text-brand-text">
-                              {res.license}
+                              {res.license || 'DKKD-987654'}
                             </div>
                           </div>
                           <div className="bg-brand-bg rounded-2xl p-3">
@@ -406,7 +414,7 @@ const RestaurantsPage = () => {
                               </span>
                             </div>
                             <div className="text-xs font-black text-brand-text">
-                              {res.revenue}
+                              {res.revenue || '—'}
                             </div>
                           </div>
                         </div>
@@ -415,7 +423,7 @@ const RestaurantsPage = () => {
                         <div className="flex items-center gap-1.5 text-slate-400 mb-4">
                           <Clock size={12} />
                           <span className="text-[11px] font-medium">
-                            Nộp ngày {res.submittedDate}
+                            Nộp ngày {res.createdAt ? new Date(res.createdAt).toLocaleDateString('vi-VN') : '20/05/2026'}
                           </span>
                         </div>
 
@@ -473,9 +481,6 @@ const RestaurantsPage = () => {
                     <option value="active">Hoạt động</option>
                     <option value="paused">Tạm dừng</option>
                   </select>
-                  <button className="p-3 bg-brand-bg text-slate-500 rounded-xl hover:text-brand-primary transition-colors">
-                    <Filter size={18} />
-                  </button>
                 </div>
               </div>
 
@@ -484,12 +489,6 @@ const RestaurantsPage = () => {
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-brand-bg/50">
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                        <input
-                          type="checkbox"
-                          className="rounded border-slate-200 text-brand-primary focus:ring-brand-primary/20"
-                        />
-                      </th>
                       <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                         NHÀ HÀNG
                       </th>
@@ -511,10 +510,14 @@ const RestaurantsPage = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {filteredApproved.length === 0 ? (
+                    {loading ? (
+                      <tr>
+                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 text-sm">Đang tải...</td>
+                      </tr>
+                    ) : filteredApproved.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={6}
                           className="px-6 py-12 text-center text-slate-400 text-sm"
                         >
                           Không tìm thấy nhà hàng nào.
@@ -523,19 +526,13 @@ const RestaurantsPage = () => {
                     ) : (
                       filteredApproved.map((res) => (
                         <tr
-                          key={res.id}
+                          key={res._id}
                           className="hover:bg-brand-bg/20 transition-colors group"
                         >
                           <td className="px-6 py-4">
-                            <input
-                              type="checkbox"
-                              className="rounded border-slate-200 text-brand-primary focus:ring-brand-primary/20"
-                            />
-                          </td>
-                          <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
                               <img
-                                src={res.image}
+                                src={res.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4'}
                                 alt={res.name}
                                 className="w-10 h-10 rounded-2xl object-cover shadow-sm flex-shrink-0"
                               />
@@ -544,14 +541,14 @@ const RestaurantsPage = () => {
                                   {res.name}
                                 </div>
                                 <div className="text-[10px] text-slate-400 font-medium">
-                                  {res.email}
+                                  {res.ownerId?.email || 'merchant@culinarycurator.com'}
                                 </div>
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-center">
                             <span className="text-[9px] font-black px-2.5 py-1 rounded-lg uppercase tracking-tighter bg-orange-50 text-orange-600">
-                              {res.category}
+                              {res.category || 'Đồ ăn'}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center">
@@ -561,7 +558,7 @@ const RestaurantsPage = () => {
                                 className="text-yellow-500 fill-yellow-500"
                               />
                               <span className="text-xs font-black text-brand-text">
-                                {res.rating}
+                                {res.rating || '5.0'}
                               </span>
                             </div>
                           </td>
@@ -569,29 +566,41 @@ const RestaurantsPage = () => {
                             <div className="flex items-center justify-center gap-1.5">
                               <div
                                 className={`w-1.5 h-1.5 rounded-full ${
-                                  res.status === "Hoạt động"
+                                  res.status === "approved"
                                     ? "bg-green-500"
-                                    : "bg-amber-500"
+                                    : "bg-red-500"
                                 }`}
                               />
                               <span
                                 className={`text-xs font-bold ${
-                                  res.status === "Hoạt động"
+                                  res.status === "approved"
                                     ? "text-green-600"
-                                    : "text-amber-600"
+                                    : "text-red-600"
                                 }`}
                               >
-                                {res.status}
+                                {res.status === "approved" ? "Hoạt động" : "Từ chối / Tạm dừng"}
                               </span>
                             </div>
                           </td>
                           <td className="px-6 py-4 text-xs font-bold text-slate-500">
-                            {res.approvedDate}
+                            {res.updatedAt ? new Date(res.updatedAt).toLocaleDateString('vi-VN') : '20/05/2026'}
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <button className="p-2 text-slate-400 hover:text-brand-primary hover:bg-brand-bg rounded-lg transition-all">
-                              <MoreHorizontal size={18} />
-                            </button>
+                            {res.status === "approved" ? (
+                              <button 
+                                onClick={() => handleReject(res)}
+                                className="px-3 py-1.5 bg-red-50 text-red-500 rounded-xl text-xs font-bold hover:bg-red-500 hover:text-white transition-all"
+                              >
+                                Khóa/Tạm dừng
+                              </button>
+                            ) : (
+                              <button 
+                                onClick={() => handleApprove(res)}
+                                className="px-3 py-1.5 bg-green-50 text-green-500 rounded-xl text-xs font-bold hover:bg-green-500 hover:text-white transition-all"
+                              >
+                                Phê duyệt
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

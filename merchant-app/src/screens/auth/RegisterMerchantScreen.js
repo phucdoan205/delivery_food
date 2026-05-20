@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat } from 'lucide-react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
+import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat, Lock } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import { request, setToken } from '../../api/client';
 
 const RegisterMerchantScreen = ({ navigation }) => {
   const [formData, setFormData] = useState({
@@ -12,8 +13,61 @@ const RegisterMerchantScreen = ({ navigation }) => {
     email: '',
     phone: '',
     address: '',
-    type: ''
+    password: '',
+    type: 'Ẩm thực truyền thống'
   });
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    const { restaurantName, ownerName, email, phone, address, password } = formData;
+    if (!restaurantName || !ownerName || !email || !phone || !address || !password) {
+      Alert.alert('Lỗi', 'Vui lòng điền đầy đủ tất cả thông tin đăng ký');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Register user with role = 'merchant'
+      await request('/auth/register', {
+        method: 'POST',
+        body: {
+          fullName: ownerName,
+          email,
+          password,
+          phone,
+          role: 'merchant'
+        }
+      });
+
+      // 2. Login user to get auth token
+      const loginRes = await request('/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+      setToken(loginRes.token);
+
+      // 3. Create restaurant for this merchant
+      await request('/restaurants', {
+        method: 'POST',
+        body: {
+          name: restaurantName,
+          address,
+          description: formData.type || "Quán ăn đối tác mới đăng ký trên hệ thống",
+          image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=600&auto=format&fit=crop"
+        }
+      });
+
+      Alert.alert(
+        'Đăng ký thành công',
+        'Cửa hàng của bạn đang chờ phê duyệt từ Ban quản trị hệ thống. Vui lòng đăng nhập lại.',
+        [{ text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }]
+      );
+    } catch (error) {
+      Alert.alert('Lỗi đăng ký', error.message || 'Đã xảy ra lỗi, vui lòng thử lại');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -50,6 +104,16 @@ const RegisterMerchantScreen = ({ navigation }) => {
           onChangeText={(val) => setFormData({...formData, email: val})}
           icon={Mail}
           keyboardType="email-address"
+          autoCapitalize="none"
+        />
+
+        <CustomInput
+          label="Mật khẩu tài khoản"
+          placeholder="Nhập mật khẩu của bạn"
+          value={formData.password}
+          onChangeText={(val) => setFormData({...formData, password: val})}
+          icon={Lock}
+          secureTextEntry
         />
 
         <CustomInput
@@ -73,16 +137,20 @@ const RegisterMerchantScreen = ({ navigation }) => {
           <Text style={styles.label}>Loại hình ẩm thực</Text>
           <TouchableOpacity style={styles.dropdown}>
             <ChefHat size={20} color={Colors.textSecondary} style={styles.icon} />
-            <Text style={styles.dropdownText}>Chọn loại hình</Text>
+            <Text style={styles.dropdownText}>{formData.type}</Text>
             <ChevronLeft size={20} color={Colors.textSecondary} style={{ transform: [{ rotate: '-90deg' }] }} />
           </TouchableOpacity>
         </View>
 
-        <CustomButton
-          title="Gửi hồ sơ đăng ký"
-          onPress={() => navigation.navigate('Login')}
-          style={styles.registerButton}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <CustomButton
+            title="Gửi hồ sơ đăng ký"
+            onPress={handleRegister}
+            style={styles.registerButton}
+          />
+        )}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Đã là đối tác? </Text>

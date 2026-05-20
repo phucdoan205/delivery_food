@@ -3,29 +3,50 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Clock } from 'lucide-react-native';
 import { Colors } from '../constants/colors';
 
-const OrderCard = ({ order, onPress }) => {
+const OrderCard = ({ order, onPress, onStatusChange }) => {
   const getStatusColor = (status) => {
     switch (status) {
-      case 'new': return '#E67E22';
-      case 'preparing': return '#3498DB';
-      case 'ready': return '#2ECC71';
-      default: return Colors.textSecondary;
+      case 'pending':
+      case 'confirmed':
+        return '#E67E22';
+      case 'preparing':
+        return '#3498DB';
+      case 'delivering':
+      case 'completed':
+        return '#2ECC71';
+      default:
+        return Colors.textSecondary;
     }
   };
 
   const getStatusLabel = (status) => {
     switch (status) {
-      case 'new': return 'MỚI';
+      case 'pending': return 'CHỜ DUYỆT';
+      case 'confirmed': return 'ĐÃ XÁC NHẬN';
       case 'preparing': return 'ĐANG CHUẨN BỊ';
-      case 'ready': return 'SẴN SÀNG';
-      default: return status;
+      case 'delivering': return 'ĐANG GIAO';
+      case 'completed': return 'ĐÃ HOÀN THÀNH';
+      case 'cancelled': return 'ĐÃ HỦY';
+      default: return status.toUpperCase();
     }
   };
+
+  const getActionButtonText = (status) => {
+    if (status === 'pending') return 'Chấp nhận đơn';
+    if (status === 'confirmed') return 'Bắt đầu chuẩn bị';
+    if (status === 'preparing') return 'Chuẩn bị xong';
+    return null;
+  };
+
+  const actionText = getActionButtonText(order.status);
+
+  // Parse time
+  const orderTime = order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong';
 
   return (
     <TouchableOpacity style={styles.container} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
-        <Text style={styles.orderId}>#{order.id}</Text>
+        <Text style={styles.orderId}>#{order._id.substring(order._id.length - 6).toUpperCase()}</Text>
         <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) + '15' }]}>
           <Text style={[styles.statusText, { color: getStatusColor(order.status) }]}>
             {getStatusLabel(order.status)}
@@ -35,27 +56,35 @@ const OrderCard = ({ order, onPress }) => {
 
       <View style={styles.timeContainer}>
         <Clock size={14} color={Colors.textSecondary} />
-        <Text style={styles.timeText}>{order.time} • {order.relativeTime}</Text>
+        <Text style={styles.timeText}>{orderTime} • {order.paymentMethod === 'cash' ? 'Tiền mặt' : 'Chuyển khoản'}</Text>
       </View>
 
       <View style={styles.itemsContainer}>
-        {order.items.map((item, index) => (
+        {order.items?.map((item, index) => (
           <Text key={index} style={styles.itemText}>
-            {item.quantity}x {item.name}
+            {item.quantity}x {item.foodId?.name || 'Món ăn'}
           </Text>
         ))}
       </View>
 
       <View style={styles.footer}>
         <Text style={styles.totalLabel}>Tổng cộng</Text>
-        <Text style={styles.totalValue}>{order.total.toLocaleString()}đ</Text>
+        <Text style={styles.totalValue}>{order.totalPrice?.toLocaleString()}đ</Text>
       </View>
 
-      <TouchableOpacity style={styles.actionButton}>
-        <Text style={styles.actionButtonText}>
-          {order.status === 'new' ? 'Bắt đầu chuẩn bị' : 'Hoàn thành'}
-        </Text>
-      </TouchableOpacity>
+      {actionText && onStatusChange && (
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={(e) => {
+            e.stopPropagation();
+            onStatusChange(order._id, order.status);
+          }}
+        >
+          <Text style={styles.actionButtonText}>
+            {actionText}
+          </Text>
+        </TouchableOpacity>
+      )}
     </TouchableOpacity>
   );
 };

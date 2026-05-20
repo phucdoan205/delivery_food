@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,13 +7,77 @@ import {
   TouchableOpacity,
   Image,
   TextInput,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 import { Bell, ArrowLeft, Camera, Plus } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { RESTAURANT_INFO } from "../../constants/mockData";
 import CustomButton from "../../components/CustomButton";
+import { request } from "../../api/client";
 
 const RestaurantInfoScreen = ({ navigation }) => {
+  const [restaurant, setRestaurant] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
+  const [address, setAddress] = useState("");
+  const [image, setImage] = useState("");
+
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      try {
+        const data = await request("/restaurants/mine");
+        setRestaurant(data);
+        setName(data.name || "");
+        setDescription(data.description || "");
+        setAddress(data.address || "");
+        setImage(data.image || "");
+      } catch (error) {
+        Alert.alert("Lỗi", "Không thể tải thông tin cửa hàng");
+        console.log("Error fetching restaurant mine:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRestaurant();
+  }, []);
+
+  const handleSave = async () => {
+    if (!name || !description || !address) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin cửa hàng");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await request(`/restaurants/${restaurant._id}`, {
+        method: "PUT",
+        body: {
+          name,
+          description,
+          address,
+          image: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400",
+        },
+      });
+      Alert.alert("Thành công", "Đã cập nhật thông tin cửa hàng");
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert("Lỗi", error.message || "Không thể lưu thay đổi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: "center", alignItems: "center" }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
@@ -35,12 +99,12 @@ const RestaurantInfoScreen = ({ navigation }) => {
 
         <View style={styles.imageSection}>
           <Image
-            source={{ uri: RESTAURANT_INFO.image }}
+            source={{ uri: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400" }}
             style={styles.coverImage}
           />
           <View style={styles.logoContainer}>
             <Image
-              source={{ uri: RESTAURANT_INFO.logo }}
+              source={{ uri: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400" }}
               style={styles.logoImage}
             />
             <TouchableOpacity style={styles.cameraBtn}>
@@ -52,14 +116,15 @@ const RestaurantInfoScreen = ({ navigation }) => {
         <View style={styles.formSection}>
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Tên nhà hàng</Text>
-            <TextInput style={styles.input} value={RESTAURANT_INFO.name} />
+            <TextInput style={styles.input} value={name} onChangeText={setName} />
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Mô tả ngắn (Editorial Style)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
-              value={RESTAURANT_INFO.description}
+              value={description}
+              onChangeText={setDescription}
               multiline
               numberOfLines={4}
             />
@@ -67,36 +132,24 @@ const RestaurantInfoScreen = ({ navigation }) => {
 
           <Text style={styles.subSectionTitle}>Liên hệ & Địa điểm</Text>
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Số điện thoại</Text>
-            <TextInput style={styles.input} value={RESTAURANT_INFO.phone} />
-          </View>
-          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Địa chỉ</Text>
-            <TextInput style={styles.input} value={RESTAURANT_INFO.address} />
+            <TextInput style={styles.input} value={address} onChangeText={setAddress} />
           </View>
 
-          <Text style={styles.subSectionTitle}>Danh mục ẩm thực</Text>
-          <View style={styles.tagRow}>
-            {RESTAURANT_INFO.categories.map((cat, i) => (
-              <View key={i} style={styles.tag}>
-                <Text style={styles.tagText}>{cat}</Text>
-              </View>
-            ))}
-            <TouchableOpacity style={styles.addTagBtn}>
-              <Text style={styles.addTagText}>+ THÊM</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.buttonRow}>
-            <TouchableOpacity style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Hủy bỏ</Text>
-            </TouchableOpacity>
-            <CustomButton
-              title="Lưu thay đổi"
-              style={styles.saveBtn}
-              onPress={() => navigation.goBack()}
-            />
-          </View>
+          {saving ? (
+            <ActivityIndicator size="large" color={Colors.primary} />
+          ) : (
+            <View style={styles.buttonRow}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
+                <Text style={styles.cancelBtnText}>Hủy bỏ</Text>
+              </TouchableOpacity>
+              <CustomButton
+                title="Lưu thay đổi"
+                style={styles.saveBtn}
+                onPress={handleSave}
+              />
+            </View>
+          )}
         </View>
       </View>
       <View style={{ height: 100 }} />

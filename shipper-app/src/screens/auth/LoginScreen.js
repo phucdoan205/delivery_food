@@ -4,13 +4,35 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 
+import { request, setToken } from '../../api/client';
+import { Alert } from 'react-native';
+
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    // Navigate to Main flow
-    navigation.replace('Main');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu');
+      return;
+    }
+
+    try {
+      const data = await request('/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+
+      if (data.role !== 'shipper') {
+        Alert.alert('Lỗi', 'Tài khoản này không phải là đối tác giao hàng');
+        return;
+      }
+
+      setToken(data.token);
+      navigation.replace('Main');
+    } catch (error) {
+      Alert.alert('Đăng nhập thất bại', error.message || 'Sai tài khoản hoặc mật khẩu');
+    }
   };
 
   return (

@@ -1,15 +1,45 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import { Mail, Lock, User, Phone, ArrowLeft, Utensils } from 'lucide-react-native';
+import { request, setToken } from '../api/client';
 
 const RegisterScreen = ({ navigation }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleRegister = async () => {
+    if (!name || !email || !phone || !password) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ tất cả thông tin');
+      return;
+    }
+    setLoading(true);
+    try {
+      const data = await request('/auth/register', {
+        method: 'POST',
+        body: {
+          fullName: name,
+          email,
+          phone,
+          password,
+          role: 'user'
+        }
+      });
+      setToken(data.token);
+      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
+        { text: 'OK', onPress: () => navigation.replace('Main') }
+      ]);
+    } catch (error) {
+      Alert.alert('Đăng ký thất bại', error.message || 'Có lỗi xảy ra khi tạo tài khoản');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -41,6 +71,8 @@ const RegisterScreen = ({ navigation }) => {
             value={email}
             onChangeText={setEmail}
             icon={Mail}
+            autoCapitalize="none"
+            keyboardType="email-address"
           />
 
           <Text style={styles.label}>SỐ ĐIỆN THOẠI</Text>
@@ -49,6 +81,7 @@ const RegisterScreen = ({ navigation }) => {
             value={phone}
             onChangeText={setPhone}
             icon={Phone}
+            keyboardType="phone-pad"
           />
 
           <Text style={styles.label}>MẬT KHẨU</Text>
@@ -68,9 +101,10 @@ const RegisterScreen = ({ navigation }) => {
           </View>
 
           <CustomButton 
-            title="Tạo tài khoản của tôi" 
+            title={loading ? "Đang xử lý..." : "Tạo tài khoản của tôi"} 
             showArrow
-            onPress={() => navigation.replace('Main')} 
+            disabled={loading}
+            onPress={handleRegister} 
             style={styles.registerBtn}
           />
         </View>

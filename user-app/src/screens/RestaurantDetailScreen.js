@@ -1,12 +1,52 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, FlatList } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Star, Clock, MapPin, Search, Bell } from 'lucide-react-native';
-import { FOOD_ITEMS } from '../constants/mockData';
+import { FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import FoodCard from '../components/FoodCard';
+import { request } from '../api/client';
 
 const RestaurantDetailScreen = ({ route, navigation }) => {
   const { restaurant } = route.params;
+  const [foods, setFoods] = useState([]);
+  const [cart, setCart] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchRestaurantMenu = async () => {
+    try {
+      const [menu, cartData] = await Promise.all([
+        request(`/foods/restaurant/${restaurant.id}`),
+        request('/cart').catch(() => null)
+      ]);
+      setFoods(menu.length ? menu : mockFoods.filter(f => f.restaurantId === restaurant.id));
+      setCart(cartData);
+    } catch (error) {
+      console.log('Error fetching restaurant menu, falling back to mocks:', error);
+      setFoods(mockFoods.filter(f => f.restaurantId === restaurant.id || !f.restaurantId));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRestaurantMenu();
+  }, []);
+
+  const handleAddToCart = async (foodId) => {
+    try {
+      const updatedCart = await request('/cart', {
+        method: 'POST',
+        body: { foodId, quantity: 1 }
+      });
+      setCart(updatedCart);
+      Alert.alert('Thành công', 'Đã thêm vào giỏ hàng!');
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Vui lòng đăng nhập để thêm vào giỏ');
+    }
+  };
+
+  const cartQuantity = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  const cartPrice = cart?.items?.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0) || 0;
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -53,6 +93,24 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
     </View>
   );
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const normalizedFoods = foods.map(food => ({
+    id: food._id || food.id,
+    name: food.name,
+    description: food.description,
+    price: food.price,
+    image: food.image,
+    restaurantId: food.restaurantId?._id || food.restaurantId || '',
+    isPopular: food.isPopular || true
+  }));
+
   return (
     <View style={styles.container}>
       {renderHeader()}
@@ -68,34 +126,37 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.menuTitle}>Món chính</Text>
-        {FOOD_ITEMS.filter(f => f.restaurantId === restaurant.id || !f.restaurantId).map((item) => (
+        <Text style={styles.menuTitle}>Món ngon của quán</Text>
+        {normalizedFoods.map((item) => (
           <FoodCard 
             key={item.id} 
             item={item} 
             onPress={() => navigation.navigate('FoodDetail', { item })} 
+            onAddPress={() => handleAddToCart(item.id)}
           />
         ))}
       </ScrollView>
 
-      <View style={styles.cartBar}>
-        <View style={styles.cartInfo}>
-          <View style={styles.cartBadge}>
-            <Text style={styles.cartBadgeText}>3</Text>
+      {cartQuantity > 0 && (
+        <View style={styles.cartBar}>
+          <View style={styles.cartInfo}>
+            <View style={styles.cartBadge}>
+              <Text style={styles.cartBadgeText}>{cartQuantity}</Text>
+            </View>
+            <View>
+              <Text style={styles.cartLabel}>Giỏ hàng của bạn</Text>
+              <Text style={styles.cartPrice}>{cartPrice.toLocaleString()}đ</Text>
+            </View>
           </View>
-          <View>
-            <Text style={styles.cartLabel}>Giỏ hàng của bạn</Text>
-            <Text style={styles.cartPrice}>130.000đ</Text>
-          </View>
+          <TouchableOpacity 
+            style={styles.checkoutBtn}
+            onPress={() => navigation.navigate('Cart')}
+          >
+            <Text style={styles.checkoutText}>Thanh toán</Text>
+            <ChevronRight size={20} color={COLORS.white} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={styles.checkoutBtn}
-          onPress={() => navigation.navigate('Cart')}
-        >
-          <Text style={styles.checkoutText}>Thanh toán</Text>
-          <ChevronRight size={20} color={COLORS.white} />
-        </TouchableOpacity>
-      </View>
+      )}
     </View>
   );
 };

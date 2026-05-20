@@ -5,7 +5,9 @@ const {
   getOrderById,
   updateOrderStatus,
   getMyOrders,
-  getMerchantOrders
+  getMerchantOrders,
+  getAllOrdersAdmin,
+  getShipperOrders
 } = require('../controllers/orderController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -64,6 +66,34 @@ router.use(protect)
  */
 router.route('/')
   .post(createOrder)
+
+/**
+ * @swagger
+ * /api/orders/admin:
+ *   get:
+ *     summary: Get all orders in system (Admin only)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of orders retrieved
+ */
+router.get('/admin', authorize('admin'), getAllOrdersAdmin)
+
+/**
+ * @swagger
+ * /api/orders/shipper:
+ *   get:
+ *     summary: Get orders available to deliver (Shipper only)
+ *     tags: [Orders]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of shipper orders retrieved
+ */
+router.get('/shipper', authorize('shipper', 'admin'), getShipperOrders)
 
 /**
  * @swagger

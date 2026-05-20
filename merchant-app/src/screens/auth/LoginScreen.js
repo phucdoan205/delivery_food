@@ -1,17 +1,41 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { Mail, Lock, ArrowRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import { request, setToken } from '../../api/client';
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    // Navigate to Main app flow
-    navigation.replace('Main');
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ email và mật khẩu');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await request('/auth/login', {
+        method: 'POST',
+        body: { email, password }
+      });
+
+      if (response.role !== 'merchant') {
+        Alert.alert('Lỗi', 'Tài khoản này không có quyền truy cập ứng dụng đối tác');
+        return;
+      }
+
+      setToken(response.token);
+      navigation.replace('Main');
+    } catch (error) {
+      Alert.alert('Lỗi đăng nhập', error.message || 'Email hoặc mật khẩu không chính xác');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -33,6 +57,8 @@ const LoginScreen = ({ navigation }) => {
           value={email}
           onChangeText={setEmail}
           icon={Mail}
+          keyboardType="email-address"
+          autoCapitalize="none"
         />
 
         <CustomInput
@@ -48,12 +74,16 @@ const LoginScreen = ({ navigation }) => {
           <Text style={styles.forgotText}>Quên mật khẩu?</Text>
         </TouchableOpacity>
 
-        <CustomButton
-          title="Đăng nhập"
-          onPress={handleLogin}
-          icon={ArrowRight}
-          style={styles.loginButton}
-        />
+        {loading ? (
+          <ActivityIndicator size="large" color={Colors.primary} style={{ marginVertical: 20 }} />
+        ) : (
+          <CustomButton
+            title="Đăng nhập"
+            onPress={handleLogin}
+            icon={ArrowRight}
+            style={styles.loginButton}
+          />
+        )}
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>Chưa có tài khoản đối tác?</Text>

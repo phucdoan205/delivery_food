@@ -1,19 +1,86 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Home, Search as Briefcase, User, MapPin, Search as Edit2, Trash2, Plus } from 'lucide-react-native';
-import { ADDRESSES } from '../constants/mockData';
+import { request } from '../api/client';
+import MapTilerView from '../components/MapTilerView';
 
 const AddressScreen = ({ navigation }) => {
-  const renderAddressItem = ({ item }) => {
-    let Icon = Home;
-    if (item.type === 'Công ty') Icon = Briefcase;
-    else if (item.type.includes('bạn')) Icon = User;
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(true);
 
+  const fetchProfile = async () => {
+    try {
+      const data = await request('/auth/profile');
+      setProfile(data);
+    } catch (error) {
+      console.log('Error fetching address profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const handleUpdateAddress = async () => {
+    // Custom update prompt fallback or simple placeholder for simplicity
+    Alert.prompt(
+      'Cập nhật địa chỉ',
+      'Nhập địa chỉ giao hàng mới của bạn:',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel',
+        },
+        {
+          text: 'Cập nhật',
+          onPress: async (newAddress) => {
+            if (!newAddress || !newAddress.trim()) return;
+            setLoading(true);
+            try {
+              const updated = await request('/auth/profile', {
+                method: 'PUT',
+                body: { address: newAddress }
+              });
+              setProfile(updated);
+              Alert.alert('Thành công', 'Đã cập nhật địa chỉ mặc định');
+            } catch (err) {
+              Alert.alert('Lỗi', err.message || 'Không thể cập nhật địa chỉ');
+            } finally {
+              setLoading(false);
+            }
+          },
+        },
+      ],
+      'plain-text',
+      profile?.address || ''
+    );
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+      </SafeAreaView>
+    );
+  }
+
+  const addressesData = [
+    {
+      id: 'default_1',
+      type: 'Nhà riêng',
+      address: profile?.address || 'Chưa thiết lập địa chỉ',
+      isDefault: true
+    }
+  ];
+
+  const renderAddressItem = ({ item }) => {
     return (
       <View style={styles.addressCard}>
         <View style={[styles.iconContainer, item.isDefault && styles.defaultIconContainer]}>
-          <Icon size={20} color={item.isDefault ? COLORS.white : COLORS.primary} />
+          <Home size={20} color={COLORS.white} />
         </View>
         <View style={styles.addressInfo}>
           <View style={styles.addressHeader}>
@@ -26,13 +93,9 @@ const AddressScreen = ({ navigation }) => {
           </View>
           <Text style={styles.addressText} numberOfLines={2}>{item.address}</Text>
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionBtn}>
+            <TouchableOpacity style={styles.actionBtn} onPress={handleUpdateAddress}>
               <Edit2 size={14} color={COLORS.textLight} />
               <Text style={styles.actionText}>Chỉnh sửa</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}>
-              <Trash2 size={14} color={COLORS.textLight} />
-              <Text style={styles.actionText}>Xóa</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -46,7 +109,7 @@ const AddressScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tài khoản của tôi</Text>
+        <Text style={styles.headerTitle}>Địa chỉ của tôi</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -55,7 +118,7 @@ const AddressScreen = ({ navigation }) => {
           <View style={styles.promoInfo}>
             <Text style={styles.promoTitle}>Địa chỉ giao hàng</Text>
             <Text style={styles.promoSubtitle}>
-              Lưu các địa điểm bạn thường xuyên đặt món để đặt hàng nhanh hơn.
+              Lưu địa điểm bạn thường xuyên nhận hàng để đặt món nhanh hơn.
             </Text>
           </View>
           <View style={styles.promoIcon}>
@@ -64,28 +127,25 @@ const AddressScreen = ({ navigation }) => {
         </View>
 
         <FlatList
-          data={ADDRESSES}
+          data={addressesData}
           renderItem={renderAddressItem}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListFooterComponent={() => (
-            <TouchableOpacity style={styles.addBtn}>
+            <TouchableOpacity style={styles.addBtn} onPress={handleUpdateAddress}>
               <View style={styles.addIconCircle}>
                 <Plus size={20} color={COLORS.primary} />
               </View>
-              <Text style={styles.addText}>Thêm địa chỉ mới</Text>
+              <Text style={styles.addText}>Thay đổi địa chỉ mặc định</Text>
             </TouchableOpacity>
           )}
         />
 
         <View style={styles.mapContainer}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=500&auto=format&fit=crop' }} 
-            style={styles.mapSmall}
-          />
-          <View style={styles.mapOverlay}>
-            <Text style={styles.mapText}>Tìm cửa hàng gần bạn</Text>
+          <MapTilerView center={[106.660172, 10.762622]} zoom={12} markers={[{ id: 1, lat: 10.762622, lng: 106.660172, title: 'Địa điểm giao hàng' }]} />
+          <View pointerEvents="none" style={styles.mapOverlay}>
+            <Text style={styles.mapText}>Bản đồ giao hàng</Text>
           </View>
         </View>
       </View>

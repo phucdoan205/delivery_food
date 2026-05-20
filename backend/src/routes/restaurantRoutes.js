@@ -5,7 +5,9 @@ const {
   getRestaurantById,
   createRestaurant,
   updateRestaurant,
-  deleteRestaurant
+  deleteRestaurant,
+  getAllRestaurantsAdmin,
+  getMyRestaurant
 } = require('../controllers/restaurantController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -57,6 +59,23 @@ const { authorize } = require('../middlewares/roleMiddleware')
 router.route('/')
   .get(getRestaurants)
   .post(protect, authorize('merchant', 'admin'), createRestaurant)
+
+/**
+ * @swagger
+ * /api/restaurants/admin:
+ *   get:
+ *     summary: Get all restaurants (Admin only)
+ *     tags: [Restaurants]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of all restaurants retrieved
+ *       403:
+ *         description: Not authorized
+ */
+router.route('/admin')
+  .get(protect, authorize('admin'), getAllRestaurantsAdmin)
 
 /**
  * @swagger
@@ -125,6 +144,8 @@ router.route('/')
  *       403:
  *         description: Not authorized (Admin only)
  */
+router.get('/mine', protect, authorize('merchant'), getMyRestaurant)
+
 router.route('/:id')
   .get(getRestaurantById)
   .put(protect, authorize('merchant', 'admin'), updateRestaurant)
