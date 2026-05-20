@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Share2, Heart, Minus, Plus } from 'lucide-react-native';
+import { ArrowLeft, Share2, Heart, Minus, Plus, ShoppingCart } from 'lucide-react-native';
 import { request } from '../api/client';
 
 const FoodDetailScreen = ({ route, navigation }) => {
@@ -9,6 +9,19 @@ const FoodDetailScreen = ({ route, navigation }) => {
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+  const [cartCount, setCartCount] = useState(0);
+
+  React.useEffect(() => {
+    const fetchCartCount = async () => {
+      try {
+        const data = await request('/cart');
+        if (data && data.items) {
+          setCartCount(data.items.reduce((sum, item) => sum + item.quantity, 0));
+        }
+      } catch (e) {}
+    };
+    fetchCartCount();
+  }, []);
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -20,6 +33,7 @@ const FoodDetailScreen = ({ route, navigation }) => {
           quantity
         }
       });
+      setCartCount(prev => prev + quantity);
       Alert.alert('Thành công', 'Đã thêm vào giỏ hàng!', [
         { text: 'Đi đến giỏ hàng', onPress: () => navigation.navigate('Cart') },
         { text: 'Tiếp tục mua sắm', onPress: () => navigation.goBack() }
@@ -42,8 +56,15 @@ const FoodDetailScreen = ({ route, navigation }) => {
                 <ArrowLeft size={24} color={COLORS.text} />
               </TouchableOpacity>
               <View style={styles.headerActions}>
-                <TouchableOpacity style={styles.iconBtn}><Share2 size={20} color={COLORS.text} /></TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn}><Heart size={20} color={COLORS.text} /></TouchableOpacity>
+                <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Cart')}>
+                  <ShoppingCart size={20} color={COLORS.text} />
+                  {cartCount > 0 && (
+                    <View style={styles.badge}>
+                      <Text style={styles.badgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
           </SafeAreaView>
@@ -175,6 +196,25 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     gap: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   content: {
     flex: 1,

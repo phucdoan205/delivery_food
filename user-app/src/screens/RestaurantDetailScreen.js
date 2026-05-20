@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Star, Clock, MapPin, Search, Bell } from 'lucide-react-native';
+import { ArrowLeft, Star, Clock, MapPin, Search, Bell, ShoppingCart } from 'lucide-react-native';
 import { FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import FoodCard from '../components/FoodCard';
 import { request } from '../api/client';
@@ -34,11 +34,12 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
 
   const handleAddToCart = async (foodId) => {
     try {
-      const updatedCart = await request('/cart', {
+      await request('/cart', {
         method: 'POST',
         body: { foodId, quantity: 1 }
       });
-      setCart(updatedCart);
+      const cartData = await request('/cart').catch(() => null);
+      setCart(cartData);
       Alert.alert('Thành công', 'Đã thêm vào giỏ hàng!');
     } catch (error) {
       Alert.alert('Lỗi', error.message || 'Vui lòng đăng nhập để thêm vào giỏ');
@@ -61,7 +62,14 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
           </TouchableOpacity>
           <View style={styles.headerActions}>
             <TouchableOpacity style={styles.actionBtn}><Search size={20} color={COLORS.text} /></TouchableOpacity>
-            <TouchableOpacity style={styles.actionBtn}><Bell size={20} color={COLORS.text} /></TouchableOpacity>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => navigation.navigate('Cart')}>
+              <ShoppingCart size={20} color={COLORS.text} />
+              {cartQuantity > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{cartQuantity > 99 ? '99+' : cartQuantity}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
       </SafeAreaView>
@@ -208,6 +216,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginLeft: 10,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   restaurantInfoCard: {
     position: 'absolute',

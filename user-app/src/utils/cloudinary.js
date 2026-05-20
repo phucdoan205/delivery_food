@@ -13,25 +13,32 @@ export const pickAndUploadImage = async () => {
 
     // Pick an image
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images, // Corrected line
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [1, 1],
       quality: 0.8,
+      base64: true,
     });
 
     if (result.canceled) {
       return null;
     }
 
-    const imageUri = result.assets[0].uri;
+    const asset = result.assets[0];
 
-    // Create form data for upload
     const formData = new FormData();
-    formData.append('file', {
-      uri: imageUri,
-      type: 'image/jpeg',
-      name: `upload_${Date.now()}.jpg`,
-    });
+    
+    if (asset.base64) {
+      const mimeType = asset.mimeType || 'image/jpeg';
+      formData.append('file', `data:${mimeType};base64,${asset.base64}`);
+    } else {
+      formData.append('file', {
+        uri: asset.uri,
+        type: 'image/jpeg',
+        name: `upload_${Date.now()}.jpg`,
+      });
+    }
+    
     formData.append('upload_preset', UPLOAD_PRESET);
 
     // Upload to Cloudinary

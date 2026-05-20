@@ -34,11 +34,11 @@ const CartScreen = ({ navigation }) => {
     }
 
     try {
-      const updatedCart = await request('/cart', {
+      await request('/cart', {
         method: 'POST',
         body: { foodId, quantity: change }
       });
-      setCart(updatedCart);
+      fetchCart();
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể cập nhật số lượng');
     }
@@ -46,10 +46,10 @@ const CartScreen = ({ navigation }) => {
 
   const handleRemoveItem = async (foodId) => {
     try {
-      const updatedCart = await request(`/cart/${foodId}`, {
+      await request(`/cart/${foodId}`, {
         method: 'DELETE'
       });
-      setCart(updatedCart);
+      fetchCart();
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể xoá món ăn');
     }

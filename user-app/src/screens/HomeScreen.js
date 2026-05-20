@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
-import { MapPin, Search as SearchIcon, Bell, ChevronRight } from 'lucide-react-native';
+import { MapPin, Search as SearchIcon, Bell, ChevronRight, ShoppingCart } from 'lucide-react-native';
 import { CATEGORIES as mockCategories, RESTAURANTS as mockRestaurants, FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import CategoryChip from '../components/CategoryChip';
 import RestaurantCard from '../components/RestaurantCard';
@@ -15,20 +15,25 @@ const HomeScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [cartCount, setCartCount] = useState(0);
 
   const fetchHomeData = async () => {
     try {
-      const [cats, foods, rests, profileData] = await Promise.all([
+      const [cats, foods, rests, profileData, cartData] = await Promise.all([
         request('/foods/categories'),
         request('/foods'),
         request('/restaurants'),
-        request('/auth/profile').catch(() => null)
+        request('/auth/profile').catch(() => null),
+        request('/cart').catch(() => null)
       ]);
       setCategories(cats.length ? cats : mockCategories);
       setFoodItems(foods.length ? foods : mockFoods);
       setRestaurants(rests.length ? rests : mockRestaurants);
       if (profileData) {
         setProfile(profileData);
+      }
+      if (cartData && cartData.items) {
+        setCartCount(cartData.items.reduce((sum, item) => sum + item.quantity, 0));
       }
       if (cats.length) setSelectedCategory(cats[0]._id || cats[0].id);
     } catch (error) {
@@ -64,6 +69,14 @@ const HomeScreen = ({ navigation }) => {
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn}>
           <Bell size={20} color={COLORS.text} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Cart')}>
+          <ShoppingCart size={20} color={COLORS.text} />
+          {cartCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </View>
@@ -242,6 +255,25 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     marginLeft: 15,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: COLORS.white,
+  },
+  badgeText: {
+    color: COLORS.white,
+    fontSize: 10,
+    fontWeight: 'bold',
   },
   categorySection: {
     marginTop: SIZES.padding,

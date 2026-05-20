@@ -1,9 +1,10 @@
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
 
 const MapTilerView = ({ markers = [], center = [106.660172, 10.762622], zoom = 12 }) => {
   const webviewRef = useRef(null);
+  const iframeRef = useRef(null);
 
   const generateHtml = () => {
     return `
@@ -43,16 +44,13 @@ const MapTilerView = ({ markers = [], center = [106.660172, 10.762622], zoom = 1
         var currentMarkers = [];
 
         map.on('load', function () {
-          // Add default markers
           updateMarkers(markers);
         });
 
         function updateMarkers(newMarkers) {
-          // Remove old markers
           currentMarkers.forEach(m => m.remove());
           currentMarkers = [];
 
-          // Add new markers
           newMarkers.forEach(m => {
             var el = document.createElement('div');
             el.className = 'marker';
@@ -69,16 +67,25 @@ const MapTilerView = ({ markers = [], center = [106.660172, 10.762622], zoom = 1
           });
         }
 
-        // Listen for messages from React Native
-        document.addEventListener('message', function(event) {
+        function handleMessage(dataStr) {
           try {
-            var data = JSON.parse(event.data);
+            var data = typeof dataStr === 'string' ? JSON.parse(dataStr) : dataStr;
             if (data.type === 'updateMarkers') {
               updateMarkers(data.markers);
             } else if (data.type === 'flyTo') {
               map.flyTo({ center: [data.lng, data.lat], zoom: data.zoom || 14 });
             }
           } catch (e) {}
+        }
+
+        // For React Native Mobile
+        document.addEventListener('message', function(event) {
+          handleMessage(event.data);
+        });
+        
+        // For React Native Web (iframe)
+        window.addEventListener('message', function(event) {
+          handleMessage(event.data);
         });
       </script>
       </body>
@@ -87,25 +94,49 @@ const MapTilerView = ({ markers = [], center = [106.660172, 10.762622], zoom = 1
   };
 
   useEffect(() => {
-    if (webviewRef.current) {
-      const msg = JSON.stringify({ type: 'updateMarkers', markers });
-      webviewRef.current.postMessage(msg);
-      // Ensure it works on some platforms that use injectJavaScript
-      webviewRef.current.injectJavaScript(`
-        try { updateMarkers(${JSON.stringify(markers)}); } catch(e){}
-        true;
-      `);
+    const msg = { type: 'updateMarkers', markers };
+    if (Platform.OS === 'web') {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify(msg), '*');
+      }
+    } else {
+      if (webviewRef.current) {
+        webviewRef.current.postMessage(JSON.stringify(msg));
+        webviewRef.current.injectJavaScript(`
+          try { updateMarkers(${JSON.stringify(markers)}); } catch(e){}
+          true;
+        `);
+      }
     }
   }, [markers]);
 
   useEffect(() => {
-    if (webviewRef.current && center) {
-      webviewRef.current.injectJavaScript(`
-        try { map.flyTo({ center: [${center[0]}, ${center[1]}], zoom: ${zoom} }); } catch(e){}
-        true;
-      `);
+    const msg = { type: 'flyTo', lat: center[1], lng: center[0], zoom };
+    if (Platform.OS === 'web') {
+      if (iframeRef.current && iframeRef.current.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(JSON.stringify(msg), '*');
+      }
+    } else {
+      if (webviewRef.current && center) {
+        webviewRef.current.injectJavaScript(`
+          try { map.flyTo({ center: [${center[0]}, ${center[1]}], zoom: ${zoom} }); } catch(e){}
+          true;
+        `);
+      }
     }
   }, [center, zoom]);
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={styles.container}>
+        <iframe
+          ref={iframeRef}
+          srcDoc={generateHtml()}
+          style={{ width: '100%', height: '100%', border: 'none' }}
+        />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
