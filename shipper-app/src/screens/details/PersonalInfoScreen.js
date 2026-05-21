@@ -22,7 +22,7 @@ const PersonalInfoScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header title="Thông tin cá nhân" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarSection}>
            <View style={styles.avatarContainer}>
               <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />

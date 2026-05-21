@@ -47,7 +47,7 @@ const FoodDetailScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: item.image }} style={styles.image} />
           <SafeAreaView style={styles.header}>

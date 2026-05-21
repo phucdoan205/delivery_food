@@ -39,7 +39,7 @@ const ProfileScreen = ({ navigation }) => {
         }
       />
       
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHeader}>
           <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
           <View style={styles.profileInfo}>

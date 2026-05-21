@@ -88,7 +88,7 @@ const EarningsScreen = ({ navigation }) => {
         }
       />
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.mainCard}>
            <Text style={styles.mainLabel}>Tổng thu nhập hôm nay</Text>
            <Text style={styles.mainValue}>{todayEarnings.toLocaleString()}đ</Text>

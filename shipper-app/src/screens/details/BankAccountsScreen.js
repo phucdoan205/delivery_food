@@ -9,7 +9,7 @@ const BankAccountsScreen = () => {
   return (
     <View style={styles.container}>
       <Header title="Liên kết ngân hàng" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.securityBanner}>
            <Ionicons name="shield-checkmark" size={24} color={COLORS.success} />
            <View style={styles.bannerInfo}>

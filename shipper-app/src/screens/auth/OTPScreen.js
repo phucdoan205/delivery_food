@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
@@ -10,7 +10,7 @@ const OTPScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header />
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Xác thực tài khoản</Text>
         <Text style={styles.subtitle}>
           Chúng tôi vừa gửi mã xác thực 6 số đến số điện thoại{"\n"}
@@ -44,7 +44,7 @@ const OTPScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.changeMethod}>
           <Text style={styles.changeMethodText}>Thay đổi số điện thoại / Email</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -54,8 +54,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     padding: SIZES.padding,
     alignItems: 'center',
   },

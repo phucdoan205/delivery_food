@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, ScrollView } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
@@ -10,7 +10,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -51,7 +51,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <ArrowLeft size={16} color={COLORS.primary} />
           <Text style={styles.footerText}> Quay lại Đăng nhập</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -61,9 +61,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: SIZES.padding,
+    paddingBottom: SIZES.padding,
   },
   backBtn: {
     marginTop: SIZES.base,

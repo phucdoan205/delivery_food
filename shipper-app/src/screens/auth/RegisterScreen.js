@@ -46,7 +46,7 @@ const RegisterScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Trở thành Đối tác</Text>
         <Text style={styles.subtitle}>Gia nhập đội ngũ giao hàng cao cấp và gia tăng thu nhập của bạn mỗi ngày.</Text>
 

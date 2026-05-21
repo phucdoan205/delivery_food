@@ -25,7 +25,7 @@ const SettingsScreen = () => {
   return (
     <View style={styles.container}>
       <Header title="Cài đặt ứng dụng" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
            <Text style={styles.sectionTitle}>CẤU HÌNH HỆ THỐNG</Text>
            <View style={styles.card}>

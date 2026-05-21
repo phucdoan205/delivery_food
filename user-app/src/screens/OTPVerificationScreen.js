@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import { ArrowLeft, CheckCircle } from 'lucide-react-native';
@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle } from 'lucide-react-native';
 const OTPVerificationScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
@@ -43,7 +43,7 @@ const OTPVerificationScreen = ({ navigation }) => {
             <Text style={styles.changeContactText}>Thay đổi số điện thoại/email</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -53,9 +53,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: SIZES.padding,
+    paddingBottom: SIZES.padding,
   },
   backBtn: {
     marginTop: SIZES.base,

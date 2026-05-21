@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
@@ -17,7 +17,7 @@ const ResetPasswordScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.brand}>Crave & Co.</Text>
         </View>
@@ -78,7 +78,7 @@ const ResetPasswordScreen = ({ navigation }) => {
           <ArrowLeft size={16} color={COLORS.textLight} />
           <Text style={styles.footerText}> Quay lại trang Đăng nhập</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -88,9 +88,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: SIZES.padding,
+    paddingBottom: SIZES.padding,
   },
   header: {
     marginTop: 40,

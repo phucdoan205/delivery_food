@@ -32,7 +32,7 @@ const SecurityScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header title="Mật khẩu & Bảo mật" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerSection}>
             <View style={styles.iconContainer}>
                 <Ionicons name="shield-checkmark" size={40} color={COLORS.secondary} />

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
@@ -10,14 +10,14 @@ const ForgotPasswordScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <Header />
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.iconContainer}>
           <Ionicons name="lock-open-outline" size={40} color={COLORS.primary} />
         </View>
         
         <Text style={styles.title}>Quên mật khẩu?</Text>
         <Text style={styles.subtitle}>
-          Nhập email hoặc số điện thoại đã đăng ký để nhận mã xác thực.
+          Nhập email hoặc số điện thoại đã đăng ký để nhận mã xác thực khôi phục tài khoản.
         </Text>
 
         <View style={styles.form}>
@@ -38,7 +38,7 @@ const ForgotPasswordScreen = ({ navigation }) => {
             <Text style={styles.backLinkText}>Quay lại đăng nhập</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </View>
   );
 };
@@ -48,8 +48,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     padding: SIZES.padding,
     alignItems: 'center',
   },

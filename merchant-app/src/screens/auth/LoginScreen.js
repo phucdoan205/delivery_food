@@ -39,7 +39,7 @@ const LoginScreen = ({ navigation }) => {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, Platform.OS === 'web' && { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }]} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <Text style={styles.brand}>Crave & Co.</Text>
         <Image 

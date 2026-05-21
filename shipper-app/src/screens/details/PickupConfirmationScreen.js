@@ -21,7 +21,7 @@ const PickupConfirmationScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Header title="Xác nhận lấy hàng" />
       
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.restaurantCard}>
            <View style={styles.resHeader}>
               <View>

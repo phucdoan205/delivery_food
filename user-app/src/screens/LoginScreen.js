@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Alert, ScrollView } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
@@ -37,7 +37,7 @@ const LoginScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.langButton}>
             <Globe size={18} color={COLORS.text} />
@@ -114,7 +114,7 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.registerText}>Đăng ký</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: SIZES.padding,
   },
   header: {

@@ -66,7 +66,7 @@ const CheckoutScreen = ({ route, navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.iconCircle}><MapPin size={18} color={COLORS.primary} /></View>

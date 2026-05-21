@@ -15,7 +15,7 @@ const HelpCenterScreen = () => {
   return (
     <View style={styles.container}>
       <Header title="Trung tâm trợ giúp" />
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.searchSection}>
            <Text style={styles.searchTitle}>Chúng tôi có thể giúp gì cho bạn?</Text>
            <View style={styles.searchBar}>

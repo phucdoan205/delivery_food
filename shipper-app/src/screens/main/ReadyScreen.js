@@ -114,7 +114,7 @@ const ReadyScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {renderHeader()}
         
         <View style={styles.card}>

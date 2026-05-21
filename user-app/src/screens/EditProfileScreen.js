@@ -107,7 +107,7 @@ const EditProfileScreen = ({ navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarContainer}>
           <Image 
             source={{ uri: profileAvatar }} 

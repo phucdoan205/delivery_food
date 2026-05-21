@@ -40,7 +40,7 @@ const LoginScreen = ({ navigation }) => {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Image 
             source={{ uri: 'https://images.unsplash.com/photo-1526367790999-0150786486a2?q=80&w=800&auto=format&fit=crop' }} 

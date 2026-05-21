@@ -118,7 +118,7 @@ const CartScreen = ({ navigation }) => {
         <TouchableOpacity onPress={handleClearCart}><Text style={styles.clearAll}>Xoá tất cả</Text></TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
         <View style={styles.restaurantSection}>
           <Image 
             source={{ uri: restaurantImage }} 

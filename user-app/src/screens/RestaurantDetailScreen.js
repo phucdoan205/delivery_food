@@ -133,7 +133,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
         </ScrollView>
       </View>
 
-      <ScrollView contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.menuTitle}>Món ngon của quán</Text>
         {normalizedFoods.map((item) => (
           <FoodCard 
