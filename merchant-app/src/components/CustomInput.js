@@ -1,5 +1,6 @@
-import React from 'react';
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
 import { Colors } from '../constants/colors';
 
 const CustomInput = ({ 
@@ -12,6 +13,8 @@ const CustomInput = ({
   error,
   keyboardType = 'default'
 }) => {
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
@@ -22,10 +25,22 @@ const CustomInput = ({
           onChangeText={onChangeText}
           placeholder={placeholder}
           placeholderTextColor="#A0A0A0"
-          secureTextEntry={secureTextEntry}
+          secureTextEntry={secureTextEntry && !isPasswordVisible}
           keyboardType={keyboardType}
           style={styles.input}
         />
+        {secureTextEntry && (
+          <TouchableOpacity 
+            onPress={() => setIsPasswordVisible(!isPasswordVisible)} 
+            style={styles.eyeIcon}
+          >
+            {isPasswordVisible ? (
+              <EyeOff size={20} color={Colors.textSecondary} />
+            ) : (
+              <Eye size={20} color={Colors.textSecondary} />
+            )}
+          </TouchableOpacity>
+        )}
       </View>
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
@@ -57,6 +72,9 @@ const styles = StyleSheet.create({
   },
   icon: {
     marginRight: 10,
+  },
+  eyeIcon: {
+    padding: 5,
   },
   input: {
     flex: 1,

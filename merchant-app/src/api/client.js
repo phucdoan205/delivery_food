@@ -1,11 +1,30 @@
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const API_URL = 'http://192.168.1.102:5000/api';
 
 let token = '';
 
-export const setToken = (t) => {
+export const loadToken = async () => {
+  try {
+    const t = await AsyncStorage.getItem('merchant_token');
+    if (t) token = t;
+  } catch (e) {
+    console.error('Error loading token', e);
+  }
+};
+
+export const setToken = async (t) => {
   token = t;
+  try {
+    if (t) {
+      await AsyncStorage.setItem('merchant_token', t);
+    } else {
+      await AsyncStorage.removeItem('merchant_token');
+    }
+  } catch (e) {
+    console.error('Error saving token', e);
+  }
 };
 
 export const getToken = () => {

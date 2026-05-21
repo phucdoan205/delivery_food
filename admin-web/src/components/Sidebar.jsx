@@ -1,5 +1,5 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   LayoutDashboard, 
   Users, 
@@ -11,6 +11,7 @@ import {
   LogOut,
   UtensilsCrossed
 } from "lucide-react";
+import { setToken } from "../api/client";
 
 const menuItems = [
   { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
@@ -22,11 +23,17 @@ const menuItems = [
   { icon: Settings, label: "Cài đặt", path: "/settings" },
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    setToken(null);
+    navigate("/login");
+  };
 
   return (
-    <aside className="w-64 h-screen bg-white border-r border-slate-100 flex flex-col fixed left-0 top-0 z-50">
+    <aside className={`w-64 h-screen bg-white border-r border-slate-100 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white shadow-premium">
           <UtensilsCrossed size={24} />
@@ -51,6 +58,7 @@ const Sidebar = () => {
                   ? "bg-brand-primary text-white shadow-premium" 
                   : "text-slate-500 hover:bg-brand-bg hover:text-brand-primary"
               }`}
+              onClick={onClose}
             >
               <div className="flex items-center gap-3">
                 <item.icon size={20} className={isActive ? "text-white" : "text-slate-400 group-hover:text-brand-primary"} />
@@ -77,7 +85,9 @@ const Sidebar = () => {
           </div>
         </div>
         
-        <button className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
+        <button 
+          onClick={handleLogout}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
           <LogOut size={20} />
           <span className="font-medium text-sm">Đăng xuất</span>
         </button>

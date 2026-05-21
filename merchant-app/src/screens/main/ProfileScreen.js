@@ -20,8 +20,13 @@ import {
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 import { RESTAURANT_INFO } from "../../constants/mockData";
+import { setToken } from "../../api/client";
 
 const ProfileScreen = ({ navigation }) => {
+  const handleLogout = () => {
+    setToken('');
+    navigation.replace('Login');
+  };
   const menuItems = [
     {
       icon: Store,
@@ -144,7 +149,7 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity style={styles.logoutBtn}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <LogOut size={20} color={Colors.primary} />
           <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>

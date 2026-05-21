@@ -112,16 +112,6 @@ const RestaurantsPage = () => {
 
   return (
     <AdminLayout title="Quản lý Nhà hàng">
-      {/* Toast Notification */}
-      {toast && (
-        <div
-          className={`fixed top-6 right-6 z-50 px-6 py-4 rounded-2xl shadow-2xl text-sm font-bold text-white transition-all animate-in slide-in-from-right duration-300 ${
-            toast.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
-        >
-          {toast.message}
-        </div>
-      )}
 
       <div className="space-y-8">
         {/* Header */}
