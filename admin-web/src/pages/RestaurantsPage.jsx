@@ -20,10 +20,12 @@ import {
   AlertCircle,
   Download,
   Plus,
+  Eye
 } from "lucide-react";
 import { request } from "../api/client";
 import toast from "react-hot-toast";
 import useNotificationStore from "../store/useNotificationStore";
+import DetailModal from "../components/DetailModal";
 
 // Category badge colors
 const CATEGORY_STYLES = {
@@ -43,6 +45,7 @@ const RestaurantsPage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPagePending, setCurrentPagePending] = useState(1);
   const [currentPageApproved, setCurrentPageApproved] = useState(1);
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -174,14 +177,13 @@ const RestaurantsPage = () => {
             },
             {
               label: "ĐANG HOẠT ĐỘNG",
-              value: approvedList.filter((r) => r.status === "Hoạt động")
-                .length,
+              value: approvedList.filter((r) => r.status === "approved").length,
               icon: CheckCircle,
               color: "text-green-600 bg-green-100",
             },
             {
               label: "TẠM DỪNG",
-              value: approvedList.filter((r) => r.status === "Tạm dừng").length,
+              value: approvedList.filter((r) => r.status === "rejected").length,
               icon: AlertCircle,
               color: "text-red-600 bg-red-100",
             },
@@ -445,6 +447,12 @@ const RestaurantsPage = () => {
                         {/* Action Buttons */}
                         <div className="flex gap-3">
                           <button
+                            onClick={() => setSelectedRestaurant(res)}
+                            className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-50 text-blue-500 rounded-2xl text-sm font-bold hover:bg-blue-500 hover:text-white transition-all"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
                             onClick={() => handleApprove(res)}
                             className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-primary text-white rounded-2xl text-sm font-bold hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-premium"
                           >
@@ -637,6 +645,14 @@ const RestaurantsPage = () => {
                             {res.updatedAt ? new Date(res.updatedAt).toLocaleDateString('vi-VN') : '20/05/2026'}
                           </td>
                           <td className="px-6 py-4 text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button
+                                onClick={() => setSelectedRestaurant(res)}
+                                className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 transition-all"
+                                title="Xem chi tiết"
+                              >
+                                <Eye size={18} />
+                              </button>
                             {res.status === "approved" ? (
                               <button 
                                 onClick={() => handleReject(res)}
@@ -652,6 +668,7 @@ const RestaurantsPage = () => {
                                 Phê duyệt
                               </button>
                             )}
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -699,6 +716,7 @@ const RestaurantsPage = () => {
           )}
         </div>
       </div>
+      <DetailModal isOpen={!!selectedRestaurant} onClose={() => setSelectedRestaurant(null)} data={selectedRestaurant} type="restaurant" />
     </AdminLayout>
   );
 };

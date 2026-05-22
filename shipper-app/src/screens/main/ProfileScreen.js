@@ -5,9 +5,29 @@ import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import { currentUser } from '../../constants/mockData';
 
-import { setToken } from '../../api/client';
+import { request, setToken } from '../../api/client';
 
 const ProfileScreen = ({ navigation }) => {
+  const [profile, setProfile] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await request('/auth/profile');
+      setProfile(data);
+    } catch (err) {
+      console.log('Error fetching profile', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchProfile();
+    });
+    return unsubscribe;
+  }, [navigation]);
   const MenuItem = ({ icon, title, onPress, color = COLORS.text }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
       <View style={[styles.menuIconBox, { backgroundColor: color + '10' }]}>
@@ -41,13 +61,13 @@ const ProfileScreen = ({ navigation }) => {
       
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.profileHeader}>
-          <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
+          <Image source={{ uri: profile?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + (profile?.fullName || 'Driver') }} style={styles.avatar} />
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{currentUser.name}</Text>
-            <Text style={styles.userId}>ID: {currentUser.id}</Text>
+            <Text style={styles.userName}>{profile?.fullName || 'Đang tải...'}</Text>
+            <Text style={styles.userId}>ID: {profile?._id?.substring(0,8).toUpperCase() || '---'}</Text>
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={14} color="#F1C40F" />
-              <Text style={styles.ratingText}>{currentUser.rating} ({currentUser.reviewsCount} đánh giá)</Text>
+              <Text style={styles.ratingText}>5.0 (0 đánh giá)</Text>
             </View>
           </View>
         </View>
@@ -55,10 +75,10 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.vehicleCard}>
            <View style={styles.vehicleInfo}>
               <Text style={styles.vehicleLabel}>THÔNG TIN PHƯƠNG TIỆN</Text>
-              <Text style={styles.vehicleName}>{currentUser.vehicle.name}</Text>
-              <Text style={styles.vehiclePlate}>{currentUser.vehicle.plate}</Text>
+              <Text style={styles.vehicleName}>{profile?.bike || 'Chưa cập nhật'}</Text>
+              <Text style={styles.vehiclePlate}>{profile?.plate || 'Chưa cập nhật'}</Text>
               <View style={styles.statusBadge}>
-                 <Text style={styles.statusText}>{currentUser.vehicle.status}</Text>
+                 <Text style={styles.statusText}>{profile?.status === 'active' ? 'Sẵn sàng' : 'Chưa kích hoạt'}</Text>
               </View>
            </View>
            <Ionicons name="bicycle" size={80} color="rgba(255,255,255,0.1)" style={styles.vehicleIcon} />
@@ -68,7 +88,7 @@ const ProfileScreen = ({ navigation }) => {
            <Ionicons name="ribbon" size={24} color={COLORS.primary} />
            <View style={styles.expInfo}>
               <Text style={styles.expLabel}>Thâm niên</Text>
-              <Text style={styles.expValue}>{currentUser.vehicle.experience}</Text>
+              <Text style={styles.expValue}>Thành viên mới</Text>
             </View>
             <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
         </View>

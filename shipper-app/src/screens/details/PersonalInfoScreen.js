@@ -1,23 +1,93 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, TextInput, Alert, ActivityIndicator, Modal } from 'react-native';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
-import { currentUser } from '../../constants/mockData';
+import { request } from '../../api/client';
+import * as ImagePicker from 'expo-image-picker';
+
+const InfoItem = ({ icon, label, value }) => (
+  <View style={styles.infoItem}>
+    <View style={styles.iconBox}>
+      <Ionicons name={icon} size={20} color={COLORS.secondary} />
+    </View>
+    <View style={styles.infoText}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  </View>
+);
 
 const PersonalInfoScreen = ({ navigation }) => {
-  const InfoItem = ({ icon, label, value }) => (
+  const [profile, setProfile] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ fullName: '', phone: '', address: '', avatar: '', cccd: '', dob: '' });
 
-    <View style={styles.infoItem}>
-      <View style={styles.iconBox}>
-        <Ionicons name={icon} size={20} color={COLORS.secondary} />
-      </View>
-      <View style={styles.infoText}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value}</Text>
-      </View>
-    </View>
-  );
+  const fetchProfile = async () => {
+    try {
+      const data = await request('/auth/profile');
+      setProfile(data);
+    } catch (err) {
+      console.log('Error fetching profile', err);
+    }
+  };
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchProfile();
+    });
+    return unsubscribe;
+  }, [navigation]);
+
+  const openEditModal = () => {
+    setFormData({
+      fullName: profile?.fullName || '',
+      phone: profile?.phone || '',
+      address: profile?.address || '',
+      avatar: profile?.avatar || '',
+      cccd: profile?.cccd || '',
+      dob: profile?.dob || ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.fullName.trim()) {
+      Alert.alert("Lỗi", "Họ tên không được để trống!");
+      return;
+    }
+    try {
+      setLoading(true);
+      await request('/auth/profile', { method: 'PUT', body: formData });
+      setIsEditing(false);
+      fetchProfile();
+    } catch (err) {
+      Alert.alert('Lỗi', 'Cập nhật thất bại');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Thông báo', 'Cần quyền truy cập thư viện ảnh để chọn avatar!');
+      return;
+    }
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true
+    });
+    if (!result.canceled) {
+      // Create a data URI with the base64 content
+      const base64Data = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      setFormData(prev => ({ ...prev, avatar: base64Data }));
+    }
+  };
 
   return (
     <View style={styles.container}>
@@ -25,32 +95,29 @@ const PersonalInfoScreen = ({ navigation }) => {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         <View style={styles.avatarSection}>
            <View style={styles.avatarContainer}>
-              <Image source={{ uri: currentUser.avatar }} style={styles.avatar} />
-              <TouchableOpacity style={styles.editAvatarButton}>
-                 <Ionicons name="camera" size={20} color={COLORS.white} />
-              </TouchableOpacity>
+              <Image source={{ uri: profile?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + (profile?.fullName || 'Driver') }} style={styles.avatar} />
            </View>
-           <Text style={styles.userName}>{currentUser.name}</Text>
+           <Text style={styles.userName}>{profile?.fullName || 'Đang tải...'}</Text>
            <View style={styles.levelBadge}>
               <View style={styles.dot} />
-              <Text style={styles.levelText}>{currentUser.level}</Text>
+              <Text style={styles.levelText}>Tài xế</Text>
            </View>
         </View>
 
         <View style={styles.card}>
            <View style={styles.cardHeader}>
               <Text style={styles.cardTitle}>Thông tin cá nhân</Text>
-              <TouchableOpacity style={styles.editButton}>
+              <TouchableOpacity style={styles.editButton} onPress={openEditModal}>
                  <Ionicons name="pencil" size={14} color={COLORS.white} />
                  <Text style={styles.editButtonText}>Chỉnh sửa</Text>
               </TouchableOpacity>
            </View>
            
            <View style={styles.infoList}>
-              <InfoItem icon="call-outline" label="Số điện thoại" value={currentUser.phone} />
-              <InfoItem icon="mail-outline" label="Email" value={currentUser.email} />
-              <InfoItem icon="card-outline" label="Số CCCD" value={currentUser.idCard} />
-              <InfoItem icon="calendar-outline" label="Ngày sinh" value={currentUser.dob} />
+              <InfoItem icon="call-outline" label="Số điện thoại" value={profile?.phone || 'Chưa cập nhật'} />
+              <InfoItem icon="mail-outline" label="Email" value={profile?.email || 'Chưa cập nhật'} />
+              <InfoItem icon="card-outline" label="Số CCCD" value={profile?.cccd || 'Chưa cập nhật'} />
+              <InfoItem icon="calendar-outline" label="Ngày sinh" value={profile?.dob || 'Chưa cập nhật'} />
            </View>
         </View>
 
@@ -65,36 +132,84 @@ const PersonalInfoScreen = ({ navigation }) => {
               </View>
            </View>
            <View style={styles.addressBox}>
-              <Text style={styles.addressText}>{currentUser.address}</Text>
+              <Text style={styles.addressText}>{profile?.address || 'Chưa cập nhật'}</Text>
            </View>
         </View>
-
-        <View style={styles.statsContainer}>
-           <View style={[styles.statBox, { backgroundColor: COLORS.success + '20' }]}>
-              <Text style={styles.statLabel}>Điểm tin cậy</Text>
-              <View style={styles.statRow}>
-                 <Text style={[styles.statValue, { color: COLORS.success }]}>{currentUser.stats.trustScore}</Text>
-                 <Ionicons name="star" size={20} color={COLORS.success} />
-              </View>
-           </View>
-           <View style={[styles.statBox, { backgroundColor: COLORS.warning + '20' }]}>
-              <Text style={styles.statLabel}>Chuyến đi</Text>
-              <View style={styles.statRow}>
-                 <Text style={[styles.statValue, { color: COLORS.warning }]}>{currentUser.stats.totalTrips.toLocaleString()}</Text>
-                 <Ionicons name="git-merge" size={20} color={COLORS.warning} />
-              </View>
-           </View>
-        </View>
-
-        <TouchableOpacity 
-          style={styles.menuItem}
-          onPress={() => navigation.navigate('Security')}
-        >
-           <Ionicons name="shield-checkmark-outline" size={22} color={COLORS.secondary} />
-           <Text style={styles.menuText}>Mật khẩu & Bảo mật</Text>
-           <Ionicons name="chevron-forward" size={20} color={COLORS.textSecondary} />
-        </TouchableOpacity>
       </ScrollView>
+
+      {/* Edit Profile Modal */}
+      <Modal visible={isEditing} animationType="slide" transparent={true}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chỉnh sửa hồ sơ</Text>
+              <TouchableOpacity onPress={() => setIsEditing(false)}>
+                <Ionicons name="close" size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView contentContainerStyle={{ padding: 20 }}>
+              <View style={styles.editAvatarSection}>
+                <Image 
+                  source={{ uri: formData.avatar || profile?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + (profile?.fullName || 'Driver') }} 
+                  style={styles.editAvatarImage} 
+                />
+                <TouchableOpacity style={styles.changeAvatarBtn} onPress={handlePickImage}>
+                  <Ionicons name="camera" size={20} color={COLORS.white} />
+                  <Text style={{color: COLORS.white, marginLeft: 5}}>Đổi ảnh</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>Họ và tên</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.fullName}
+                onChangeText={(t) => setFormData({...formData, fullName: t})}
+                placeholder="Nhập họ và tên"
+              />
+
+              <Text style={styles.inputLabel}>Số điện thoại</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.phone}
+                onChangeText={(t) => setFormData({...formData, phone: t})}
+                placeholder="Nhập số điện thoại"
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.inputLabel}>Số CCCD</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.cccd}
+                onChangeText={(t) => setFormData({...formData, cccd: t})}
+                placeholder="Nhập số CCCD"
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.inputLabel}>Ngày sinh</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.dob}
+                onChangeText={(t) => setFormData({...formData, dob: t})}
+                placeholder="VD: 15/05/1992"
+              />
+
+              <Text style={styles.inputLabel}>Địa chỉ</Text>
+              <TextInput
+                style={[styles.inputField, { height: 80, textAlignVertical: 'top' }]}
+                value={formData.address}
+                onChangeText={(t) => setFormData({...formData, address: t})}
+                placeholder="Nhập địa chỉ của bạn"
+                multiline
+              />
+              
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSave} disabled={loading}>
+                {loading ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>Lưu thay đổi</Text>}
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -124,48 +239,43 @@ const styles = StyleSheet.create({
     borderWidth: 4,
     borderColor: COLORS.white,
   },
-  editAvatarButton: {
-    position: 'absolute',
-    bottom: -5,
-    right: -5,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: COLORS.secondary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: COLORS.white,
-  },
   userName: {
     ...FONTS.h2,
-    fontSize: 26,
     color: COLORS.text,
+    marginBottom: 4,
   },
   levelBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    backgroundColor: COLORS.white,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+    shadowColor: COLORS.black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
   },
   dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.secondary,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
     marginRight: 6,
   },
   levelText: {
     ...FONTS.body4,
-    color: COLORS.secondary,
+    color: COLORS.primary,
     fontWeight: '600',
   },
   card: {
     backgroundColor: COLORS.white,
-    borderRadius: 25,
-    padding: SIZES.padding,
+    borderRadius: 20,
+    padding: 20,
     marginBottom: SIZES.padding,
     shadowColor: COLORS.black,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
@@ -174,125 +284,139 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SIZES.padding,
+    marginBottom: 20,
   },
   cardTitle: {
     ...FONTS.h3,
-    fontSize: 18,
+    color: COLORS.text,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 6,
+    borderRadius: 15,
   },
   editButtonText: {
-    ...FONTS.h4,
+    ...FONTS.body5,
     color: COLORS.white,
-    fontSize: 11,
-    marginLeft: 6,
+    marginLeft: 4,
+    fontWeight: 'bold',
   },
   infoList: {
-    marginTop: SIZES.base,
+    gap: 16,
   },
   infoItem: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: SIZES.padding,
+    alignItems: 'flex-start',
   },
   iconBox: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(211, 84, 0, 0.05)',
-    alignItems: 'center',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
-    marginRight: SIZES.padding / 2,
+    alignItems: 'center',
+    marginRight: 12,
   },
   infoText: {
     flex: 1,
   },
   infoLabel: {
-    ...FONTS.body4,
+    ...FONTS.body5,
     color: COLORS.textSecondary,
-    fontSize: 12,
+    marginBottom: 2,
   },
   infoValue: {
     ...FONTS.h4,
-    fontSize: 15,
-    marginTop: 2,
+    color: COLORS.text,
   },
   subLabel: {
-    ...FONTS.body4,
-    fontSize: 10,
-    color: COLORS.textLight,
+    ...FONTS.body5,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   addressBox: {
-    backgroundColor: 'rgba(211, 84, 0, 0.03)',
-    padding: SIZES.base * 1.5,
-    borderRadius: 15,
-    borderWidth: 1,
-    borderColor: 'rgba(211, 84, 0, 0.1)',
+    marginTop: 15,
+    padding: 15,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
   },
   addressText: {
     ...FONTS.body4,
-    fontSize: 14,
+    color: COLORS.text,
     lineHeight: 22,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    marginBottom: SIZES.padding,
-  },
-  statBox: {
+  modalOverlay: {
     flex: 1,
-    borderRadius: 20,
-    padding: SIZES.padding / 1.5,
-    marginRight: SIZES.base,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end'
   },
-  statLabel: {
-    ...FONTS.body4,
-    fontSize: 11,
-    color: COLORS.textSecondary,
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    height: '85%'
   },
-  statRow: {
+  modalHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    marginTop: 4,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border
   },
-  statValue: {
-    ...FONTS.h1,
-    fontSize: 28,
+  modalTitle: {
+    ...FONTS.h2,
+    color: COLORS.text
   },
-  menuItem: {
+  editAvatarSection: {
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  editAvatarImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    borderWidth: 2,
+    borderColor: COLORS.border
+  },
+  changeAvatarBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(211, 84, 0, 0.05)',
-    padding: SIZES.padding / 1.5,
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 15,
+    paddingVertical: 8,
     borderRadius: 20,
-    marginBottom: SIZES.padding,
+    marginTop: -15
   },
-  menuText: {
-    ...FONTS.h4,
-    flex: 1,
-    marginLeft: 12,
+  inputLabel: {
+    ...FONTS.body4,
+    color: COLORS.textSecondary,
+    marginBottom: 5,
+    fontWeight: '600'
   },
-  logoutButton: {
-    flexDirection: 'row',
+  inputField: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 15,
+    ...FONTS.body3,
+    color: COLORS.text,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: COLORS.border
+  },
+  saveBtn: {
+    backgroundColor: COLORS.primary,
+    padding: 15,
+    borderRadius: 12,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 15,
-    borderRadius: 20,
-    backgroundColor: '#FDEDEC',
-    marginBottom: SIZES.padding * 2,
+    marginTop: 10
   },
-  logoutText: {
-    ...FONTS.h3,
-    color: COLORS.error,
-    marginLeft: SIZES.base,
-  },
+  saveBtnText: {
+    color: COLORS.white,
+    ...FONTS.h3
+  }
 });
 
 export default PersonalInfoScreen;

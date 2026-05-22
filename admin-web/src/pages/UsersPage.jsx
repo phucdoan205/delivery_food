@@ -14,10 +14,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldAlert,
-  ShieldCheck
+  ShieldCheck,
+  Eye
 } from "lucide-react";
 import { request } from "../api/client";
 import toast from "react-hot-toast";
+import DetailModal from "../components/DetailModal";
 
 const roleMap = {
   user: 'KHÁCH HÀNG',
@@ -39,6 +41,7 @@ const UsersPage = () => {
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedUser, setSelectedUser] = useState(null);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -222,19 +225,28 @@ const UsersPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
-                        {user.role !== 'admin' && (
-                          <button 
-                            onClick={() => handleToggleStatus(user._id, user.status)}
-                            className={`p-2 rounded-lg transition-all ${
-                              user.status === "banned" 
-                                ? "text-green-500 hover:bg-green-50" 
-                                : "text-red-500 hover:bg-red-50"
-                            }`}
-                            title={user.status === "banned" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => setSelectedUser(user)}
+                            className="p-2 rounded-lg text-blue-500 hover:bg-blue-50 transition-all"
+                            title="Xem chi tiết"
                           >
-                            {user.status === "banned" ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
+                            <Eye size={18} />
                           </button>
-                        )}
+                          {user.role !== 'admin' && (
+                            <button 
+                              onClick={() => handleToggleStatus(user._id, user.status)}
+                              className={`p-2 rounded-lg transition-all ${
+                                user.status === "banned" 
+                                  ? "text-green-500 hover:bg-green-50" 
+                                  : "text-red-500 hover:bg-red-50"
+                              }`}
+                              title={user.status === "banned" ? "Mở khóa tài khoản" : "Khóa tài khoản"}
+                            >
+                              {user.status === "banned" ? <ShieldCheck size={18} /> : <ShieldAlert size={18} />}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -272,6 +284,7 @@ const UsersPage = () => {
           )}
         </div>
       </div>
+      <DetailModal isOpen={!!selectedUser} onClose={() => setSelectedUser(null)} data={selectedUser} type="user" />
     </AdminLayout>
   );
 };

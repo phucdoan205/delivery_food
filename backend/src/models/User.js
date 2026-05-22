@@ -23,6 +23,12 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String
   },
+  cccd: {
+    type: String
+  },
+  dob: {
+    type: String
+  },
   role: {
     type: String,
     enum: ['user', 'merchant', 'shipper', 'admin'],

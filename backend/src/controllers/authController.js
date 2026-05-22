@@ -68,6 +68,9 @@ const loginUser = async (req, res) => {
       return res.status(403).json({ message: 'Vui lòng chờ duyệt tài khoản' })
     }
     if (user.status === 'banned') {
+      if (user.role === 'merchant' || user.role === 'shipper') {
+        return res.status(403).json({ message: 'Tài khoản tạm thời bị khóa/tạm dừng hãy liên lạc người quản trị' })
+      }
       return res.status(403).json({ message: 'Tài khoản của bạn đã bị khoá' })
     }
 
@@ -98,6 +101,8 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       avatar: user.avatar,
       address: user.address,
+      cccd: user.cccd,
+      dob: user.dob,
       status: user.status
     })
   } else {
@@ -117,6 +122,11 @@ const updateUserStatus = async (req, res) => {
   if (user) {
     user.status = status || user.status
     const updatedUser = await user.save()
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_user_registered'); // emit to update admin dashboard realtime
+    }
     res.json({
       _id: updatedUser._id,
       fullName: updatedUser.fullName,
@@ -137,6 +147,8 @@ const updateUserProfile = async (req, res) => {
     user.phone = req.body.phone || user.phone
     user.avatar = req.body.avatar || user.avatar
     user.address = req.body.address || user.address
+    user.cccd = req.body.cccd || user.cccd
+    user.dob = req.body.dob || user.dob
 
     if (req.body.password) {
       const salt = await bcrypt.genSalt(10)
@@ -144,6 +156,12 @@ const updateUserProfile = async (req, res) => {
     }
 
     const updatedUser = await user.save()
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_user_registered');
+      io.emit('user_profile_updated');
+    }
 
     res.json({
       _id: updatedUser._id,
@@ -153,6 +171,8 @@ const updateUserProfile = async (req, res) => {
       role: updatedUser.role,
       avatar: updatedUser.avatar,
       address: updatedUser.address,
+      cccd: updatedUser.cccd,
+      dob: updatedUser.dob,
       status: updatedUser.status
     })
   } else {

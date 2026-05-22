@@ -10,7 +10,17 @@ import MapTilerView from '../../components/MapTilerView';
 const ReadyScreen = ({ navigation }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [orders, setOrders] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const fetchProfile = async () => {
+    try {
+      const data = await request('/auth/profile');
+      setProfile(data);
+    } catch (err) {
+      console.log('Error fetching profile', err);
+    }
+  };
 
   const fetchOrders = async () => {
     try {
@@ -26,6 +36,7 @@ const ReadyScreen = ({ navigation }) => {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchOrders();
+      fetchProfile();
     });
     return unsubscribe;
   }, [navigation]);
@@ -49,11 +60,11 @@ const ReadyScreen = ({ navigation }) => {
     <View style={styles.header}>
       <View style={styles.userInfo}>
         <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200' }} 
+          source={{ uri: profile?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + (profile?.fullName || 'Driver') }} 
           style={styles.avatar} 
         />
         <View style={styles.userText}>
-          <Text style={styles.userName}>Crave & Co. Driver</Text>
+          <Text style={styles.userName}>{profile?.fullName || 'Đang tải...'}</Text>
           <View style={styles.onlineBadge}>
              <View style={[styles.dot, { backgroundColor: isOnline ? COLORS.success : COLORS.textLight }]} />
              <Text style={styles.onlineText}>{isOnline ? 'Đang trực tuyến' : 'Ngoại tuyến'}</Text>

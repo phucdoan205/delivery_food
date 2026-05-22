@@ -20,11 +20,14 @@ import {
   AlertCircle,
   Download,
   Plus,
-  Truck
+  Truck,
+  Eye
 } from "lucide-react";
 import { request } from "../api/client";
+import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import useNotificationStore from "../store/useNotificationStore";
+import DetailModal from "../components/DetailModal";
 
 const DriversPage = () => {
   const [activeTab, setActiveTab] = useState("pending"); // default = pending
@@ -35,6 +38,7 @@ const DriversPage = () => {
   const [filterStatus, setFilterStatus] = useState("all");
   const [currentPagePending, setCurrentPagePending] = useState(1);
   const [currentPageApproved, setCurrentPageApproved] = useState(1);
+  const [selectedDriver, setSelectedDriver] = useState(null);
   const itemsPerPage = 5;
 
   useEffect(() => {
@@ -60,6 +64,14 @@ const DriversPage = () => {
 
   useEffect(() => {
     fetchDrivers();
+    const socket = io("http://localhost:5000");
+    socket.on("new_user_registered", () => {
+      fetchDrivers();
+    });
+    socket.on("user_profile_updated", () => {
+      fetchDrivers();
+    });
+    return () => socket.disconnect();
   }, []);
 
   const handleApprove = async (driver) => {
@@ -166,16 +178,15 @@ const DriversPage = () => {
             },
             {
               label: "ĐANG HOẠT ĐỘNG",
-              value: approvedList.filter((d) => d.status === "Đang hoạt động")
-                .length,
+              value: approvedList.filter((d) => d.status === "active").length,
               icon: CheckCircle,
               color: "text-green-600 bg-green-100",
             },
             {
-              label: "NGOẠI TUYẾN",
-              value: approvedList.filter((d) => d.status === "Ngoại tuyến").length,
+              label: "ĐÃ KHÓA / TẠM DỪNG",
+              value: approvedList.filter((d) => d.status === "banned").length,
               icon: AlertCircle,
-              color: "text-slate-600 bg-slate-100",
+              color: "text-red-600 bg-red-100",
             },
             {
               label: "TỔNG ĐỐI TÁC",
@@ -372,6 +383,12 @@ const DriversPage = () => {
                         {/* Action Buttons */}
                         <div className="flex gap-3">
                           <button
+                            onClick={() => setSelectedDriver(driver)}
+                            className="flex items-center justify-center gap-2 py-3 px-4 bg-blue-50 text-blue-500 rounded-2xl text-sm font-bold hover:bg-blue-500 hover:text-white transition-all"
+                          >
+                            <Eye size={16} />
+                          </button>
+                          <button
                             onClick={() => handleApprove(driver)}
                             className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-primary text-white rounded-2xl text-sm font-bold hover:bg-orange-600 hover:scale-[1.02] active:scale-[0.98] transition-all shadow-premium"
                           >
@@ -511,6 +528,15 @@ const DriversPage = () => {
                                 <div className="text-sm font-black text-brand-text">{driver.orders || 0}</div>
                               </div>
                             </div>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => setSelectedDriver(driver)}
+                                className="p-2 bg-blue-50 text-blue-500 rounded-xl hover:bg-blue-500 hover:text-white transition-all"
+                                title="Xem chi tiết"
+                              >
+                                <Eye size={16} />
+                              </button>
+                            </div>
                             {driver.status === 'active' ? (
                               <button 
                                 onClick={() => handleReject(driver)}
@@ -573,6 +599,7 @@ const DriversPage = () => {
           )}
         </div>
       </div>
+      <DetailModal isOpen={!!selectedDriver} onClose={() => setSelectedDriver(null)} data={selectedDriver} type="driver" />
     </AdminLayout>
   );
 };
