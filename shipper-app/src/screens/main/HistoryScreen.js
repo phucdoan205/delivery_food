@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: SIZES.padding,
     paddingBottom: SIZES.padding,
+    flexGrow: 1,
   },
   historyCard: {
     backgroundColor: COLORS.white,

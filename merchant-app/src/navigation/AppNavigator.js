@@ -30,7 +30,7 @@ const AppNavigator = () => {
         initialRouteName="Onboarding"
         screenOptions={{
           headerShown: false,
-          cardStyle: { backgroundColor: "#FFFFFF" },
+          cardStyle: { flex: 1, backgroundColor: "#FFFFFF" },
         }}
       >
         {/* Auth Flow */}

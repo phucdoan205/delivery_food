@@ -22,7 +22,11 @@ import {
 
 const PaymentSettingsScreen = ({ navigation }) => {
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView 
+      style={styles.container} 
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}

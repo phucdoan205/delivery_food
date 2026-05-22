@@ -122,6 +122,8 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 40,
     padding: SIZES.padding,
   },
   notifButton: {

@@ -245,6 +245,7 @@ const styles = StyleSheet.create({
   },
   listPadding: {
     paddingBottom: 40,
+    flexGrow: 1,
   }
 });
 

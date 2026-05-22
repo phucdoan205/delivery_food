@@ -71,7 +71,7 @@ const MainTab = () => (
 const AppNavigator = () => {
   return (
     <NavigationContainer>
-      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Splash">
+      <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { flex: 1, backgroundColor: '#FFFFFF' } }} initialRouteName="Splash">
         {/* Auth Flow */}
         <Stack.Screen name="Splash" component={SplashScreen} />
         <Stack.Screen name="Login" component={LoginScreen} />
