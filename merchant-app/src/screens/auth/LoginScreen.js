@@ -10,10 +10,12 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async () => {
+    setErrorMessage('');
     if (!email || !password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ email và mật khẩu');
+      setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu');
       return;
     }
 
@@ -25,14 +27,14 @@ const LoginScreen = ({ navigation }) => {
       });
 
       if (response.role !== 'merchant') {
-        Alert.alert('Lỗi', 'Tài khoản này không có quyền truy cập ứng dụng đối tác');
+        setErrorMessage('Tài khoản này không có quyền truy cập ứng dụng đối tác');
         return;
       }
 
       setToken(response.token);
       navigation.replace('Main');
     } catch (error) {
-      Alert.alert('Lỗi đăng nhập', error.message || 'Email hoặc mật khẩu không chính xác');
+      setErrorMessage(error.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
       setLoading(false);
     }
@@ -51,6 +53,12 @@ const LoginScreen = ({ navigation }) => {
       <View style={styles.formCard}>
         <Text style={styles.title}>Chào mừng Đối tác</Text>
         
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
+
         <CustomInput
           label="Email/Số điện thoại"
           placeholder="Nhập Email hoặc Số điện thoại"
@@ -140,6 +148,20 @@ const styles = StyleSheet.create({
     color: Colors.text,
     textAlign: 'center',
     marginBottom: 30,
+  },
+  errorContainer: {
+    backgroundColor: '#FFEBE6',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#FFD1C1',
+  },
+  errorText: {
+    color: Colors.primary,
+    textAlign: 'center',
+    fontSize: 14,
+    fontWeight: '600',
   },
   forgotText: {
     textAlign: 'right',

@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { request } from "../api/client";
 import toast from "react-hot-toast";
+import useNotificationStore from "../store/useNotificationStore";
 
 const DriversPage = () => {
   const [activeTab, setActiveTab] = useState("pending"); // default = pending
@@ -32,6 +33,18 @@ const DriversPage = () => {
   const [searchPending, setSearchPending] = useState("");
   const [searchApproved, setSearchApproved] = useState("");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPagePending, setCurrentPagePending] = useState(1);
+  const [currentPageApproved, setCurrentPageApproved] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPagePending(1);
+  }, [searchPending]);
+
+  useEffect(() => {
+    setCurrentPageApproved(1);
+  }, [searchApproved, filterStatus]);
+  const { decrementPendingDrivers } = useNotificationStore();
 
   const fetchDrivers = async () => {
     try {
@@ -56,6 +69,9 @@ const DriversPage = () => {
         body: { status: "active" }
       });
       toast.success(`Đã phê duyệt tài xế "${driver.fullName}" thành công!`);
+      if (driver.status === "pending") {
+        decrementPendingDrivers();
+      }
       fetchDrivers();
       setActiveTab("info");
     } catch (error) {
@@ -70,6 +86,9 @@ const DriversPage = () => {
         body: { status: "banned" }
       });
       toast.success(`Đã từ chối/khóa tài xế "${driver.fullName}".`);
+      if (driver.status === "pending") {
+        decrementPendingDrivers();
+      }
       fetchDrivers();
     } catch (error) {
       toast.error("Thao tác thất bại: " + error.message);
@@ -96,6 +115,12 @@ const DriversPage = () => {
       (filterStatus === "blocked" && d.status === "banned");
     return matchSearch && matchFilter;
   });
+
+  const totalPendingPages = Math.ceil(filteredPending.length / itemsPerPage);
+  const paginatedPending = filteredPending.slice((currentPagePending - 1) * itemsPerPage, currentPagePending * itemsPerPage);
+
+  const totalApprovedPages = Math.ceil(filteredApproved.length / itemsPerPage);
+  const paginatedApproved = filteredApproved.slice((currentPageApproved - 1) * itemsPerPage, currentPageApproved * itemsPerPage);
 
   const tabs = [
     { id: "pending", label: "Phê duyệt tài xế", count: pendingList.length },
@@ -270,7 +295,7 @@ const DriversPage = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredPending.map((driver) => (
+                  {paginatedPending.map((driver) => (
                     <div
                       key={driver._id}
                       className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
@@ -366,6 +391,42 @@ const DriversPage = () => {
                   ))}
                 </div>
               )}
+
+              {/* Pagination Pending */}
+              {!loading && totalPendingPages > 1 && (
+                <div className="mt-6 flex items-center justify-between">
+                  <p className="text-xs text-slate-400 font-medium">
+                    Hiển thị{" "}
+                    <span className="font-bold text-brand-text">
+                      {((currentPagePending - 1) * itemsPerPage) + 1}-{Math.min(currentPagePending * itemsPerPage, filteredPending.length)}
+                    </span>{" "}
+                    trong số{" "}
+                    <span className="font-bold text-brand-text">
+                      {filteredPending.length}
+                    </span>{" "}
+                    yêu cầu
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => setCurrentPagePending(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPagePending === 1}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                    <div className="text-sm font-bold text-brand-text px-2">
+                      {currentPagePending} / {totalPendingPages}
+                    </div>
+                    <button 
+                      onClick={() => setCurrentPagePending(prev => Math.min(prev + 1, totalPendingPages))}
+                      disabled={currentPagePending === totalPendingPages}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -410,7 +471,7 @@ const DriversPage = () => {
                     Không tìm thấy tài xế nào.
                   </div>
                 ) : (
-                  filteredApproved.map((driver) => (
+                  paginatedApproved.map((driver) => (
                     <div key={driver._id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 relative overflow-hidden group">
                       <div className="flex items-start gap-5 relative z-10">
                         <div className="relative">
@@ -473,35 +534,37 @@ const DriversPage = () => {
                 )}
               </div>
 
-              {/* Pagination */}
-              {filteredApproved.length > 0 && (
+              {/* Pagination Approved */}
+              {!loading && totalApprovedPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
                   <p className="text-xs text-slate-400 font-medium">
                     Hiển thị{" "}
                     <span className="font-bold text-brand-text">
-                      1-{filteredApproved.length}
+                      {((currentPageApproved - 1) * itemsPerPage) + 1}-{Math.min(currentPageApproved * itemsPerPage, filteredApproved.length)}
                     </span>{" "}
                     trong số{" "}
                     <span className="font-bold text-brand-text">
-                      {approvedList.length}
+                      {filteredApproved.length}
                     </span>{" "}
                     tài xế
                   </p>
                   <div className="flex items-center gap-2">
-                    <button
-                      className="p-2 text-slate-400 hover:text-brand-primary disabled:opacity-50"
-                      disabled
+                    <button 
+                      onClick={() => setCurrentPageApproved(prev => Math.max(prev - 1, 1))}
+                      disabled={currentPageApproved === 1}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
                     >
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={16} />
                     </button>
-                    <button className="w-8 h-8 rounded-lg text-xs font-bold bg-brand-primary text-white shadow-premium">
-                      1
-                    </button>
-                    <button
-                      className="p-2 text-slate-400 hover:text-brand-primary disabled:opacity-50"
-                      disabled
+                    <div className="text-sm font-bold text-brand-text px-2">
+                      {currentPageApproved} / {totalApprovedPages}
+                    </div>
+                    <button 
+                      onClick={() => setCurrentPageApproved(prev => Math.min(prev + 1, totalApprovedPages))}
+                      disabled={currentPageApproved === totalApprovedPages}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
                     >
-                      <ChevronRight size={20} />
+                      <ChevronRight size={16} />
                     </button>
                   </div>
                 </div>

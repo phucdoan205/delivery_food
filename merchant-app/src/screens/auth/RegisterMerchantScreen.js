@@ -17,6 +17,8 @@ const RegisterMerchantScreen = ({ navigation }) => {
     type: 'Ẩm thực truyền thống'
   });
   const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const foodTypes = ['Ẩm thực truyền thống', 'Đồ ăn nhanh', 'Món chay', 'Hải sản', 'Đồ uống & Trà sữa', 'Bánh ngọt', 'Món Âu', 'Món Á'];
 
   const handleRegister = async () => {
     const { restaurantName, ownerName, email, phone, address, password } = formData;
@@ -28,7 +30,7 @@ const RegisterMerchantScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // 1. Register user with role = 'merchant'
-      await request('/auth/register', {
+      const registerRes = await request('/auth/register', {
         method: 'POST',
         body: {
           fullName: ownerName,
@@ -39,12 +41,8 @@ const RegisterMerchantScreen = ({ navigation }) => {
         }
       });
 
-      // 2. Login user to get auth token
-      const loginRes = await request('/auth/login', {
-        method: 'POST',
-        body: { email, password }
-      });
-      setToken(loginRes.token);
+      // 2. Set token directly from register response
+      setToken(registerRes.token);
 
       // 3. Create restaurant for this merchant
       await request('/restaurants', {
@@ -59,9 +57,9 @@ const RegisterMerchantScreen = ({ navigation }) => {
 
       Alert.alert(
         'Đăng ký thành công',
-        'Cửa hàng của bạn đang chờ phê duyệt từ Ban quản trị hệ thống. Vui lòng đăng nhập lại.',
-        [{ text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }]
+        'Cửa hàng của bạn đang chờ phê duyệt từ Ban quản trị hệ thống.'
       );
+      navigation.navigate('Login');
     } catch (error) {
       Alert.alert('Lỗi đăng ký', error.message || 'Đã xảy ra lỗi, vui lòng thử lại');
     } finally {
@@ -133,13 +131,42 @@ const RegisterMerchantScreen = ({ navigation }) => {
           icon={MapPin}
         />
 
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Loại hình ẩm thực</Text>
-          <TouchableOpacity style={styles.dropdown}>
-            <ChefHat size={20} color={Colors.textSecondary} style={styles.icon} />
-            <Text style={styles.dropdownText}>{formData.type}</Text>
-            <ChevronLeft size={20} color={Colors.textSecondary} style={{ transform: [{ rotate: '-90deg' }] }} />
-          </TouchableOpacity>
+        <View style={{ zIndex: 10, position: 'relative' }}>
+          <CustomInput
+            label="Loại hình ẩm thực"
+            placeholder="Nhập hoặc chọn từ danh sách"
+            value={formData.type}
+            onChangeText={(val) => {
+              setFormData({...formData, type: val});
+              setShowDropdown(true);
+            }}
+            icon={ChefHat}
+            onFocus={() => setShowDropdown(true)}
+            onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+          />
+          {showDropdown && (
+            <View style={styles.dropdownList}>
+              <ScrollView nestedScrollEnabled keyboardShouldPersistTaps="handled" style={{ maxHeight: 150 }}>
+                {foodTypes.filter(t => t.toLowerCase().includes(formData.type.toLowerCase())).map((item, index) => (
+                  <TouchableOpacity 
+                    key={index} 
+                    style={styles.dropdownItem}
+                    onPress={() => {
+                      setFormData({...formData, type: item});
+                      setShowDropdown(false);
+                    }}
+                  >
+                    <Text style={styles.dropdownItemText}>{item}</Text>
+                  </TouchableOpacity>
+                ))}
+                {foodTypes.filter(t => t.toLowerCase().includes(formData.type.toLowerCase())).length === 0 && (
+                  <View style={styles.dropdownItem}>
+                    <Text style={[styles.dropdownItemText, { color: Colors.textSecondary }]}>Bạn sẽ dùng loại hình tự nhập này</Text>
+                  </View>
+                )}
+              </ScrollView>
+            </View>
+          )}
         </View>
 
         {loading ? (
@@ -238,6 +265,32 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     color: Colors.textSecondary,
+  },
+  dropdownList: {
+    position: 'absolute',
+    top: 85,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#EEEEEE',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 4,
+    zIndex: 999,
+  },
+  dropdownItem: {
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  dropdownItemText: {
+    fontSize: 14,
+    color: Colors.text,
   },
   registerButton: {
     marginTop: 10,

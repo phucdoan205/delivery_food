@@ -7,7 +7,14 @@ const Category = require('../models/Category')
 // @route   GET /api/foods
 // @access  Public
 const getFoods = async (req, res) => {
-  const foods = await Food.find({}).populate('restaurantId').populate('categoryId')
+  const query = {};
+  if (req.query.restaurantId) {
+    query.restaurantId = req.query.restaurantId;
+  }
+  if (req.query.categoryId) {
+    query.categoryId = req.query.categoryId;
+  }
+  const foods = await Food.find(query).populate('restaurantId').populate('categoryId')
   res.json(foods)
 }
 

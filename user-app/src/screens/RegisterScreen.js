@@ -30,10 +30,8 @@ const RegisterScreen = ({ navigation }) => {
           role: 'user'
         }
       });
-      setToken(data.token);
-      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!', [
-        { text: 'OK', onPress: () => navigation.replace('Main') }
-      ]);
+      Alert.alert('Thành công', 'Đăng ký tài khoản thành công!');
+      navigation.navigate('Login');
     } catch (error) {
       Alert.alert('Đăng ký thất bại', error.message || 'Có lỗi xảy ra khi tạo tài khoản');
     } finally {

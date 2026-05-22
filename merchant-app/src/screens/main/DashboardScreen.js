@@ -203,34 +203,27 @@ const DashboardScreen = ({ navigation }) => {
       {/* Top Selling */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Món bán chạy hôm nay</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topSellingScroll}>
-          {(dishes.length ? dishes : [
-            {
-              name: 'Cơm Tấm Đặc Biệt',
-              price: 45000,
-              image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=300',
-              orders: 45
-            },
-            {
-              name: 'Bún Thịt Nướng',
-              price: 35000,
-              image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=300',
-              orders: 32
-            }
-          ]).map((dish, index) => (
-            <View key={index} style={styles.dishCard}>
-              <Image source={{ uri: dish.image }} style={styles.dishImage} />
-              <View style={styles.dishRank}>
-                <Text style={styles.dishRankText}>TOP {index + 1}</Text>
+        {dishes.length === 0 ? (
+          <View style={{ padding: 30, backgroundColor: Colors.white, borderRadius: 20, alignItems: 'center', marginTop: 10, borderWidth: 1, borderColor: Colors.border }}>
+            <Text style={{ color: Colors.textSecondary }}>Cửa hàng chưa có món ăn nào</Text>
+          </View>
+        ) : (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.topSellingScroll}>
+            {dishes.map((dish, index) => (
+              <View key={index} style={styles.dishCard}>
+                <Image source={{ uri: dish.image }} style={styles.dishImage} />
+                <View style={styles.dishRank}>
+                  <Text style={styles.dishRankText}>TOP {index + 1}</Text>
+                </View>
+                <View style={styles.dishInfo}>
+                  <Text style={styles.dishName}>{dish.name}</Text>
+                  <Text style={styles.dishPrice}>{dish.price.toLocaleString()}đ</Text>
+                  <Text style={styles.dishOrders}>{dish.orders || (10 - index * 2)} lượt đặt</Text>
+                </View>
               </View>
-              <View style={styles.dishInfo}>
-                <Text style={styles.dishName}>{dish.name}</Text>
-                <Text style={styles.dishPrice}>{dish.price.toLocaleString()}đ</Text>
-                <Text style={styles.dishOrders}>{dish.orders || (10 - index * 2)} lượt đặt</Text>
-              </View>
-            </View>
-          ))}
-        </ScrollView>
+            ))}
+          </ScrollView>
+        )}
       </View>
       
       <View style={{ height: 100 }} />

@@ -10,10 +10,12 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async () => {
+    setErrorMessage('');
     if (!email || !password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ email và mật khẩu');
+      setErrorMessage('Vui lòng nhập đầy đủ email và mật khẩu');
       return;
     }
     setLoading(true);
@@ -23,13 +25,13 @@ const LoginScreen = ({ navigation }) => {
         body: { email, password }
       });
       if (data.role !== 'user') {
-        Alert.alert('Lỗi', 'Tài khoản này không thuộc về khách hàng');
+        setErrorMessage('Tài khoản này không thuộc về khách hàng');
         return;
       }
       setToken(data.token);
       navigation.replace('Main');
     } catch (error) {
-      Alert.alert('Đăng nhập thất bại', error.message || 'Email hoặc mật khẩu không chính xác');
+      setErrorMessage(error.message || 'Email hoặc mật khẩu không chính xác');
     } finally {
       setLoading(false);
     }
@@ -46,6 +48,12 @@ const LoginScreen = ({ navigation }) => {
 
         <Text style={styles.title}>Chào mừng trở lại</Text>
         <Text style={styles.subtitle}>Đăng nhập để tiếp tục hành trình ẩm thực của bạn</Text>
+
+        {errorMessage ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{errorMessage}</Text>
+          </View>
+        ) : null}
 
         <View style={styles.form}>
           <Text style={styles.label}>Địa chỉ Email</Text>
@@ -153,6 +161,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: SIZES.base,
     marginBottom: SIZES.extraLarge * 1.5,
+  },
+  errorContainer: {
+    backgroundColor: '#FDEDEC',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: SIZES.base,
+    borderWidth: 1,
+    borderColor: '#F5B7B1',
+  },
+  errorText: {
+    color: COLORS.red || '#E74C3C',
+    textAlign: 'center',
+    fontWeight: '600',
+    fontSize: 14,
   },
   form: {
     marginTop: SIZES.padding,

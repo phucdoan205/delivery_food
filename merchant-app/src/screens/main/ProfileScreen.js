@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -19,10 +19,25 @@ import {
   Clock,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { RESTAURANT_INFO } from "../../constants/mockData";
-import { setToken } from "../../api/client";
+import { request, setToken } from "../../api/client";
 
 const ProfileScreen = ({ navigation }) => {
+  const [restaurant, setRestaurant] = useState(null);
+
+  useEffect(() => {
+    const fetchRestaurant = async () => {
+      try {
+        const rest = await request('/restaurants/mine');
+        setRestaurant(rest);
+      } catch (error) {
+        console.log('Error fetching restaurant for profile:', error);
+      }
+    };
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchRestaurant();
+    });
+    return unsubscribe;
+  }, [navigation]);
   const handleLogout = () => {
     setToken('');
     navigation.replace('Login');
@@ -95,34 +110,34 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.profileCard}>
           <View style={styles.restLogoContainer}>
             <Image
-              source={{ uri: RESTAURANT_INFO.logo }}
+              source={{ uri: restaurant?.image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=200" }}
               style={styles.restLogo}
             />
             <View style={styles.statusDot} />
           </View>
-          <Text style={styles.restName}>{RESTAURANT_INFO.name}</Text>
+          <Text style={styles.restName}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
           <View style={styles.badgeRow}>
             <View style={styles.restStatus}>
-              <Text style={styles.restStatusText}>MỞ CỬA</Text>
+              <Text style={styles.restStatusText}>{restaurant?.status === 'approved' ? 'MỞ CỬA' : 'CHỜ DUYỆT'}</Text>
             </View>
             <View style={styles.ratingBox}>
-              <Text style={styles.ratingText}>★ 4.9</Text>
+              <Text style={styles.ratingText}>★ {restaurant?.rating || '0.0'}</Text>
             </View>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{RESTAURANT_INFO.followers}</Text>
+              <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>Người theo dõi</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{RESTAURANT_INFO.reviews}</Text>
+              <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>Đánh giá</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{RESTAURANT_INFO.years}</Text>
+              <Text style={styles.statValue}>0</Text>
               <Text style={styles.statLabel}>Tham gia</Text>
             </View>
           </View>

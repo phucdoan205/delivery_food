@@ -33,9 +33,9 @@ const RegisterScreen = ({ navigation }) => {
           role: 'shipper'
         }
       });
-      Alert.alert('Thành công', 'Đăng ký tài khoản shipper thành công, vui lòng đăng nhập.', [
-        { text: 'Đăng nhập', onPress: () => navigation.navigate('Login') }
-      ]);
+      Alert.alert('Thành công', 'Đăng ký tài khoản shipper thành công, hệ thống đang chờ phê duyệt.');
+      navigation.navigate('Login');
+
     } catch (error) {
       Alert.alert('Đăng ký thất bại', error.message || 'Không thể đăng ký tài khoản');
     } finally {

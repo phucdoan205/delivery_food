@@ -59,6 +59,16 @@ const updateRestaurant = async (req, res) => {
     
     if (req.user.role === 'admin' && status) {
       restaurant.status = status
+      
+      // If approving or rejecting the restaurant, also update the owner's status
+      if (status === 'approved' || status === 'rejected') {
+        const User = require('../models/User');
+        const owner = await User.findById(restaurant.ownerId);
+        if (owner) {
+          owner.status = status === 'approved' ? 'active' : 'banned';
+          await owner.save();
+        }
+      }
     }
 
     const updatedRestaurant = await restaurant.save()

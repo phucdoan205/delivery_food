@@ -10,10 +10,12 @@ import { Alert } from 'react-native';
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const handleLogin = async () => {
+    setErrorMessage('');
     if (!email || !password) {
-      Alert.alert('Lỗi', 'Vui lòng nhập email và mật khẩu');
+      setErrorMessage('Vui lòng nhập email và mật khẩu');
       return;
     }
 
@@ -24,14 +26,14 @@ const LoginScreen = ({ navigation }) => {
       });
 
       if (data.role !== 'shipper') {
-        Alert.alert('Lỗi', 'Tài khoản này không phải là đối tác giao hàng');
+        setErrorMessage('Tài khoản này không phải là đối tác giao hàng');
         return;
       }
 
       setToken(data.token);
       navigation.replace('Main');
     } catch (error) {
-      Alert.alert('Đăng nhập thất bại', error.message || 'Sai tài khoản hoặc mật khẩu');
+      setErrorMessage(error.message || 'Sai tài khoản hoặc mật khẩu');
     }
   };
 
@@ -54,6 +56,12 @@ const LoginScreen = ({ navigation }) => {
         <View style={styles.formContainer}>
           <Text style={styles.title}>Chào mừng{"\n"}Đối tác Giao hàng</Text>
           <Text style={styles.subtitle}>Đăng nhập để bắt đầu hành trình mang hương vị tinh tế đến khách hàng.</Text>
+
+          {errorMessage ? (
+            <View style={styles.errorContainer}>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.inputs}>
             <Text style={styles.label}>Email hoặc Số điện thoại</Text>
@@ -146,6 +154,20 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: SIZES.padding,
     marginBottom: SIZES.padding,
+  },
+  errorContainer: {
+    backgroundColor: '#FDEDEC',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: SIZES.base,
+    borderWidth: 1,
+    borderColor: '#F5B7B1',
+  },
+  errorText: {
+    ...FONTS.body4,
+    color: COLORS.error,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   inputs: {
     marginTop: SIZES.base,

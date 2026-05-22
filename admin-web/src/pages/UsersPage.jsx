@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { io } from "socket.io-client";
 import AdminLayout from "../layouts/AdminLayout";
 import { 
   Search, 
@@ -37,6 +38,12 @@ const UsersPage = () => {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, filterRole, filterStatus]);
 
   const fetchUsers = async () => {
     try {
@@ -51,6 +58,16 @@ const UsersPage = () => {
 
   useEffect(() => {
     fetchUsers();
+
+    const socket = io("http://localhost:5000");
+    
+    socket.on("new_user_registered", () => {
+      fetchUsers();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleToggleStatus = async (userId, currentStatus) => {
@@ -79,6 +96,9 @@ const UsersPage = () => {
 
     return matchesSearch && matchesRole && matchesStatus;
   });
+
+  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const totalUsers = users.length;
   const activeUsers = users.filter(u => u.status === 'active').length;
@@ -169,7 +189,7 @@ const UsersPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {filteredUsers.map((user) => (
+                  {paginatedUsers.map((user) => (
                     <tr key={user._id} className="hover:bg-brand-bg/20 transition-colors group">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -222,6 +242,34 @@ const UsersPage = () => {
               </table>
             )}
           </div>
+
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="p-4 border-t border-slate-50 flex items-center justify-between bg-white">
+              <div className="text-xs text-slate-500 font-medium">
+                Hiển thị {((currentPage - 1) * itemsPerPage) + 1} đến {Math.min(currentPage * itemsPerPage, filteredUsers.length)} trong số {filteredUsers.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+                <div className="text-sm font-bold text-brand-text px-2">
+                  {currentPage} / {totalPages}
+                </div>
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                >
+                  <ChevronRight size={16} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </AdminLayout>

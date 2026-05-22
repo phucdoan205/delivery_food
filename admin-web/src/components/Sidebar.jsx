@@ -11,13 +11,15 @@ import {
   LogOut,
   UtensilsCrossed
 } from "lucide-react";
-import { setToken } from "../api/client";
+import { setToken, request } from "../api/client";
+import useNotificationStore from "../store/useNotificationStore";
+import { useEffect } from "react";
 
-const menuItems = [
+const getMenuItems = (pendingRestaurants, pendingDrivers) => [
   { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
   { icon: Users, label: "Người dùng", path: "/users" },
-  { icon: Store, label: "Nhà hàng", path: "/restaurants" },
-  { icon: Truck, label: "Tài xế", path: "/drivers" },
+  { icon: Store, label: "Nhà hàng", path: "/restaurants", badge: pendingRestaurants > 0 ? pendingRestaurants : null },
+  { icon: Truck, label: "Tài xế", path: "/drivers", badge: pendingDrivers > 0 ? pendingDrivers : null },
   { icon: ClipboardList, label: "Đơn hàng", path: "/orders", badge: 12 },
   { icon: BarChart3, label: "Báo cáo & Phân tích", path: "/analytics" },
   { icon: Settings, label: "Cài đặt", path: "/settings" },
@@ -26,6 +28,26 @@ const menuItems = [
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { pendingRestaurants, pendingDrivers, setPendingRestaurants, setPendingDrivers } = useNotificationStore();
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const restaurantsData = await request("/restaurants/admin");
+        const pendingResCount = restaurantsData.filter(r => r.status === "pending").length;
+        setPendingRestaurants(pendingResCount);
+
+        const usersData = await request("/auth/users");
+        const pendingShippersCount = usersData.filter(u => u.role === "shipper" && u.status === "pending").length;
+        setPendingDrivers(pendingShippersCount);
+      } catch (error) {
+        console.error("Failed to fetch notification counts", error);
+      }
+    };
+    fetchCounts();
+  }, [setPendingRestaurants, setPendingDrivers]);
+
+  const menuItems = getMenuItems(pendingRestaurants, pendingDrivers);
 
   const handleLogout = () => {
     setToken(null);

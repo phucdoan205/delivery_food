@@ -21,14 +21,9 @@ const Header = ({ title, onMenuClick }) => {
           </div>
           <input 
             type="text" 
-            placeholder="Tìm kiếm nhanh... (Ctrl-K)" 
+            placeholder="Tìm kiếm nhanh..." 
             className="pl-10 pr-12 py-2 bg-brand-bg border-transparent focus:border-brand-primary focus:ring-0 rounded-full text-sm w-64 transition-all duration-200"
           />
-          <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-            <div className="bg-white border border-slate-200 px-1.5 py-0.5 rounded text-[10px] font-bold text-slate-400">
-              ⌘K
-            </div>
-          </div>
         </div>
 
         <div className="flex items-center gap-2">

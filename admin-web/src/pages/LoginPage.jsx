@@ -9,11 +9,14 @@ const LoginPage = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigate = useNavigate();
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
     if (!email || !password) {
+      setErrorMessage("Vui lòng nhập email và mật khẩu");
       toast.error("Vui lòng nhập email và mật khẩu");
       return;
     }
@@ -26,6 +29,7 @@ const LoginPage = () => {
       });
 
       if (data.role !== "admin") {
+        setErrorMessage("Bạn không có quyền truy cập vào trang Admin");
         toast.error("Bạn không có quyền truy cập vào trang Admin");
         setLoading(false);
         return;
@@ -35,6 +39,7 @@ const LoginPage = () => {
       toast.success("Đăng nhập thành công!");
       navigate("/");
     } catch (error) {
+      setErrorMessage(error.message || "Đăng nhập thất bại");
       toast.error(error.message || "Đăng nhập thất bại");
     } finally {
       setLoading(false);
@@ -75,6 +80,12 @@ const LoginPage = () => {
           <h2 className="text-3xl font-bold text-brand-primary mb-6">Culinary Curator</h2>
           <p className="text-slate-500">Vui lòng đăng nhập để quản lý nền tảng của bạn.</p>
         </div>
+
+        {errorMessage && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-600 text-sm font-semibold text-center animate-in fade-in duration-300">
+            {errorMessage}
+          </div>
+        )}
 
         <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-2">

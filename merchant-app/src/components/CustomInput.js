@@ -11,7 +11,8 @@ const CustomInput = ({
   secureTextEntry, 
   icon: Icon,
   error,
-  keyboardType = 'default'
+  keyboardType = 'default',
+  ...rest
 }) => {
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
 
@@ -28,6 +29,7 @@ const CustomInput = ({
           secureTextEntry={secureTextEntry && !isPasswordVisible}
           keyboardType={keyboardType}
           style={styles.input}
+          {...rest}
         />
         {secureTextEntry && (
           <TouchableOpacity 

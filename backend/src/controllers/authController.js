@@ -17,15 +17,32 @@ const registerUser = async (req, res) => {
   const salt = await bcrypt.genSalt(10)
   const hashedPassword = await bcrypt.hash(password, salt)
 
+  const userStatus = (role === 'merchant' || role === 'shipper') ? 'pending' : 'active';
+
   const user = await User.create({
     fullName,
     email,
     password: hashedPassword,
     phone,
-    role: role || 'user'
+    role: role || 'user',
+    status: userStatus
   })
 
   if (user) {
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_user_registered');
+      
+      if (userStatus === 'pending') {
+        io.emit('new_registration_pending', {
+          _id: user._id,
+          fullName: user.fullName,
+          role: user.role,
+          email: user.email,
+          createdAt: user.createdAt
+        });
+      }
+    }
     res.status(201).json({
       _id: user._id,
       fullName: user.fullName,
@@ -47,6 +64,13 @@ const loginUser = async (req, res) => {
   const user = await User.findOne({ email })
 
   if (user && (await bcrypt.compare(password, user.password))) {
+    if (user.status === 'pending') {
+      return res.status(403).json({ message: 'Vui lòng chờ duyệt tài khoản' })
+    }
+    if (user.status === 'banned') {
+      return res.status(403).json({ message: 'Tài khoản của bạn đã bị khoá' })
+    }
+
     res.json({
       _id: user._id,
       fullName: user.fullName,
