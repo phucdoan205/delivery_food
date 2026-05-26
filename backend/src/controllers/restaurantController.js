@@ -1,4 +1,5 @@
 const Restaurant = require('../models/Restaurant')
+const { uploadImageBase64 } = require('../utils/cloudinary')
 
 // @desc    Get all restaurants
 // @route   GET /api/restaurants
@@ -24,14 +25,24 @@ const getRestaurantById = async (req, res) => {
 // @route   POST /api/restaurants
 // @access  Private/Merchant
 const createRestaurant = async (req, res) => {
-  const { name, description, address, image } = req.body
+  const { name, description, address, image, category } = req.body
+
+  let imageUrl = image;
+  if (image) {
+    try {
+      imageUrl = await uploadImageBase64(image);
+    } catch (error) {
+      return res.status(400).json({ message: 'Lỗi khi upload ảnh' });
+    }
+  }
 
   const restaurant = new Restaurant({
     ownerId: req.user._id,
     name,
     description,
     address,
-    image,
+    image: imageUrl,
+    category,
     status: 'pending' // Needs admin approval
   })
 
@@ -43,7 +54,7 @@ const createRestaurant = async (req, res) => {
 // @route   PUT /api/restaurants/:id
 // @access  Private/Merchant
 const updateRestaurant = async (req, res) => {
-  const { name, description, address, image, status } = req.body
+  const { name, description, address, image, status, category } = req.body
 
   const restaurant = await Restaurant.findById(req.params.id)
 
@@ -55,7 +66,15 @@ const updateRestaurant = async (req, res) => {
     restaurant.name = name || restaurant.name
     restaurant.description = description || restaurant.description
     restaurant.address = address || restaurant.address
-    restaurant.image = image || restaurant.image
+    restaurant.category = category || restaurant.category
+    
+    if (image) {
+      try {
+        restaurant.image = await uploadImageBase64(image)
+      } catch (error) {
+        return res.status(400).json({ message: 'Lỗi khi upload ảnh' })
+      }
+    }
     
     if (req.user.role === 'admin' && status) {
       restaurant.status = status
@@ -72,6 +91,12 @@ const updateRestaurant = async (req, res) => {
     }
 
     const updatedRestaurant = await restaurant.save()
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('restaurant_updated');
+    }
+
     res.json(updatedRestaurant)
   } else {
     res.status(404).json({ message: 'Restaurant not found' })
@@ -93,12 +118,12 @@ const deleteRestaurant = async (req, res) => {
 }
 
 const getAllRestaurantsAdmin = async (req, res) => {
-  const restaurants = await Restaurant.find({}).populate('ownerId', 'fullName email')
+  const restaurants = await Restaurant.find({}).populate('ownerId', 'fullName email phone cccd')
   res.json(restaurants)
 }
 
 const getMyRestaurant = async (req, res) => {
-  const restaurant = await Restaurant.findOne({ ownerId: req.user._id })
+  const restaurant = await Restaurant.findOne({ ownerId: req.user._id }).populate('ownerId', 'fullName email phone cccd')
   if (restaurant) {
     res.json(restaurant)
   } else {

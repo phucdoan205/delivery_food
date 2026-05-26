@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Heart, MapPin, Search as Star } from 'lucide-react-native';
-import { RESTAURANTS } from '../constants/mockData';
+
+const RESTAURANTS = [];
 
 const FavoriteScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Tất cả');

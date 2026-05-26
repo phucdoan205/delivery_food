@@ -15,14 +15,14 @@ import {
   Star,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import {
-  CUSTOMER_REVIEWS,
-  REVIEW_SUMMARY,
-} from "../../constants/profileMockData";
+
+const CUSTOMER_REVIEWS = [];
+const REVIEW_SUMMARY = { average: 0, total: 0, positive: 0, negative: 0, ratingDistribution: [] };
 
 const FILTERS = ["Tất cả", "Đánh giá 5★", "Điểm 1-3★", "Chưa phản hồi"];
 
-const CustomerFeedbackScreen = ({ navigation }) => {
+const CustomerFeedbackScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
 
   return (
@@ -38,7 +38,7 @@ const CustomerFeedbackScreen = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.brand}>Culinary Curator Merchant</Text>
+        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Bell size={20} color={Colors.text} />
         </TouchableOpacity>

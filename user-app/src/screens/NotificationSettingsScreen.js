@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Switch } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Bell, Search as Package, Search as MessageSquare, Search as Ticket, Settings } from 'lucide-react-native';
-import { NOTIFICATIONS } from '../constants/mockData';
+
+const NOTIFICATIONS = [];
 
 const NotificationSettingsScreen = ({ navigation }) => {
   const [settings, setSettings] = useState(NOTIFICATIONS);

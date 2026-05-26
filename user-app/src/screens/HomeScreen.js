@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { MapPin, Search as SearchIcon, Bell, ChevronRight, ShoppingCart } from 'lucide-react-native';
-import { CATEGORIES as mockCategories, RESTAURANTS as mockRestaurants, FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import CategoryChip from '../components/CategoryChip';
 import RestaurantCard from '../components/RestaurantCard';
 import FoodCard from '../components/FoodCard';
@@ -26,9 +25,9 @@ const HomeScreen = ({ navigation }) => {
         request('/auth/profile').catch(() => null),
         request('/cart').catch(() => null)
       ]);
-      setCategories(cats.length ? cats : mockCategories);
-      setFoodItems(foods.length ? foods : mockFoods);
-      setRestaurants(rests.length ? rests : mockRestaurants);
+      setCategories(Array.isArray(cats) ? cats : []);
+      setFoodItems(Array.isArray(foods) ? foods : []);
+      setRestaurants(Array.isArray(rests) ? rests : []);
       if (profileData) {
         setProfile(profileData);
       }
@@ -38,10 +37,10 @@ const HomeScreen = ({ navigation }) => {
       if (cats.length) setSelectedCategory(cats[0]._id || cats[0].id);
     } catch (error) {
       console.log('Error fetching home data, falling back to mocks:', error);
-      setCategories(mockCategories);
-      setFoodItems(mockFoods);
-      setRestaurants(mockRestaurants);
-      setSelectedCategory(mockCategories[0].id);
+      setCategories([]);
+      setFoodItems([]);
+      setRestaurants([]);
+      setSelectedCategory(null);
     } finally {
       setLoading(false);
     }

@@ -2,13 +2,18 @@ import React from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { Search, MapPin } from 'lucide-react-native';
-import { RESTAURANTS } from '../constants/mockData';
+
+const selectedRestaurant = {
+  name: 'No data',
+  rating: '0.0',
+  distance: '0 km',
+  time: '0 min',
+  image: 'https://via.placeholder.com/150'
+};
 
 const { width, height } = Dimensions.get('window');
 
 const MapScreen = () => {
-  const selectedRestaurant = RESTAURANTS[1]; // Artisan Crust Bistro (matches design vibe)
-
   return (
     <View style={styles.container}>
       {/* Mock Map Image Background */}

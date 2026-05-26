@@ -23,6 +23,7 @@ import {
   Eye
 } from "lucide-react";
 import { request } from "../api/client";
+import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import useNotificationStore from "../store/useNotificationStore";
 import DetailModal from "../components/DetailModal";
@@ -70,6 +71,14 @@ const RestaurantsPage = () => {
 
   useEffect(() => {
     fetchRestaurants();
+    const socket = io("http://localhost:5000");
+    socket.on("restaurant_updated", () => {
+      fetchRestaurants();
+    });
+    socket.on("new_user_registered", () => {
+      fetchRestaurants();
+    });
+    return () => socket.disconnect();
   }, []);
 
   // Approve: update status to approved

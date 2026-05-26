@@ -10,6 +10,7 @@ import {
 import {
   CreditCard,
   Users,
+  User,
   MessageSquare,
   HelpCircle,
   LogOut,
@@ -96,11 +97,11 @@ const ProfileScreen = ({ navigation }) => {
     >
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <Text style={styles.brand}>Crave & Co. Merchant</Text>
+          <Text style={styles.brand}>{restaurant?.name || 'Đang tải...'}</Text>
           <TouchableOpacity style={styles.avatarBtn}>
             <Image
               source={{
-                uri: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
+                uri: restaurant?.image || "https://via.placeholder.com/100",
               }}
               style={styles.avatar}
             />
@@ -110,7 +111,7 @@ const ProfileScreen = ({ navigation }) => {
         <View style={styles.profileCard}>
           <View style={styles.restLogoContainer}>
             <Image
-              source={{ uri: restaurant?.image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=200" }}
+              source={{ uri: restaurant?.image || "https://via.placeholder.com/200" }}
               style={styles.restLogo}
             />
             <View style={styles.statusDot} />
@@ -150,7 +151,7 @@ const ProfileScreen = ({ navigation }) => {
           <TouchableOpacity
             key={item.label}
             style={styles.menuItem}
-            onPress={() => navigation.navigate(item.screen)}
+            onPress={() => navigation.navigate(item.screen, { restaurant })}
           >
             <View style={styles.menuIconContainer}>
               <item.icon size={20} color={Colors.primary} />

@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TextInput, Image } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Search, Search as Ticket, Search as Info, Search as Truck, Search as Utensils, Search as Zap } from 'lucide-react-native';
-import { VOUCHERS } from '../constants/mockData';
+
+const VOUCHERS = [];
 
 const VoucherScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Tất cả');

@@ -68,6 +68,14 @@ const UsersPage = () => {
       fetchUsers();
     });
 
+    socket.on("user_profile_updated", () => {
+      fetchUsers();
+    });
+
+    socket.on("restaurant_updated", () => {
+      fetchUsers();
+    });
+
     return () => {
       socket.disconnect();
     };
@@ -197,12 +205,18 @@ const UsersPage = () => {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
                           <img 
-                            src={user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.fullName}`} 
-                            alt={user.fullName} 
+                            src={
+                              user.role === 'merchant' && user.restaurantImage 
+                                ? user.restaurantImage 
+                                : user.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${user.fullName}`
+                            } 
+                            alt={user.role === 'merchant' && user.restaurantName ? user.restaurantName : user.fullName} 
                             className="w-10 h-10 rounded-full object-cover shadow-sm" 
                           />
                           <div>
-                            <div className="text-sm font-bold text-brand-text">{user.fullName}</div>
+                            <div className="text-sm font-bold text-brand-text">
+                              {user.role === 'merchant' && user.restaurantName ? user.restaurantName : user.fullName}
+                            </div>
                             <div className="text-[10px] text-slate-400 font-medium">{user.email} • {user.phone}</div>
                           </div>
                         </div>

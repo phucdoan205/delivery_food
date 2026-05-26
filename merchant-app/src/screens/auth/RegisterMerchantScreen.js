@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Platform } from 'react-native';
 import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat, Lock } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
@@ -50,7 +50,8 @@ const RegisterMerchantScreen = ({ navigation }) => {
         body: {
           name: restaurantName,
           address,
-          description: formData.type || "Quán ăn đối tác mới đăng ký trên hệ thống",
+          description: 'Quán ăn đối tác mới đăng ký trên hệ thống',
+            category: formData.type || 'Ẩm thực truyền thống',
           image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=600&auto=format&fit=crop"
         }
       });

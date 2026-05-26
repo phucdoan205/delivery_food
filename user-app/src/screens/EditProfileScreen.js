@@ -16,6 +16,9 @@ const EditProfileScreen = ({ navigation }) => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [avatar, setAvatar] = useState('');
+  const [cccd, setCccd] = useState('');
+  const [dob, setDob] = useState('');
+  const [address, setAddress] = useState('');
   const [newPassword, setNewPassword] = useState('');
 
   const fetchProfile = async () => {
@@ -25,6 +28,9 @@ const EditProfileScreen = ({ navigation }) => {
       setPhone(data.phone || '');
       setEmail(data.email || '');
       setAvatar(data.avatar || '');
+      setCccd(data.cccd || '');
+      setDob(data.dob || '');
+      setAddress(data.address || '');
     } catch (error) {
       console.log('Error fetching profile inside EditProfileScreen:', error);
       Alert.alert('Lỗi', 'Không thể tải thông tin tài khoản');
@@ -48,7 +54,10 @@ const EditProfileScreen = ({ navigation }) => {
       const updateData = {
         fullName: name,
         phone,
-        avatar
+        avatar,
+        cccd,
+        dob,
+        address
       };
 
       if (newPassword.trim()) {
@@ -155,6 +164,34 @@ const EditProfileScreen = ({ navigation }) => {
               editable={false}
               placeholder="Email"
               keyboardType="email-address"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>SỐ CCCD</Text>
+            <CustomInput
+              value={cccd}
+              onChangeText={setCccd}
+              placeholder="Nhập số CCCD"
+              keyboardType="numeric"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>NGÀY SINH</Text>
+            <CustomInput
+              value={dob}
+              onChangeText={setDob}
+              placeholder="VD: 15/05/1992"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>ĐỊA CHỈ</Text>
+            <CustomInput
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Nhập địa chỉ"
             />
           </View>
         </View>

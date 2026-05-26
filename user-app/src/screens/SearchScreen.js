@@ -2,10 +2,23 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TextInput, ScrollView, TouchableOpacity, Image, FlatList } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { Search, X, MapPin, SlidersHorizontal, Star } from 'lucide-react-native';
-import { RESTAURANTS } from '../constants/mockData';
+import { request } from '../api/client';
 
 const SearchScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [restaurants, setRestaurants] = useState([]);
+
+  React.useEffect(() => {
+    const fetchRestaurants = async () => {
+      try {
+        const data = await request('/restaurants');
+        setRestaurants(data);
+      } catch (error) {
+        console.log('Error fetching restaurants', error);
+      }
+    };
+    fetchRestaurants();
+  }, []);
 
   const recentSearches = ['Pizza Nấm Truffle', 'Hộp Sushi', 'Salad hữu cơ'];
   const popularTags = ['#FreeShip', '#ComboHời', '#MónÝThủCông', '#CàPhêLạnh'];
@@ -127,9 +140,9 @@ const SearchScreen = ({ navigation }) => {
             <Text style={styles.resultsCount}>Tìm thấy 12 nhà hàng</Text>
           </View>
           <FlatList
-            data={RESTAURANTS}
+            data={restaurants}
             renderItem={renderRestaurantItem}
-            keyExtractor={item => item.id}
+            keyExtractor={item => item._id || item.id}
             scrollEnabled={false}
           />
         </View>

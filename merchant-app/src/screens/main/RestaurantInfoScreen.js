@@ -14,6 +14,7 @@ import { Bell, ArrowLeft, Camera, Plus } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 import CustomButton from "../../components/CustomButton";
 import { request } from "../../api/client";
+import * as ImagePicker from "expo-image-picker";
 
 const RestaurantInfoScreen = ({ navigation }) => {
   const [restaurant, setRestaurant] = useState(null);
@@ -24,6 +25,12 @@ const RestaurantInfoScreen = ({ navigation }) => {
   const [description, setDescription] = useState("");
   const [address, setAddress] = useState("");
   const [image, setImage] = useState("");
+  const [category, setCategory] = useState("");
+  const [cccd, setCccd] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [ownerName, setOwnerName] = useState("");
+  const [dob, setDob] = useState("");
 
   useEffect(() => {
     const fetchRestaurant = async () => {
@@ -34,6 +41,12 @@ const RestaurantInfoScreen = ({ navigation }) => {
         setDescription(data.description || "");
         setAddress(data.address || "");
         setImage(data.image || "");
+        setCategory(data.category || "");
+        setCccd(data.ownerId?.cccd || "");
+        setEmail(data.ownerId?.email || "");
+        setPhone(data.ownerId?.phone || "");
+        setOwnerName(data.ownerId?.fullName || "");
+        setDob(data.ownerId?.dob || "");
       } catch (error) {
         Alert.alert("Lỗi", "Không thể tải thông tin cửa hàng");
         console.log("Error fetching restaurant mine:", error);
@@ -43,6 +56,32 @@ const RestaurantInfoScreen = ({ navigation }) => {
     };
     fetchRestaurant();
   }, []);
+
+  const handlePickImage = async () => {
+    try {
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (permissionResult.granted === false) {
+        Alert.alert("Quyền truy cập", "Cần cấp quyền truy cập thư viện ảnh!");
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.5,
+      base64: true,
+    });
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const mimeType = result.assets[0].mimeType || 'image/jpeg';
+      const base64Image = `data:${mimeType};base64,${result.assets[0].base64}`;
+      setImage(base64Image);
+    }
+    } catch (error) {
+      console.log("Error picking image:", error);
+    }
+  };
 
   const handleSave = async () => {
     if (!name || !description || !address) {
@@ -58,10 +97,22 @@ const RestaurantInfoScreen = ({ navigation }) => {
           name,
           description,
           address,
-          image: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400",
+          category,
+          image: image || "https://via.placeholder.com/400",
         },
       });
-      Alert.alert("Thành công", "Đã cập nhật thông tin cửa hàng");
+      
+      await request(`/auth/profile`, {
+        method: "PUT",
+        body: {
+          fullName: ownerName,
+          cccd,
+          phone,
+          dob,
+        },
+      });
+      
+      Alert.alert("Thành công", "Đã cập nhật thông tin nhà hàng và chủ sở hữu");
       navigation.goBack();
     } catch (error) {
       Alert.alert("Lỗi", error.message || "Không thể lưu thay đổi");
@@ -91,7 +142,7 @@ const RestaurantInfoScreen = ({ navigation }) => {
         >
           <ArrowLeft size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerBrand}>Culinary Curator Merchant</Text>
+        <Text style={styles.headerBrand}>{restaurant?.name || 'Đang tải...'}</Text>
         <TouchableOpacity style={styles.notifBtn}>
           <Bell size={24} color={Colors.text} />
         </TouchableOpacity>
@@ -103,15 +154,15 @@ const RestaurantInfoScreen = ({ navigation }) => {
 
         <View style={styles.imageSection}>
           <Image
-            source={{ uri: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400" }}
+            source={{ uri: image || "https://via.placeholder.com/400" }}
             style={styles.coverImage}
           />
           <View style={styles.logoContainer}>
             <Image
-              source={{ uri: image || "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=400" }}
+              source={{ uri: image || "https://via.placeholder.com/400" }}
               style={styles.logoImage}
             />
-            <TouchableOpacity style={styles.cameraBtn}>
+            <TouchableOpacity style={styles.cameraBtn} onPress={handlePickImage}>
               <Camera size={14} color={Colors.white} />
             </TouchableOpacity>
           </View>
@@ -124,6 +175,11 @@ const RestaurantInfoScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Loại hình ẩm thực</Text>
+            <TextInput style={styles.input} value={category} onChangeText={setCategory} placeholder="VD: Ẩm thực truyền thống" />
+          </View>
+
+          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Mô tả ngắn (Editorial Style)</Text>
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -132,6 +188,28 @@ const RestaurantInfoScreen = ({ navigation }) => {
               multiline
               numberOfLines={4}
             />
+          </View>
+
+          <Text style={styles.subSectionTitle}>Thông tin chủ sở hữu</Text>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Tên chủ sở hữu</Text>
+            <TextInput style={styles.input} value={ownerName} onChangeText={setOwnerName} />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Email (Không thể thay đổi)</Text>
+            <TextInput style={[styles.input, { backgroundColor: '#F5F5F5', color: '#888' }]} value={email} editable={false} />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Số điện thoại</Text>
+            <TextInput style={styles.input} value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>CCCD</Text>
+            <TextInput style={styles.input} value={cccd} onChangeText={setCccd} keyboardType="numeric" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Ngày thành lập</Text>
+            <TextInput style={styles.input} value={dob} onChangeText={setDob} placeholder="VD: 12/03/2022" />
           </View>
 
           <Text style={styles.subSectionTitle}>Liên hệ & Địa điểm</Text>
@@ -207,11 +285,9 @@ const styles = StyleSheet.create({
   },
   imageSection: {
     height: 200,
-    borderRadius: 24,
-    overflow: "hidden",
     marginBottom: 60,
   },
-  coverImage: { width: "100%", height: "100%", opacity: 0.8 },
+  coverImage: { width: "100%", height: "100%", opacity: 0.8, borderRadius: 24 },
   logoContainer: {
     position: "absolute",
     bottom: -40,

@@ -4,7 +4,7 @@ import { ChevronLeft, Camera, Plus, Trash2, ChevronRight } from 'lucide-react-na
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import { request } from '../../api/client';
-import { pickAndUploadImage } from '../../utils/cloudinary';
+import * as ImagePicker from 'expo-image-picker';
 
 const AddEditDishScreen = ({ navigation, route }) => {
   const { dish, restaurantId } = route.params || {};
@@ -110,12 +110,20 @@ const AddEditDishScreen = ({ navigation, route }) => {
   const handlePickImage = async () => {
     try {
       setUploadingImage(true);
-      const url = await pickAndUploadImage([4, 3]); // Food aspect ratio 4:3
-      if (url) {
-        setImageUri(url);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.5,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets[0].base64) {
+        const mimeType = result.assets[0].mimeType || 'image/jpeg';
+        setImageUri(`data:${mimeType};base64,${result.assets[0].base64}`);
       }
     } catch (error) {
-      Alert.alert('Lỗi', error.message);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh. Vui lòng thử lại.');
     } finally {
       setUploadingImage(false);
     }

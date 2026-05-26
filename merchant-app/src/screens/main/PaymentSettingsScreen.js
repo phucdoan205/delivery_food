@@ -15,12 +15,12 @@ import {
   CircleDollarSign,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import {
-  PAYMENT_METHODS,
-  PAYOUT_HISTORY,
-} from "../../constants/profileMockData";
 
-const PaymentSettingsScreen = ({ navigation }) => {
+const PAYMENT_METHODS = [];
+const PAYOUT_HISTORY = [];
+
+const PaymentSettingsScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   return (
     <ScrollView 
       style={styles.container} 
@@ -34,7 +34,7 @@ const PaymentSettingsScreen = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.brand}>Culinary Curator Merchant</Text>
+        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Bell size={20} color={Colors.text} />
         </TouchableOpacity>

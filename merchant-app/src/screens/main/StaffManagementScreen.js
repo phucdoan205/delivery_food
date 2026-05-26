@@ -15,10 +15,12 @@ import {
   ChevronRight,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { STAFF } from "../../constants/mockData";
-import { STAFF_FILTERS } from "../../constants/profileMockData";
 
-const StaffManagementScreen = ({ navigation }) => {
+const STAFF = [];
+const STAFF_FILTERS = ["Tất cả"];
+
+const StaffManagementScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   const [activeFilter, setActiveFilter] = useState(STAFF_FILTERS[0]);
 
   return (
@@ -34,7 +36,7 @@ const StaffManagementScreen = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.brand}>Culinary Curator Merchant</Text>
+        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Bell size={20} color={Colors.text} />
         </TouchableOpacity>

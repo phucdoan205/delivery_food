@@ -88,9 +88,10 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
             // Restaurant details
             <>
               <DetailRow icon={Store} label="Tên nhà hàng" value={data.name} />
-              <DetailRow icon={User} label="Chủ sở hữu" value={data.owner?.fullName} />
-              <DetailRow icon={Mail} label="Email chủ sở hữu" value={data.owner?.email} />
-              <DetailRow icon={Phone} label="Số điện thoại" value={data.owner?.phone || data.phone} />
+              <DetailRow icon={User} label="Chủ sở hữu" value={data.ownerId?.fullName} />
+              <DetailRow icon={Mail} label="Email chủ sở hữu" value={data.ownerId?.email} />
+              <DetailRow icon={CreditCard} label="Số CCCD" value={data.ownerId?.cccd} />
+              <DetailRow icon={Phone} label="Số điện thoại" value={data.ownerId?.phone || data.phone} />
               <DetailRow icon={MapPin} label="Địa chỉ" value={data.address} />
               <DetailRow icon={Star} label="Loại hình ẩm thực" value={data.category} color="text-amber-500" />
               <DetailRow icon={Clock} label="Ngày tạo" value={data.createdAt ? new Date(data.createdAt).toLocaleString("vi-VN") : null} />
@@ -117,7 +118,7 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
               <DetailRow icon={Mail} label="Email" value={data.email} />
               <DetailRow icon={Phone} label="Số điện thoại" value={data.phone} />
               <DetailRow icon={CreditCard} label="Số CCCD" value={data.cccd} />
-              <DetailRow icon={Calendar} label="Ngày sinh" value={data.dob} />
+              <DetailRow icon={Calendar} label={data.role === 'merchant' ? "Ngày thành lập" : "Ngày sinh"} value={data.dob} />
               <DetailRow icon={MapPin} label="Địa chỉ" value={data.address} />
               <DetailRow icon={Shield} label="Vai trò" value={roleLabel[data.role] || data.role} />
               <DetailRow icon={Clock} label="Ngày tạo" value={data.createdAt ? new Date(data.createdAt).toLocaleString("vi-VN") : null} />

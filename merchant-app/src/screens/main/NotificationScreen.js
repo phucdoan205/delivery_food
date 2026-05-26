@@ -2,7 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Bell, ShoppingBag, CreditCard, Settings, Star, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { NOTIFICATIONS } from '../../constants/mockData';
+
+const NOTIFICATIONS = [];
 
 const NotificationScreen = ({ navigation }) => {
   const getIcon = (type) => {

@@ -8,9 +8,11 @@ import {
 } from "react-native";
 import { ArrowLeft, Bell, Clock3, ChevronDown } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { OPERATING_HOURS } from "../../constants/profileMockData";
 
-const OperatingHoursScreen = ({ navigation }) => {
+const OPERATING_HOURS = [];
+
+const OperatingHoursScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   const [temporaryClosed, setTemporaryClosed] = useState(false);
 
   return (
@@ -26,7 +28,7 @@ const OperatingHoursScreen = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.brand}>Culinary Curator Merchant</Text>
+        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Bell size={20} color={Colors.text} />
         </TouchableOpacity>

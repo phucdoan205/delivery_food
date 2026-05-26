@@ -111,7 +111,17 @@ const getUserProfile = async (req, res) => {
 }
 
 const getAllUsers = async (req, res) => {
-  const users = await User.find({}).select('-password')
+  const users = await User.find({}).select('-password').lean()
+  const Restaurant = require('../models/Restaurant')
+  for (let user of users) {
+    if (user.role === 'merchant') {
+      const rest = await Restaurant.findOne({ ownerId: user._id }).lean()
+      if (rest) {
+        user.restaurantName = rest.name
+        user.restaurantImage = rest.image
+      }
+    }
+  }
   res.json(users)
 }
 
@@ -161,6 +171,9 @@ const updateUserProfile = async (req, res) => {
     if (io) {
       io.emit('new_user_registered');
       io.emit('user_profile_updated');
+      if (user.role === 'merchant') {
+        io.emit('restaurant_updated');
+      }
     }
 
     res.json({

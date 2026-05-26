@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import AdminLayout from "../layouts/AdminLayout";
-import { DASHBOARD_STATS, REVENUE_DATA, TOP_RESTAURANTS, TOP_DISHES } from "../utils/mockData";
+
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -65,6 +65,74 @@ const DashboardPage = () => {
 
   const activeRestaurants = restaurants.filter(r => r.status === "approved").length;
 
+  const dynamicRevenueData = useMemo(() => {
+    const buckets = { "06:00": 0, "09:00": 0, "12:00": 0, "15:00": 0, "18:00": 0, "21:00": 0, "00:00": 0 };
+    orders.filter(o => o.status === "completed").forEach(o => {
+      const h = new Date(o.createdAt).getHours();
+      let bucket = "00:00";
+      if (h >= 6 && h < 9) bucket = "06:00";
+      else if (h >= 9 && h < 12) bucket = "09:00";
+      else if (h >= 12 && h < 15) bucket = "12:00";
+      else if (h >= 15 && h < 18) bucket = "15:00";
+      else if (h >= 18 && h < 21) bucket = "18:00";
+      else if (h >= 21) bucket = "21:00";
+      buckets[bucket] += (o.totalPrice || 0) / 1000;
+    });
+    return Object.keys(buckets).map(time => ({ time, revenue: buckets[time], forecast: Math.round(buckets[time] * 1.2) }));
+  }, [orders]);
+
+  const dynamicTopRestaurants = useMemo(() => {
+    const resStats = {};
+    orders.filter(o => o.status === "completed").forEach(o => {
+      const rid = o.restaurantId?._id;
+      if (!rid) return;
+      if (!resStats[rid]) resStats[rid] = { count: 0, revenue: 0, res: o.restaurantId };
+      resStats[rid].count += 1;
+      resStats[rid].revenue += o.totalPrice || 0;
+    });
+    restaurants.forEach(r => {
+      if (!resStats[r._id]) resStats[r._id] = { count: 0, revenue: 0, res: r };
+    });
+    return Object.values(resStats)
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 3)
+      .map((stat, i) => ({
+        id: stat.res._id,
+        name: stat.res.name,
+        category: "Nhà hàng",
+        rating: stat.res.rating || 5.0,
+        reviews: stat.count,
+        revenue: stat.revenue > 1000000 ? (stat.revenue/1000000).toFixed(1) + 'M' : (stat.revenue/1000).toFixed(0) + 'k',
+        image: stat.res.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop",
+        trending: i === 0 && stat.revenue > 0
+      }));
+  }, [orders, restaurants]);
+
+  const dynamicTopDishes = useMemo(() => {
+    const dishStats = {};
+    orders.filter(o => o.status === "completed").forEach(o => {
+      if (o.items) {
+        o.items.forEach(item => {
+          const fid = item.foodId?._id;
+          if (!fid) return;
+          if (!dishStats[fid]) dishStats[fid] = { count: 0, food: item.foodId };
+          dishStats[fid].count += item.quantity || 1;
+        });
+      }
+    });
+    return Object.values(dishStats)
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 3)
+      .map((stat, i) => ({
+        id: stat.food._id,
+        name: stat.food.name,
+        description: stat.food.description || "Món ăn ngon",
+        price: (stat.food.price || 0).toLocaleString('vi-VN') + 'đ',
+        orders: stat.count + " Lượt mua",
+        image: stat.food.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop"
+      }));
+  }, [orders]);
+
   const stats = [
     { title: "Doanh thu", value: `${totalRevenue.toLocaleString('vi-VN')}đ`, icon: "Wallet", color: "text-amber-600 bg-amber-50", trend: "+12.5%", trendType: "up" },
     { title: "Số đơn hàng", value: `${orders.length} đơn`, icon: "ShoppingBag", color: "text-blue-600 bg-blue-50", trend: "+8.2%", trendType: "up" },
@@ -123,7 +191,7 @@ const DashboardPage = () => {
             </div>
             <div className="h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={REVENUE_DATA}>
+                <AreaChart data={dynamicRevenueData}>
                   <defs>
                     <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#E65100" stopOpacity={0.2}/>
@@ -212,7 +280,7 @@ const DashboardPage = () => {
               <button className="text-xs font-bold text-brand-primary hover:underline">Xem tất cả</button>
             </div>
             <div className="space-y-6">
-              {TOP_RESTAURANTS.map((res, i) => (
+              {dynamicTopRestaurants.map((res, i) => (
                 <div key={res.id} className="flex items-center gap-4 group">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-sm">
                     <img src={res.image} alt={res.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -254,7 +322,7 @@ const DashboardPage = () => {
               <button className="text-xs font-bold text-brand-primary hover:underline">Chi tiết</button>
             </div>
             <div className="space-y-6">
-              {TOP_DISHES.map((dish, i) => (
+              {dynamicTopDishes.map((dish, i) => (
                 <div key={dish.id} className="flex items-center gap-4 group">
                   <div className="relative">
                     <div className="absolute -top-2 -left-2 w-6 h-6 bg-brand-primary text-white rounded-full flex items-center justify-center text-[10px] font-black shadow-premium z-10">

@@ -1,5 +1,7 @@
 const Food = require('../models/Food')
 const Category = require('../models/Category')
+const { uploadImageBase64 } = require('../utils/cloudinary')
+
 
 // --- FOOD CONTROLLERS ---
 
@@ -32,12 +34,21 @@ const getFoodsByRestaurant = async (req, res) => {
 const createFood = async (req, res) => {
   const { restaurantId, categoryId, name, description, image, price } = req.body
 
+  let imageUrl = image;
+  if (image) {
+    try {
+      imageUrl = await uploadImageBase64(image);
+    } catch (error) {
+      return res.status(400).json({ message: 'Lỗi khi upload ảnh' });
+    }
+  }
+
   const food = new Food({
     restaurantId,
     categoryId,
     name,
     description,
-    image,
+    image: imageUrl,
     price
   })
 
@@ -56,9 +67,16 @@ const updateFood = async (req, res) => {
   if (food) {
     food.name = name || food.name
     food.description = description || food.description
-    food.image = image || food.image
     food.price = price || food.price
     food.isAvailable = isAvailable !== undefined ? isAvailable : food.isAvailable
+    
+    if (image) {
+      try {
+        food.image = await uploadImageBase64(image)
+      } catch (error) {
+        return res.status(400).json({ message: 'Lỗi khi upload ảnh' })
+      }
+    }
 
     const updatedFood = await food.save()
     res.json(updatedFood)
@@ -83,9 +101,18 @@ const getCategories = async (req, res) => {
 const createCategory = async (req, res) => {
   const { name, image } = req.body
 
+  let imageUrl = image;
+  if (image) {
+    try {
+      imageUrl = await uploadImageBase64(image);
+    } catch (error) {
+      return res.status(400).json({ message: 'Lỗi khi upload ảnh' });
+    }
+  }
+
   const category = new Category({
     name,
-    image
+    image: imageUrl
   })
 
   const createdCategory = await category.save()

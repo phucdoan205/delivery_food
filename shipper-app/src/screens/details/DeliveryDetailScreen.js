@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'rea
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
-import { currentOrder } from '../../constants/mockData';
 
 const { width } = Dimensions.get('window');
 

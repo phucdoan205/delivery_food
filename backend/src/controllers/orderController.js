@@ -88,6 +88,7 @@ const getAllOrdersAdmin = async (req, res) => {
     .populate('userId', 'fullName email')
     .populate('restaurantId', 'name address')
     .populate('shipperId', 'fullName phone')
+    .populate('items.foodId', 'name price image description')
     .sort({ createdAt: -1 })
   res.json(orders)
 }

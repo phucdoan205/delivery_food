@@ -2,9 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, ScrollView } from 'react-native';
 import { ChevronLeft, Plus, Ticket, Users, Calendar, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { PROMOTIONS } from '../../constants/mockData';
 
-const PromotionsScreen = ({ navigation }) => {
+const PROMOTIONS = [];
+
+const PromotionsScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   const renderPromoCard = ({ item }) => (
     <View style={styles.promoCard}>
       <View style={styles.promoHeader}>

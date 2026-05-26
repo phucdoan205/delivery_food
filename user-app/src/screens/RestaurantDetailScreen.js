@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Star, Clock, MapPin, Search, Bell, ShoppingCart } from 'lucide-react-native';
-import { FOOD_ITEMS as mockFoods } from '../constants/mockData';
 import FoodCard from '../components/FoodCard';
 import { request } from '../api/client';
 
@@ -18,11 +17,11 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
         request(`/foods/restaurant/${restaurant.id}`),
         request('/cart').catch(() => null)
       ]);
-      setFoods(menu.length ? menu : mockFoods.filter(f => f.restaurantId === restaurant.id));
+      setFoods(menu.length ? menu : []);
       setCart(cartData);
     } catch (error) {
-      console.log('Error fetching restaurant menu, falling back to mocks:', error);
-      setFoods(mockFoods.filter(f => f.restaurantId === restaurant.id || !f.restaurantId));
+      console.log('Error fetching restaurant menu:', error);
+      setFoods([]);
     } finally {
       setLoading(false);
     }

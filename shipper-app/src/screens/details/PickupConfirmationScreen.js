@@ -4,7 +4,7 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
 import CustomButton from '../../components/CustomButton';
-import { currentOrder } from '../../constants/mockData';
+const currentOrder = { restaurant: {}, items: [] };
 
 const PickupConfirmationScreen = ({ navigation }) => {
   const [checkedItems, setCheckedItems] = useState([]);

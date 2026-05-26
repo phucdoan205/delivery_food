@@ -16,7 +16,9 @@ import {
   Mail,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { SUPPORT_FAQS, SUPPORT_TOPICS } from "../../constants/profileMockData";
+
+const SUPPORT_FAQS = [];
+const SUPPORT_TOPICS = [];
 
 const ICONS = {
   "Chat Trực Tiếp": MessageCircleMore,
@@ -24,7 +26,8 @@ const ICONS = {
   "Gửi Email Đối Tác": Mail,
 };
 
-const SupportHelpScreen = ({ navigation }) => {
+const SupportHelpScreen = ({ route, navigation }) => {
+  const { restaurant } = route?.params || {};
   return (
     <ScrollView 
       style={styles.container} 
@@ -38,7 +41,7 @@ const SupportHelpScreen = ({ navigation }) => {
         >
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.brand}>Culinary Curator Merchant</Text>
+        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
         <TouchableOpacity style={styles.headerBtn}>
           <Bell size={20} color={Colors.text} />
         </TouchableOpacity>

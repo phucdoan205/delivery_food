@@ -15,7 +15,8 @@ import {
   ShoppingCart,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { DASHBOARD_STATS } from "../../constants/mockData";
+
+const DASHBOARD_STATS = { performanceData: [] };
 
 const AnalyticsScreen = () => {
   return (
@@ -24,7 +25,7 @@ const AnalyticsScreen = () => {
         <View style={styles.headerTop}>
           <Image
             source={{
-              uri: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100",
+              uri: "https://via.placeholder.com/100",
             }}
             style={styles.avatar}
           />
@@ -55,17 +56,17 @@ const AnalyticsScreen = () => {
       <View style={styles.content}>
         <View style={styles.reportCard}>
           <Text style={styles.reportLabel}>DOANH THU HÔM NAY</Text>
-          <Text style={styles.reportValue}>8.420.000đ</Text>
+          <Text style={styles.reportValue}>0đ</Text>
           <View style={styles.trendRow}>
             <TrendingUp size={14} color="#2ECC71" />
-            <Text style={styles.trendText}>+12.5% so với hôm qua</Text>
+            <Text style={styles.trendText}>+0% so với hôm qua</Text>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statLabel}>Tổng đơn hàng</Text>
               <View style={styles.statContent}>
-                <Text style={styles.statValue}>142</Text>
+                <Text style={styles.statValue}>0</Text>
                 <View style={styles.statIcon}>
                   <ShoppingCart size={16} color="#2ECC71" />
                 </View>
@@ -74,7 +75,7 @@ const AnalyticsScreen = () => {
             <View style={styles.statBox}>
               <Text style={styles.statLabel}>Giá trị TB đơn hàng</Text>
               <View style={styles.statContent}>
-                <Text style={styles.statValue}>59.000đ</Text>
+                <Text style={styles.statValue}>0đ</Text>
                 <View style={styles.statIcon}>
                   <TrendingUp size={16} color="#F1C40F" />
                 </View>
@@ -113,14 +114,10 @@ const AnalyticsScreen = () => {
         </View>
 
         <Text style={styles.sectionTitle}>Top món bán chạy</Text>
-        {[
-          { name: "Phở Bò Tái Lăn", count: 452, value: "25.4M" },
-          { name: "Bánh Mì Đặc Biệt", count: 325, value: "12.6M" },
-          { name: "Cơm Tấm Sườn Bì", count: 284, value: "17.8M" },
-        ].map((item, index) => (
+        {[].map((item, index) => (
           <View key={index} style={styles.topItem}>
             <Image
-              source={{ uri: `https://picsum.photos/200?random=${index}` }}
+              source={{ uri: `https://via.placeholder.com/200` }}
               style={styles.topImage}
             />
             <View style={styles.topInfo}>
@@ -129,7 +126,7 @@ const AnalyticsScreen = () => {
             </View>
             <View style={styles.topMeta}>
               <Text style={styles.topValue}>{item.value}</Text>
-              <Text style={styles.topTrend}>Tăng 4%</Text>
+              <Text style={styles.topTrend}>Tăng 0%</Text>
             </View>
           </View>
         ))}

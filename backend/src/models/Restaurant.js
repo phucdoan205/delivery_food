@@ -18,6 +18,9 @@ const restaurantSchema = new mongoose.Schema({
   image: {
     type: String
   },
+  category: {
+    type: String
+  },
   rating: {
     type: Number,
     default: 0

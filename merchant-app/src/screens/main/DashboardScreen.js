@@ -95,7 +95,7 @@ const DashboardScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.userInfo}>
           <Image 
-            source={{ uri: restaurant?.image || 'https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=200' }} 
+            source={{ uri: restaurant?.image || 'https://via.placeholder.com/200' }} 
             style={styles.logo} 
           />
           <View style={{ flex: 1 }}>
