@@ -123,7 +123,8 @@ const HomeScreen = ({ navigation }) => {
     reviews: res.reviews || 250,
     time: res.time || '20-30 phút',
     distance: res.distance || '1.5km',
-    tags: res.tags || ['Đối tác']
+    tags: res.tags || ['Đối tác'],
+    isTemporarilyClosed: res.isTemporarilyClosed || false
   }));
 
   const normalizedFoods = foodItems.map(food => ({

@@ -1,19 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  Alert
 } from "react-native";
-import { ArrowLeft, Bell, Clock3, ChevronDown } from "lucide-react-native";
+import { ArrowLeft, Bell, Clock3, ChevronDown, Plus, X } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
+import { request } from "../../api/client";
 
-const OPERATING_HOURS = [];
+const ALL_DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
 const OperatingHoursScreen = ({ route, navigation }) => {
   const { restaurant } = route?.params || {};
-  const [temporaryClosed, setTemporaryClosed] = useState(false);
+  const [temporaryClosed, setTemporaryClosed] = useState(restaurant?.isTemporarilyClosed || false);
+  const [operatingHours, setOperatingHours] = useState(restaurant?.operatingHours || []);
+  
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingDay, setEditingDay] = useState(null);
+
+  const availableDays = ALL_DAYS.filter(d => !operatingHours.find(h => h.day === d));
+
+  const addDay = (day) => {
+    setOperatingHours([...operatingHours, { day, open: '08:00', close: '22:00', enabled: true }]);
+    setShowAddModal(false);
+  };
+
+  const removeDay = (day) => {
+    setOperatingHours(operatingHours.filter(h => h.day !== day));
+  };
+
+  const updateTime = (day, field, value) => {
+    setOperatingHours(operatingHours.map(h => {
+      if (h.day === day) return { ...h, [field]: value };
+      return h;
+    }));
+  };
+
+  const toggleDayEnabled = (day) => {
+    setOperatingHours(operatingHours.map(h => {
+      if (h.day === day) return { ...h, enabled: !h.enabled };
+      return h;
+    }));
+  };
+
+  const handleSave = async () => {
+    try {
+      await request(`/restaurants/${restaurant._id || restaurant.id}/operating-hours`, {
+        method: 'PUT',
+        body: {
+          operatingHours,
+          isTemporarilyClosed: temporaryClosed
+        }
+      });
+      Alert.alert('Thành công', 'Đã lưu cài đặt giờ hoạt động');
+      navigation.goBack();
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể lưu cài đặt');
+    }
+  };
 
   return (
     <ScrollView 
@@ -68,20 +117,40 @@ const OperatingHoursScreen = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
 
-        {OPERATING_HOURS.map((item) => (
-          <View key={item.id} style={styles.dayCard}>
-            <Text style={styles.dayLabel}>{item.day}</Text>
+        {operatingHours.map((item) => (
+          <View key={item.day} style={styles.dayCard}>
+            <View style={styles.dayHeader}>
+              <Text style={styles.dayLabel}>{item.day}</Text>
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity onPress={() => toggleDayEnabled(item.day)}>
+                  <Text style={{ color: item.enabled ? Colors.primary : Colors.textSecondary, fontSize: 12, fontWeight: 'bold' }}>
+                    {item.enabled ? 'Đang bật' : 'Đã tắt'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => removeDay(item.day)}>
+                  <X size={16} color={Colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            </View>
             {item.enabled ? (
               <>
                 <View style={styles.timeRow}>
                   <View style={styles.timeBox}>
-                    <Text style={styles.timeText}>{item.open}</Text>
-                    <ChevronDown size={16} color={Colors.textSecondary} />
+                    <TextInput 
+                      style={styles.timeText} 
+                      value={item.open} 
+                      onChangeText={(val) => updateTime(item.day, 'open', val)}
+                      placeholder="08:00"
+                    />
                   </View>
                   <Text style={styles.arrow}>→</Text>
                   <View style={styles.timeBox}>
-                    <Text style={styles.timeText}>{item.close}</Text>
-                    <ChevronDown size={16} color={Colors.textSecondary} />
+                    <TextInput 
+                      style={styles.timeText} 
+                      value={item.close} 
+                      onChangeText={(val) => updateTime(item.day, 'close', val)}
+                      placeholder="22:00"
+                    />
                   </View>
                 </View>
                 <View style={styles.openBadge}>
@@ -90,7 +159,7 @@ const OperatingHoursScreen = ({ route, navigation }) => {
               </>
             ) : (
               <>
-                <Text style={styles.closedText}>{item.note}</Text>
+                <Text style={styles.closedText}>Không hoạt động</Text>
                 <View style={styles.closedBadge}>
                   <Text style={styles.closedBadgeText}>Đóng cửa</Text>
                 </View>
@@ -99,15 +168,38 @@ const OperatingHoursScreen = ({ route, navigation }) => {
           </View>
         ))}
 
+        {availableDays.length > 0 && (
+          <TouchableOpacity style={styles.addDayBtn} onPress={() => setShowAddModal(true)}>
+            <Plus size={20} color={Colors.primary} />
+            <Text style={styles.addDayText}>Thêm ngày hoạt động</Text>
+          </TouchableOpacity>
+        )}
+
         <View style={styles.footerRow}>
-          <TouchableOpacity style={styles.cancelBtn}>
+          <TouchableOpacity style={styles.cancelBtn} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelText}>Hủy thay đổi</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.saveBtn}>
+          <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
             <Text style={styles.saveText}>Lưu cài đặt</Text>
           </TouchableOpacity>
         </View>
       </View>
+
+      <Modal visible={showAddModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Chọn ngày thêm</Text>
+            {availableDays.map(d => (
+              <TouchableOpacity key={d} style={styles.modalOption} onPress={() => addDay(d)}>
+                <Text style={styles.modalOptionText}>{d}</Text>
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setShowAddModal(false)}>
+              <Text style={styles.modalCancelText}>Hủy</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 };
@@ -195,6 +287,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "800",
     color: Colors.text,
+  },
+  dayHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
   timeRow: { flexDirection: "row", alignItems: "center" },
@@ -254,6 +351,63 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   saveText: { color: Colors.white, fontSize: 15, fontWeight: "700" },
+  addDayBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderWidth: 2,
+    borderColor: '#FDEBE7',
+    borderStyle: 'dashed',
+    borderRadius: 20,
+    marginBottom: 10,
+  },
+  addDayText: {
+    color: Colors.primary,
+    fontWeight: '700',
+    marginLeft: 8,
+    fontSize: 15,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 20,
+    width: '80%',
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalOption: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalOptionText: {
+    fontSize: 16,
+    color: Colors.text,
+    textAlign: 'center',
+  },
+  modalCancelBtn: {
+    marginTop: 15,
+    paddingVertical: 12,
+  },
+  modalCancelText: {
+    color: Colors.primary,
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
 });
 
 export default OperatingHoursScreen;

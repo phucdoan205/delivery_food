@@ -1,5 +1,6 @@
 const Order = require('../models/Order')
 const Cart = require('../models/Cart')
+const Restaurant = require('../models/Restaurant')
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -54,6 +55,13 @@ const updateOrderStatus = async (req, res) => {
   const order = await Order.findById(req.params.id)
 
   if (order) {
+    if (req.user.role === 'merchant') {
+      const restaurant = await Restaurant.findById(order.restaurantId)
+      if (restaurant?.ownerId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Unauthorized' })
+    } else if (req.user.role === 'staff') {
+      if (order.restaurantId.toString() !== req.user.restaurantId.toString()) return res.status(403).json({ message: 'Unauthorized' })
+    }
+
     order.status = status || order.status
     
     if (status === 'delivering' && req.user.role === 'shipper') {
@@ -79,6 +87,13 @@ const getMyOrders = async (req, res) => {
 // @route   GET /api/orders/merchant/:restaurantId
 // @access  Private/Merchant
 const getMerchantOrders = async (req, res) => {
+  if (req.user.role === 'merchant') {
+    const restaurant = await Restaurant.findById(req.params.restaurantId)
+    if (restaurant?.ownerId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Unauthorized' })
+  } else if (req.user.role === 'staff') {
+    if (req.user.restaurantId.toString() !== req.params.restaurantId.toString()) return res.status(403).json({ message: 'Unauthorized' })
+  }
+
   const orders = await Order.find({ restaurantId: req.params.restaurantId }).sort({ createdAt: -1 })
   res.json(orders)
 }

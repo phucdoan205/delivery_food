@@ -2,11 +2,29 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, Image } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Heart, MapPin, Search as Star } from 'lucide-react-native';
-
-const RESTAURANTS = [];
+import { request } from '../api/client';
+import { useFocusEffect } from '@react-navigation/native';
 
 const FavoriteScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Tất cả');
+  const [favorites, setFavorites] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchFavorites = async () => {
+        try {
+          const res = await request('/auth/favorites');
+          setFavorites(res);
+        } catch (e) {
+          console.log('Error fetching favorites:', e);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchFavorites();
+    }, [])
+  );
 
   const renderFavoriteItem = ({ item }) => (
     <TouchableOpacity 
@@ -16,10 +34,10 @@ const FavoriteScreen = ({ navigation }) => {
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.restaurantImage} />
         <TouchableOpacity style={styles.heartBtn}>
-          <Heart size={18} color={COLORS.white} fill={COLORS.white} />
+          <Heart size={18} color={COLORS.primary} fill={COLORS.primary} />
         </TouchableOpacity>
-        <View style={styles.statusBadge}>
-          <Text style={styles.statusText}>MỞ CỬA</Text>
+        <View style={[styles.statusBadge, item.isTemporarilyClosed && { backgroundColor: '#FF3B30' }]}>
+          <Text style={styles.statusText}>{item.isTemporarilyClosed ? 'TẠM ĐÓNG CỬA' : 'MỞ CỬA'}</Text>
         </View>
       </View>
       
@@ -28,24 +46,23 @@ const FavoriteScreen = ({ navigation }) => {
           <Text style={styles.restaurantName}>{item.name}</Text>
           <View style={styles.ratingBadge}>
             <Star size={14} color="#FFB300" fill="#FFB300" />
-            <Text style={styles.ratingText}>{item.rating}</Text>
+            <Text style={styles.ratingText}>{item.rating || 4.8}</Text>
           </View>
         </View>
         
         <Text style={styles.restaurantDesc} numberOfLines={1}>
-          Món Âu, Bít tết, Rượu vang thượng hạng
+          {item.address}
         </Text>
         
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
             <Text style={styles.statIcon}>🕒</Text>
-            <Text style={styles.statText}>{item.time}</Text>
+            <Text style={styles.statText}>{item.time || '20-30 phút'}</Text>
           </View>
           <View style={styles.statItem}>
             <MapPin size={14} color={COLORS.textLight} />
-            <Text style={styles.statText}>{item.distance}</Text>
+            <Text style={styles.statText}>{item.distance || '1.5km'}</Text>
           </View>
-          <Text style={styles.priceRange}>$$$</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -86,11 +103,14 @@ const FavoriteScreen = ({ navigation }) => {
         </View>
 
         <FlatList
-          data={RESTAURANTS}
+          data={favorites}
           renderItem={renderFavoriteItem}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item._id || item.id}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: 'center', marginTop: 20, color: COLORS.textLight }}>Chưa có nhà hàng yêu thích nào</Text>
+          )}
         />
       </View>
     </SafeAreaView>

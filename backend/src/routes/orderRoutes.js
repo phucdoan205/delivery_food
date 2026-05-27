@@ -127,7 +127,7 @@ router.get('/myorders', getMyOrders)
  *       200:
  *         description: List of restaurant orders retrieved
  */
-router.get('/merchant/:restaurantId', authorize('merchant', 'admin'), getMerchantOrders)
+router.get('/merchant/:restaurantId', authorize('merchant', 'admin', 'staff'), getMerchantOrders)
 
 /**
  * @swagger
@@ -180,6 +180,6 @@ router.route('/:id')
  *       200:
  *         description: Order status updated
  */
-router.put('/:id/status', authorize('merchant', 'admin', 'shipper'), updateOrderStatus)
+router.put('/:id/status', authorize('merchant', 'admin', 'shipper', 'staff'), updateOrderStatus)
 
 module.exports = router

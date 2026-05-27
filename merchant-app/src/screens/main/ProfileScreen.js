@@ -24,10 +24,13 @@ import { request, setToken } from "../../api/client";
 
 const ProfileScreen = ({ navigation }) => {
   const [restaurant, setRestaurant] = useState(null);
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
     const fetchRestaurant = async () => {
       try {
+        const user = await request('/auth/profile');
+        setCurrentUser(user);
         const rest = await request('/restaurants/mine');
         setRestaurant(rest);
       } catch (error) {
@@ -53,7 +56,7 @@ const ProfileScreen = ({ navigation }) => {
     {
       icon: Clock,
       label: "Giờ hoạt động",
-      sub: "08:00 - 22:00, hàng ngày",
+      sub: "Hàng ngày, hàng tuần",
       screen: "OperatingHours",
     },
     {
@@ -65,7 +68,7 @@ const ProfileScreen = ({ navigation }) => {
     {
       icon: Users,
       label: "Quản lý nhân viên",
-      sub: "24 nhân sự, 18 người đang trực",
+      sub: "Quản lý nhân sự của nhà hàng",
       screen: "StaffManagement",
     },
     {
@@ -77,8 +80,7 @@ const ProfileScreen = ({ navigation }) => {
     {
       icon: MessageSquare,
       label: "Phản hồi khách hàng",
-      sub: "12 đánh giá mới chưa đọc",
-      badge: 12,
+      sub: "Những phản hồi của khách hàng",
       screen: "CustomerFeedback",
     },
     {
@@ -88,6 +90,14 @@ const ProfileScreen = ({ navigation }) => {
       screen: "SupportHelp",
     },
   ];
+
+  const filteredMenuItems = menuItems.filter(item => {
+    if (currentUser?.role === 'staff') {
+      const hiddenForStaff = ['OperatingHours', 'PaymentSettings', 'StaffManagement', 'Promotions'];
+      return !hiddenForStaff.includes(item.screen);
+    }
+    return true;
+  });
 
   return (
     <ScrollView 
@@ -147,7 +157,7 @@ const ProfileScreen = ({ navigation }) => {
 
       <View style={styles.menuContainer}>
         <Text style={styles.menuTitle}>Quản trị nhà hàng</Text>
-        {menuItems.map((item) => (
+        {filteredMenuItems.map((item) => (
           <TouchableOpacity
             key={item.label}
             style={styles.menuItem}

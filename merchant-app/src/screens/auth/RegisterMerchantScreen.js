@@ -1,6 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Platform } from 'react-native';
-import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat, Lock } from 'lucide-react-native';
+import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat, Lock, Calendar, FileText } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
@@ -14,15 +14,17 @@ const RegisterMerchantScreen = ({ navigation }) => {
     phone: '',
     address: '',
     password: '',
-    type: 'Ẩm thực truyền thống'
+    type: 'Ẩm thực truyền thống',
+    dob: '',
+    description: ''
   });
   const [loading, setLoading] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const foodTypes = ['Ẩm thực truyền thống', 'Đồ ăn nhanh', 'Món chay', 'Hải sản', 'Đồ uống & Trà sữa', 'Bánh ngọt', 'Món Âu', 'Món Á'];
 
   const handleRegister = async () => {
-    const { restaurantName, ownerName, email, phone, address, password } = formData;
-    if (!restaurantName || !ownerName || !email || !phone || !address || !password) {
+    const { restaurantName, ownerName, email, phone, address, password, dob, description } = formData;
+    if (!restaurantName || !ownerName || !email || !phone || !address || !password || !dob || !description) {
       Alert.alert('Lỗi', 'Vui lòng điền đầy đủ tất cả thông tin đăng ký');
       return;
     }
@@ -37,7 +39,8 @@ const RegisterMerchantScreen = ({ navigation }) => {
           email,
           password,
           phone,
-          role: 'merchant'
+          role: 'merchant',
+          dob
         }
       });
 
@@ -50,7 +53,7 @@ const RegisterMerchantScreen = ({ navigation }) => {
         body: {
           name: restaurantName,
           address,
-          description: 'Quán ăn đối tác mới đăng ký trên hệ thống',
+          description: description,
             category: formData.type || 'Ẩm thực truyền thống',
           image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=600&auto=format&fit=crop"
         }
@@ -130,6 +133,22 @@ const RegisterMerchantScreen = ({ navigation }) => {
           value={formData.address}
           onChangeText={(val) => setFormData({...formData, address: val})}
           icon={MapPin}
+        />
+
+        <CustomInput
+          label="Ngày thành lập"
+          placeholder="VD: 12/03/2022"
+          value={formData.dob}
+          onChangeText={(val) => setFormData({...formData, dob: val})}
+          icon={Calendar}
+        />
+
+        <CustomInput
+          label="Mô tả ngắn"
+          placeholder="Giới thiệu về nhà hàng của bạn..."
+          value={formData.description}
+          onChangeText={(val) => setFormData({...formData, description: val})}
+          icon={FileText}
         />
 
         <View style={{ zIndex: 10, position: 'relative' }}>

@@ -31,13 +31,25 @@ const userSchema = new mongoose.Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'merchant', 'shipper', 'admin'],
+    enum: ['user', 'merchant', 'shipper', 'admin', 'staff'],
     default: 'user'
   },
   status: {
     type: String,
     enum: ['active', 'pending', 'banned'],
     default: 'active'
+  },
+  favoriteRestaurants: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant'
+  }],
+  likedFoods: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Food'
+  }],
+  restaurantId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant'
   }
 }, {
   timestamps: true

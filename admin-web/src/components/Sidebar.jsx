@@ -97,16 +97,6 @@ const Sidebar = ({ isOpen, onClose }) => {
       </nav>
 
       <div className="p-4 border-t border-slate-100">
-        <div className="bg-brand-bg rounded-2xl p-3 flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-white">
-            <img src="https://i.pravatar.cc/150?u=admin" alt="Admin" className="w-full h-full object-cover" />
-          </div>
-          <div className="flex-1 overflow-hidden">
-            <div className="text-sm font-bold text-brand-text truncate">Admin Culinary</div>
-            <div className="text-[10px] text-brand-text-muted truncate">admin@system.com</div>
-          </div>
-        </div>
-        
         <button 
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200">

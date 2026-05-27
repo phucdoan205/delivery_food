@@ -7,6 +7,7 @@ const restaurantRoutes = require('./routes/restaurantRoutes')
 const foodRoutes = require('./routes/foodRoutes')
 const cartRoutes = require('./routes/cartRoutes')
 const orderRoutes = require('./routes/orderRoutes')
+const promotionRoutes = require('./routes/promotionRoutes')
 
 const app = express()
 
@@ -21,6 +22,7 @@ app.use('/api/restaurants', restaurantRoutes)
 app.use('/api/foods', foodRoutes)
 app.use('/api/cart', cartRoutes)
 app.use('/api/orders', orderRoutes)
+app.use('/api/promotions', promotionRoutes)
 
 app.get('/', (req, res) => {
   res.send('API Running... Visit /api-docs for documentation.')

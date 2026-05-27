@@ -5,15 +5,16 @@ import { ArrowLeft, MapPin, ChevronRight, CreditCard, DollarSign } from 'lucide-
 import { request } from '../api/client';
 
 const CheckoutScreen = ({ route, navigation }) => {
-  const { cart } = route.params || {};
+  const { cart, promoDiscount = 0, promoCode } = route.params || {};
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
 
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
   const shippingFee = subtotal > 0 ? 15000 : 0;
-  const discount = shippingFee + (paymentMethod === 'momo' ? 15000 : 0);
-  const total = Math.max(0, subtotal + shippingFee - discount);
+  const paymentDiscount = (paymentMethod === 'momo' ? 15000 : 0);
+  const shippingDiscount = shippingFee;
+  const total = Math.max(0, subtotal + shippingFee - shippingDiscount - paymentDiscount - promoDiscount);
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
@@ -156,6 +157,12 @@ const CheckoutScreen = ({ route, navigation }) => {
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Khuyến mãi MoMo</Text>
                 <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
+              </View>
+            )}
+            {promoDiscount > 0 && (
+              <View style={styles.summaryItem}>
+                <Text style={styles.summaryLabel}>Mã giảm giá ({promoCode})</Text>
+                <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{promoDiscount.toLocaleString()}đ</Text>
               </View>
             )}
             <View style={[styles.summaryItem, styles.totalRow]}>

@@ -3,14 +3,15 @@ import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { Plus } from 'lucide-react-native';
 
-const FoodCard = ({ item, onPress, onAddPress }) => {
+const FoodCard = ({ item, onPress, onAddPress, isClosed = false }) => {
   const hasDiscount = item.oldPrice > item.price;
+  const isDisabled = isClosed || item.isAvailable === false;
 
   return (
     <TouchableOpacity 
       activeOpacity={0.9}
       onPress={onPress}
-      style={styles.container}
+      style={[styles.container, isDisabled && { opacity: 0.5 }]}
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.image} />
@@ -34,8 +35,9 @@ const FoodCard = ({ item, onPress, onAddPress }) => {
           </View>
           
           <TouchableOpacity 
-            style={styles.addButton}
+            style={[styles.addButton, isDisabled && { backgroundColor: COLORS.textLight }]}
             onPress={onAddPress}
+            disabled={isDisabled}
           >
             <Plus size={20} color={COLORS.white} />
           </TouchableOpacity>

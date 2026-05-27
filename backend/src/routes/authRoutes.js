@@ -6,7 +6,8 @@ const {
   getUserProfile,
   updateUserProfile,
   getAllUsers,
-  updateUserStatus
+  updateUserStatus,
+  getFavoriteRestaurants
 } = require('../controllers/authController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -91,6 +92,7 @@ router.post('/login', loginUser)
  */
 router.get('/profile', protect, getUserProfile)
 router.put('/profile', protect, updateUserProfile)
+router.get('/favorites', protect, getFavoriteRestaurants)
 
 /**
  * @swagger

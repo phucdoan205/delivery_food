@@ -26,7 +26,7 @@ const LoginScreen = ({ navigation }) => {
         body: { email, password }
       });
 
-      if (response.role !== 'merchant') {
+      if (response.role !== 'merchant' && response.role !== 'staff') {
         setErrorMessage('Tài khoản này không có quyền truy cập ứng dụng đối tác');
         return;
       }

@@ -26,6 +26,14 @@ const foodSchema = new mongoose.Schema({
   isAvailable: {
     type: Boolean,
     default: true
+  },
+  views: {
+    type: Number,
+    default: 0
+  },
+  likes: {
+    type: Number,
+    default: 0
   }
 }, {
   timestamps: true

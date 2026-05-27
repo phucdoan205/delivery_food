@@ -59,14 +59,16 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
               src={
                 type === "restaurant"
                   ? data.image || `https://api.dicebear.com/7.x/shapes/svg?seed=${data.name}`
+                  : type === "user" && data.role === "merchant" && data.restaurantImage
+                  ? data.restaurantImage
                   : data.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.fullName}`
               }
-              alt={type === "restaurant" ? data.name : data.fullName}
+              alt={type === "restaurant" ? data.name : type === "user" && data.role === "merchant" && data.restaurantName ? data.restaurantName : data.fullName}
               className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-white"
             />
             <div>
               <h3 className="text-lg font-black text-brand-text">
-                {type === "restaurant" ? data.name : data.fullName}
+                {type === "restaurant" ? data.name : type === "user" && data.role === "merchant" && data.restaurantName ? data.restaurantName : data.fullName}
               </h3>
               <div className="flex items-center gap-2 mt-1">
                 <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase ${statusColor[data.status] || "bg-slate-100 text-slate-500"}`}>
@@ -114,12 +116,15 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
           ) : (
             // User details
             <>
+              {data.role === 'merchant' && data.restaurantName && (
+                <DetailRow icon={Store} label="Tên nhà hàng" value={data.restaurantName} />
+              )}
               <DetailRow icon={User} label="Họ và tên" value={data.fullName} />
               <DetailRow icon={Mail} label="Email" value={data.email} />
               <DetailRow icon={Phone} label="Số điện thoại" value={data.phone} />
               <DetailRow icon={CreditCard} label="Số CCCD" value={data.cccd} />
               <DetailRow icon={Calendar} label={data.role === 'merchant' ? "Ngày thành lập" : "Ngày sinh"} value={data.dob} />
-              <DetailRow icon={MapPin} label="Địa chỉ" value={data.address} />
+              <DetailRow icon={MapPin} label="Địa chỉ" value={data.role === 'merchant' && data.restaurantAddress ? data.restaurantAddress : data.address} />
               <DetailRow icon={Shield} label="Vai trò" value={roleLabel[data.role] || data.role} />
               <DetailRow icon={Clock} label="Ngày tạo" value={data.createdAt ? new Date(data.createdAt).toLocaleString("vi-VN") : null} />
             </>

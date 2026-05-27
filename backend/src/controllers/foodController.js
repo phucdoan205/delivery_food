@@ -1,5 +1,7 @@
 const Food = require('../models/Food')
 const Category = require('../models/Category')
+const User = require('../models/User')
+const Restaurant = require('../models/Restaurant')
 const { uploadImageBase64 } = require('../utils/cloudinary')
 
 
@@ -34,6 +36,19 @@ const getFoodsByRestaurant = async (req, res) => {
 const createFood = async (req, res) => {
   const { restaurantId, categoryId, name, description, image, price } = req.body
 
+  if (req.user.role !== 'admin') {
+    if (req.user.role === 'merchant') {
+      const restaurant = await Restaurant.findById(restaurantId)
+      if (!restaurant || restaurant.ownerId.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ message: 'Unauthorized' })
+      }
+    } else if (req.user.role === 'staff') {
+      if (req.user.restaurantId.toString() !== restaurantId.toString()) {
+        return res.status(403).json({ message: 'Unauthorized' })
+      }
+    }
+  }
+
   let imageUrl = image;
   if (image) {
     try {
@@ -53,6 +68,15 @@ const createFood = async (req, res) => {
   })
 
   const createdFood = await food.save()
+  
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('food_status_updated', {
+      restaurantId,
+      food: createdFood
+    });
+  }
+
   res.status(201).json(createdFood)
 }
 
@@ -65,6 +89,19 @@ const updateFood = async (req, res) => {
   const food = await Food.findById(req.params.id)
 
   if (food) {
+    if (req.user.role !== 'admin') {
+      if (req.user.role === 'merchant') {
+        const restaurant = await Restaurant.findById(food.restaurantId)
+        if (!restaurant || restaurant.ownerId.toString() !== req.user._id.toString()) {
+          return res.status(403).json({ message: 'Unauthorized' })
+        }
+      } else if (req.user.role === 'staff') {
+        if (req.user.restaurantId.toString() !== food.restaurantId.toString()) {
+          return res.status(403).json({ message: 'Unauthorized' })
+        }
+      }
+    }
+
     food.name = name || food.name
     food.description = description || food.description
     food.price = price || food.price
@@ -79,6 +116,15 @@ const updateFood = async (req, res) => {
     }
 
     const updatedFood = await food.save()
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('food_status_updated', {
+        restaurantId: updatedFood.restaurantId,
+        food: updatedFood
+      });
+    }
+
     res.json(updatedFood)
   } else {
     res.status(404).json({ message: 'Food not found' })
@@ -133,6 +179,65 @@ const deleteFood = async (req, res) => {
   }
 }
 
+// @desc    Increment food view
+// @route   PUT /api/foods/:id/view
+// @access  Public
+const incrementViewCount = async (req, res) => {
+  const food = await Food.findById(req.params.id)
+  if (food) {
+    food.views += 1
+    await food.save()
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('food_status_updated', {
+        restaurantId: food.restaurantId,
+        food: food
+      });
+    }
+    
+    res.json({ views: food.views })
+  } else {
+    res.status(404).json({ message: 'Food not found' })
+  }
+}
+
+// @desc    Toggle like for food
+// @route   POST /api/foods/:id/like
+// @access  Private
+const toggleLikeFood = async (req, res) => {
+  const food = await Food.findById(req.params.id)
+  const user = await User.findById(req.user._id)
+
+  if (food && user) {
+    const isLiked = user.likedFoods.includes(food._id)
+    if (isLiked) {
+      user.likedFoods = user.likedFoods.filter(id => id.toString() !== food._id.toString())
+      food.likes = Math.max(0, food.likes - 1)
+    } else {
+      user.likedFoods.push(food._id)
+      food.likes += 1
+      if (food.restaurantId && !user.favoriteRestaurants.includes(food.restaurantId)) {
+        user.favoriteRestaurants.push(food.restaurantId)
+      }
+    }
+    await user.save()
+    await food.save()
+    
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('food_status_updated', {
+        restaurantId: food.restaurantId,
+        food: food
+      });
+    }
+    
+    res.json({ likes: food.likes, isLiked: !isLiked })
+  } else {
+    res.status(404).json({ message: 'Food or User not found' })
+  }
+}
+
 module.exports = {
   getFoods,
   getFoodsByRestaurant,
@@ -140,5 +245,7 @@ module.exports = {
   updateFood,
   deleteFood,
   getCategories,
-  createCategory
+  createCategory,
+  incrementViewCount,
+  toggleLikeFood
 }

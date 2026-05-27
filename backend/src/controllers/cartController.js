@@ -4,7 +4,13 @@ const Cart = require('../models/Cart')
 // @route   GET /api/cart
 // @access  Private
 const getCart = async (req, res) => {
-  const cart = await Cart.findOne({ userId: req.user._id }).populate('items.foodId')
+  const cart = await Cart.findOne({ userId: req.user._id }).populate({
+    path: 'items.foodId',
+    populate: {
+      path: 'restaurantId',
+      select: 'name address image'
+    }
+  })
   if (cart) {
     res.json(cart)
   } else {

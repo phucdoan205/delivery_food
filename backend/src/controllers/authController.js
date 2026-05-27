@@ -6,7 +6,7 @@ const generateToken = require('../utils/generateToken')
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-  const { fullName, email, password, phone, role } = req.body
+  const { fullName, email, password, phone, role, dob } = req.body
 
   const userExists = await User.findOne({ email })
 
@@ -25,7 +25,8 @@ const registerUser = async (req, res) => {
     password: hashedPassword,
     phone,
     role: role || 'user',
-    status: userStatus
+    status: userStatus,
+    dob
   })
 
   if (user) {
@@ -79,6 +80,7 @@ const loginUser = async (req, res) => {
       fullName: user.fullName,
       email: user.email,
       role: user.role,
+      restaurantId: user.restaurantId,
       token: generateToken(user._id)
     })
   } else {
@@ -103,7 +105,8 @@ const getUserProfile = async (req, res) => {
       address: user.address,
       cccd: user.cccd,
       dob: user.dob,
-      status: user.status
+      status: user.status,
+      restaurantId: user.restaurantId
     })
   } else {
     res.status(404).json({ message: 'User not found' })
@@ -119,6 +122,7 @@ const getAllUsers = async (req, res) => {
       if (rest) {
         user.restaurantName = rest.name
         user.restaurantImage = rest.image
+        user.restaurantAddress = rest.address
       }
     }
   }
@@ -193,11 +197,24 @@ const updateUserProfile = async (req, res) => {
   }
 }
 
+// @desc    Get user favorite restaurants
+// @route   GET /api/auth/favorites
+// @access  Private
+const getFavoriteRestaurants = async (req, res) => {
+  const user = await User.findById(req.user._id).populate('favoriteRestaurants')
+  if (user) {
+    res.json(user.favoriteRestaurants)
+  } else {
+    res.status(404).json({ message: 'User not found' })
+  }
+}
+
 module.exports = {
   registerUser,
   loginUser,
   getUserProfile,
   updateUserProfile,
   getAllUsers,
-  updateUserStatus
+  updateUserStatus,
+  getFavoriteRestaurants
 }

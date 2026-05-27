@@ -10,10 +10,20 @@ const RestaurantCard = ({ restaurant, onPress, horizontal = false }) => {
       onPress={onPress}
       style={[
         styles.container,
-        horizontal ? styles.horizontalContainer : styles.verticalContainer
+        horizontal ? styles.horizontalContainer : styles.verticalContainer,
+        restaurant.isTemporarilyClosed && { opacity: 0.7 }
       ]}
     >
-      <Image source={{ uri: restaurant.image }} style={styles.image} />
+      <View style={{ position: 'relative' }}>
+        <Image source={{ uri: restaurant.image }} style={styles.image} />
+        {restaurant.isTemporarilyClosed && (
+          <View style={styles.closedOverlay}>
+            <View style={styles.closedBadge}>
+              <Text style={styles.closedBadgeText}>TẠM ĐÓNG CỬA</Text>
+            </View>
+          </View>
+        )}
+      </View>
       
       {restaurant.tags?.includes('Tinh tuyển') && (
         <View style={styles.tagContainer}>
@@ -121,6 +131,24 @@ const styles = StyleSheet.create({
     borderRadius: 1.5,
     backgroundColor: COLORS.textLight,
     marginHorizontal: 6,
+  },
+  closedOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  closedBadge: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  closedBadgeText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: 'bold',
   }
 });
 

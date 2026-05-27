@@ -25,11 +25,18 @@ const SearchScreen = ({ navigation }) => {
 
   const renderRestaurantItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.restaurantItem}
+      style={[styles.restaurantItem, item.isTemporarilyClosed && { opacity: 0.7 }]}
       onPress={() => navigation.navigate('RestaurantDetail', { restaurant: item })}
     >
       <View style={styles.imageContainer}>
         <Image source={{ uri: item.image }} style={styles.itemImage} />
+        {item.isTemporarilyClosed && (
+          <View style={styles.closedOverlaySearch}>
+            <View style={styles.closedBadgeSearch}>
+              <Text style={styles.closedBadgeTextSearch}>TẠM ĐÓNG CỬA</Text>
+            </View>
+          </View>
+        )}
         <View style={styles.ratingBadge}>
           <Star size={10} color={COLORS.secondary} fill={COLORS.secondary} />
           <Text style={styles.ratingText}>{item.rating}</Text>
@@ -407,6 +414,24 @@ const styles = StyleSheet.create({
     fontSize: 9,
     fontWeight: 'bold',
     color: COLORS.green,
+  },
+  closedOverlaySearch: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 2,
+  },
+  closedBadgeSearch: {
+    backgroundColor: '#FF3B30',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  closedBadgeTextSearch: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: 'bold',
   }
 });
 

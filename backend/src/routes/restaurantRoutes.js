@@ -7,7 +7,15 @@ const {
   updateRestaurant,
   deleteRestaurant,
   getAllRestaurantsAdmin,
-  getMyRestaurant
+  getMyRestaurant,
+  updateOperatingHours,
+  addBankAccount,
+  updateBankAccount,
+  deleteBankAccount,
+  getStaffByRestaurant,
+  createStaff,
+  updateStaff,
+  toggleStaffStatus
 } = require('../controllers/restaurantController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -144,11 +152,25 @@ router.route('/admin')
  *       403:
  *         description: Not authorized (Admin only)
  */
-router.get('/mine', protect, authorize('merchant'), getMyRestaurant)
+router.get('/mine', protect, authorize('merchant', 'staff'), getMyRestaurant)
 
 router.route('/:id')
   .get(getRestaurantById)
   .put(protect, authorize('merchant', 'admin'), updateRestaurant)
   .delete(protect, authorize('admin'), deleteRestaurant)
+
+router.put('/:id/operating-hours', protect, authorize('merchant', 'admin'), updateOperatingHours)
+
+router.post('/:id/bank-accounts', protect, authorize('merchant'), addBankAccount)
+router.put('/:id/bank-accounts/:accountId', protect, authorize('merchant'), updateBankAccount)
+router.delete('/:id/bank-accounts/:accountId', protect, authorize('merchant'), deleteBankAccount)
+
+// Staff management
+router.route('/:id/staff')
+  .get(protect, authorize('merchant'), getStaffByRestaurant)
+  .post(protect, authorize('merchant'), createStaff)
+
+router.put('/:id/staff/:staffId', protect, authorize('merchant'), updateStaff)
+router.put('/:id/staff/:staffId/status', protect, authorize('merchant'), toggleStaffStatus)
 
 module.exports = router

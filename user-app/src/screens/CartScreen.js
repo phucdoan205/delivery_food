@@ -3,10 +3,12 @@ import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Ima
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, ChevronRight, Minus, Plus, Tag } from 'lucide-react-native';
 import { request } from '../api/client';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartScreen = ({ navigation }) => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [promo, setPromo] = useState(null);
 
   const fetchCart = async () => {
     try {
@@ -21,7 +23,21 @@ const CartScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchCart();
-  }, []);
+    
+    const loadPromo = async () => {
+      const savedPromo = await AsyncStorage.getItem('appliedPromo');
+      if (savedPromo) {
+        setPromo(JSON.parse(savedPromo));
+      }
+    };
+    
+    const unsubscribe = navigation.addListener('focus', () => {
+      loadPromo();
+    });
+    loadPromo();
+    
+    return unsubscribe;
+  }, [navigation]);
 
   const handleUpdateQuantity = async (foodId, change) => {
     const item = cart?.items?.find(i => (i.foodId?._id || i.foodId) === foodId);
@@ -59,6 +75,8 @@ const CartScreen = ({ navigation }) => {
     try {
       await request('/cart', { method: 'DELETE' });
       setCart({ items: [] });
+      await AsyncStorage.removeItem('appliedPromo');
+      setPromo(null);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể xoá giỏ hàng');
     }
@@ -75,14 +93,27 @@ const CartScreen = ({ navigation }) => {
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
   const shippingFee = subtotal > 0 ? 15000 : 0;
-  const discount = shippingFee; // Free ship for demo
-  const total = subtotal + shippingFee - discount;
-
+  const shippingDiscount = shippingFee; // Free ship for demo
+  
   // Find a representative restaurant name if items exist
   const firstItem = items[0];
+  const restaurantId = firstItem?.foodId?.restaurantId?._id || firstItem?.foodId?.restaurantId?.id;
   const restaurantName = firstItem?.foodId?.restaurantId?.name || "Cửa hàng đối tác";
   const restaurantAddress = firstItem?.foodId?.restaurantId?.address || "Hà Nội, Việt Nam";
   const restaurantImage = firstItem?.foodId?.restaurantId?.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=100&auto=format&fit=crop';
+
+  let promoDiscount = 0;
+  if (promo && promo.restaurantId === restaurantId) {
+    if (promo.discountType === 'percentage') {
+      promoDiscount = (subtotal * promo.discountValue) / 100;
+    } else {
+      promoDiscount = promo.discountValue;
+    }
+    // Cap discount to not exceed subtotal
+    if (promoDiscount > subtotal) promoDiscount = subtotal;
+  }
+
+  const total = subtotal + shippingFee - shippingDiscount - promoDiscount;
 
   if (items.length === 0) {
     return (
@@ -167,15 +198,33 @@ const CartScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Tag size={20} color={COLORS.primary} />
             <Text style={styles.sectionTitle}>Mã giảm giá (Voucher)</Text>
-            <TouchableOpacity><Text style={styles.chooseVoucher}>Chọn hoặc nhập mã</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.chooseVoucher}>Chọn ưu đãi</Text></TouchableOpacity>
           </View>
           <View style={styles.voucherInputRow}>
-            <TextInput 
-              style={styles.voucherInput} 
-              placeholder="Nhập mã ưu đãi tại đây..." 
-              placeholderTextColor={COLORS.textLight}
-            />
-            <TouchableOpacity style={styles.applyBtn}><Text style={styles.applyText}>Áp dụng</Text></TouchableOpacity>
+            {promo && promo.restaurantId === restaurantId ? (
+              <View style={[styles.voucherInput, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderColor: '#A5D6A7' }]}>
+                <Text style={{ color: '#2E7D32', fontWeight: 'bold' }}>{promo.code}</Text>
+                <Text style={{ color: '#2E7D32', marginLeft: 10 }}>
+                  (Giảm {promo.discountType === 'percentage' ? `${promo.discountValue}%` : `${promo.discountValue.toLocaleString()}đ`})
+                </Text>
+              </View>
+            ) : (
+              <TextInput 
+                style={styles.voucherInput} 
+                placeholder="Nhập mã ưu đãi tại đây..." 
+                placeholderTextColor={COLORS.textLight}
+              />
+            )}
+            {promo && promo.restaurantId === restaurantId ? (
+              <TouchableOpacity style={[styles.applyBtn, { backgroundColor: '#F44336' }]} onPress={async () => {
+                await AsyncStorage.removeItem('appliedPromo');
+                setPromo(null);
+              }}>
+                <Text style={styles.applyText}>Gỡ</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.applyBtn}><Text style={styles.applyText}>Áp dụng</Text></TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -194,8 +243,14 @@ const CartScreen = ({ navigation }) => {
               <Text style={styles.summaryLabel}>Giảm giá phí giao hàng </Text>
               <View style={styles.freeBadge}><Text style={styles.freeText}>FREE</Text></View>
             </View>
-            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{discount.toLocaleString()}đ</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{shippingDiscount.toLocaleString()}đ</Text>
           </View>
+          {promoDiscount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Mã giảm giá ({promo.code})</Text>
+              <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{promoDiscount.toLocaleString()}đ</Text>
+            </View>
+          )}
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
             <Text style={styles.totalValue}>{total.toLocaleString()}đ</Text>
@@ -215,7 +270,7 @@ const CartScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity 
           style={styles.payBtn}
-          onPress={() => navigation.navigate('Checkout', { cart })}
+          onPress={() => navigation.navigate('Checkout', { cart, promoDiscount, promoCode: promo?.code, total })}
         >
           <Text style={styles.payText}>Thanh toán ngay</Text>
         </TouchableOpacity>

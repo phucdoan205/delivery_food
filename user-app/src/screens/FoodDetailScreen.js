@@ -1,15 +1,18 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Share2, Heart, Minus, Plus, ShoppingCart } from 'lucide-react-native';
+import { ArrowLeft, Share2, Heart, Minus, Plus, ShoppingCart, Eye } from 'lucide-react-native';
 import { request } from '../api/client';
 
 const FoodDetailScreen = ({ route, navigation }) => {
-  const { item } = route.params;
+  const { item, restaurant } = route.params;
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [cartCount, setCartCount] = useState(0);
+  const [views, setViews] = useState(item.views || 0);
+  const [likes, setLikes] = useState(item.likes || 0);
+  const [isLiked, setIsLiked] = useState(false);
 
   React.useEffect(() => {
     const fetchCartCount = async () => {
@@ -21,7 +24,37 @@ const FoodDetailScreen = ({ route, navigation }) => {
       } catch (e) {}
     };
     fetchCartCount();
+
+    let isMounted = true;
+    const initData = async () => {
+      try {
+        const profile = await request('/auth/profile').catch(() => null);
+        if (profile && profile.likedFoods && isMounted) {
+          setIsLiked(profile.likedFoods.includes(item._id || item.id));
+        }
+        
+        const res = await request(`/foods/${item._id || item.id}/view`, { method: 'PUT' }).catch(() => null);
+        if (res && res.views !== undefined && isMounted) {
+          setViews(res.views);
+        }
+      } catch (e) {}
+    };
+    initData();
+
+    return () => { isMounted = false; };
   }, []);
+
+  const handleToggleLike = async () => {
+    try {
+      const res = await request(`/foods/${item._id || item.id}/like`, { method: 'POST' });
+      if (res) {
+        setLikes(res.likes);
+        setIsLiked(res.isLiked);
+      }
+    } catch (e) {
+      Alert.alert('Lỗi', 'Vui lòng đăng nhập để sử dụng tính năng này.');
+    }
+  };
 
   const handleAddToCart = async () => {
     setLoading(true);
@@ -56,7 +89,9 @@ const FoodDetailScreen = ({ route, navigation }) => {
                 <ArrowLeft size={24} color={COLORS.text} />
               </TouchableOpacity>
               <View style={styles.headerActions}>
-                <TouchableOpacity style={styles.iconBtn}><Heart size={20} color={COLORS.text} /></TouchableOpacity>
+                <TouchableOpacity style={styles.iconBtn} onPress={handleToggleLike}>
+                  <Heart size={20} color={isLiked ? COLORS.primary : COLORS.text} fill={isLiked ? COLORS.primary : 'transparent'} />
+                </TouchableOpacity>
                 <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Cart')}>
                   <ShoppingCart size={20} color={COLORS.text} />
                   {cartCount > 0 && (
@@ -76,7 +111,7 @@ const FoodDetailScreen = ({ route, navigation }) => {
               <Text style={styles.name}>{item.name}</Text>
               <View style={styles.restaurantRow}>
                 <View style={styles.dot} />
-                <Text style={styles.restaurantName}>Quán ăn đối tác</Text>
+                <Text style={styles.restaurantName}>{restaurant ? restaurant.name : "Quán ăn đối tác"}</Text>
               </View>
             </View>
             <View style={styles.priceContainer}>
@@ -84,8 +119,16 @@ const FoodDetailScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <View style={styles.ratingBadge}>
-            <Text style={styles.ratingText}>⭐ 4.8 (1,200+ đánh giá)</Text>
+          <View style={styles.statsContainer}>
+            <View style={styles.ratingBadge}>
+              <Text style={styles.ratingText}>⭐ 4.8 (1,200+ đánh giá)</Text>
+            </View>
+            <View style={styles.viewLikeStats}>
+              <Eye size={16} color={COLORS.textLight} />
+              <Text style={styles.statLabel}>{views} lượt xem</Text>
+              <Heart size={16} color={COLORS.textLight} style={{ marginLeft: 15 }} />
+              <Text style={styles.statLabel}>{likes} thích</Text>
+            </View>
           </View>
 
           <View style={styles.section}>
@@ -95,25 +138,6 @@ const FoodDetailScreen = ({ route, navigation }) => {
             </Text>
           </View>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Thêm Topping</Text>
-              <View style={styles.optionalBadge}><Text style={styles.optionalText}>TÙY CHỌN</Text></View>
-            </View>
-            
-            {[
-              { id: 1, name: 'Thêm Nem Rán (1 chiếc)', price: 15000 },
-              { id: 2, name: 'Thêm Chả Viên (2 viên)', price: 20000 },
-            ].map((topping) => (
-              <View key={topping.id} style={styles.toppingRow}>
-                <Text style={styles.toppingName}>{topping.name}</Text>
-                <View style={styles.toppingRight}>
-                  <Text style={styles.toppingPrice}>+{topping.price.toLocaleString()}đ</Text>
-                  <View style={styles.checkbox} />
-                </View>
-              </View>
-            ))}
-          </View>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Ghi chú cho quán</Text>
@@ -277,6 +301,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#8D4D2E',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: SIZES.extraLarge,
+  },
+  viewLikeStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 15,
+  },
+  statLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textLight,
+    marginLeft: 4,
   },
   section: {
     backgroundColor: COLORS.white,

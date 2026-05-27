@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { Search, Plus, Filter, ArrowUpDown } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import FoodItemCard from '../../components/FoodItemCard';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const MenuManagementScreen = ({ navigation }) => {
   const [restaurant, setRestaurant] = useState(null);
@@ -25,11 +26,27 @@ const MenuManagementScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
     const unsubscribe = navigation.addListener('focus', () => {
       fetchMenu();
+      
+      if (!socket) {
+        const socketUrl = API_URL.replace('/api', '');
+        socket = io(socketUrl);
+        
+        socket.on('food_status_updated', (data) => {
+          if (restaurant && (data.restaurantId === restaurant._id || data.restaurantId === restaurant.id)) {
+            fetchMenu();
+          }
+        });
+      }
     });
-    return unsubscribe;
-  }, [navigation]);
+    
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
+  }, [navigation, restaurant]);
 
   const filteredItems = menuItems.filter(item => 
     item.name?.toLowerCase().includes(searchQuery.toLowerCase())
@@ -110,8 +127,8 @@ const MenuManagementScreen = ({ navigation }) => {
           const mappedItem = {
             ...item,
             status: item.isAvailable !== false ? 'active' : 'inactive',
-            views: 180 + (index * 12),
-            likes: 42 + (index * 3)
+            views: item.views || 0,
+            likes: item.likes || 0
           };
           return (
             <FoodItemCard 

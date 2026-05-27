@@ -1,26 +1,48 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Star, Clock, MapPin, Search, Bell, ShoppingCart } from 'lucide-react-native';
+import { ArrowLeft, Star, Clock, MapPin, Search, Bell, ShoppingCart, Ticket } from 'lucide-react-native';
 import FoodCard from '../components/FoodCard';
-import { request } from '../api/client';
+import { request, API_URL } from '../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RestaurantDetailScreen = ({ route, navigation }) => {
   const { restaurant } = route.params;
   const [foods, setFoods] = useState([]);
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isClosed, setIsClosed] = useState(restaurant.isTemporarilyClosed || false);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [promotions, setPromotions] = useState([]);
+  const [appliedPromos, setAppliedPromos] = useState({});
+
+  useEffect(() => {
+    const loadSavedPromo = async () => {
+      const saved = await AsyncStorage.getItem('appliedPromo');
+      if (saved) {
+        const promo = JSON.parse(saved);
+        if (promo.restaurantId === (restaurant.id || restaurant._id)) {
+          setAppliedPromos({ [promo._id]: true });
+        }
+      }
+    };
+    loadSavedPromo();
+  }, [restaurant]);
 
   const fetchRestaurantMenu = async () => {
     try {
-      const [menu, cartData] = await Promise.all([
-        request(`/foods/restaurant/${restaurant.id}`),
-        request('/cart').catch(() => null)
+      const restaurantId = restaurant.id || restaurant._id;
+      const [menu, cartData, promos] = await Promise.all([
+        request(`/foods/restaurant/${restaurantId}`),
+        request('/cart').catch(() => null),
+        request(`/promotions/restaurant/${restaurantId}`).catch(() => [])
       ]);
       setFoods(menu.length ? menu : []);
       setCart(cartData);
+      setPromotions(Array.isArray(promos) ? promos.filter(p => p.status === 'active') : []);
     } catch (error) {
-      console.log('Error fetching restaurant menu:', error);
+      console.log('Error fetching restaurant data:', error);
       setFoods([]);
     } finally {
       setLoading(false);
@@ -29,6 +51,37 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchRestaurantMenu();
+    
+    const socketUrl = API_URL.replace('/api', '');
+    const socket = io(socketUrl);
+
+    socket.on('restaurant_status_updated', (data) => {
+      if (data.restaurantId === restaurant.id || data.restaurantId === restaurant._id) {
+        setIsClosed(data.isTemporarilyClosed);
+      }
+    });
+
+    socket.on('food_status_updated', (data) => {
+      if (data.restaurantId === restaurant.id || data.restaurantId === restaurant._id) {
+        fetchRestaurantMenu();
+      }
+    });
+
+    socket.on('promotion_updated', (data) => {
+      if (data.restaurantId === restaurant.id || data.restaurantId === restaurant._id) {
+        fetchRestaurantMenu();
+      }
+    });
+
+    socket.on('promotion_deleted', (data) => {
+      if (data.restaurantId === restaurant.id || data.restaurantId === restaurant._id) {
+        fetchRestaurantMenu();
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const handleAddToCart = async (foodId) => {
@@ -48,10 +101,44 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
   const cartQuantity = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
   const cartPrice = cart?.items?.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0) || 0;
 
+  const handleApplyPromo = async (promo) => {
+    setAppliedPromos(prev => ({ ...prev, [promo._id]: true }));
+    await AsyncStorage.setItem('appliedPromo', JSON.stringify(promo));
+    Alert.alert('Thành công', 'Đã lưu khuyến mãi để sử dụng khi thanh toán!');
+  };
+
+  const renderPromoItem = ({ item }) => (
+    <View style={styles.promoCard}>
+      <View style={styles.promoIconBg}>
+        <Ticket size={20} color={COLORS.primary} />
+      </View>
+      <View style={styles.promoInfo}>
+        <Text style={styles.promoTitle}>{item.title}</Text>
+        <Text style={styles.promoDesc}>
+          Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`}
+        </Text>
+      </View>
+      <TouchableOpacity 
+        style={[styles.applyBtn, appliedPromos[item._id] && { backgroundColor: '#F0F0F0' }]} 
+        onPress={() => handleApplyPromo(item)}
+        disabled={appliedPromos[item._id]}
+      >
+        <Text style={[styles.applyBtnText, appliedPromos[item._id] && { color: COLORS.textSecondary }]}>
+          {appliedPromos[item._id] ? 'Đã lưu' : 'Áp dụng'}
+        </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
   const renderHeader = () => (
     <View style={styles.header}>
       <Image source={{ uri: restaurant.image }} style={styles.bannerImage} />
       <SafeAreaView style={styles.headerContent}>
+        {isClosed && (
+          <View style={styles.closedBanner}>
+            <Text style={styles.closedBannerText}>Nhà hàng tạm thời đóng cửa</Text>
+          </View>
+        )}
         <View style={styles.headerRow}>
           <TouchableOpacity 
             style={styles.backBtn}
@@ -97,8 +184,40 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
           </View>
         </View>
       </View>
+      
+      {promotions.length > 0 && (
+        <View style={styles.promotionsSection}>
+          <Text style={styles.promotionsTitle}>Ưu đãi dành cho bạn</Text>
+          <FlatList
+            data={promotions}
+            renderItem={renderPromoItem}
+            keyExtractor={item => item._id}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 20 }}
+          />
+        </View>
+      )}
     </View>
   );
+
+  const uniqueCategories = React.useMemo(() => {
+    const ObjectMap = new Map();
+    foods.forEach(f => {
+      if (f.categoryId) {
+        ObjectMap.set(f.categoryId._id || f.categoryId, f.categoryId.name || 'Chưa phân loại');
+      } else {
+        ObjectMap.set('uncategorized', 'Chưa phân loại');
+      }
+    });
+    return Array.from(ObjectMap.keys()).map(id => ({ id, name: ObjectMap.get(id) }));
+  }, [foods]);
+
+  useEffect(() => {
+    if (uniqueCategories.length > 0 && !activeCategory) {
+      setActiveCategory(uniqueCategories[0].id);
+    }
+  }, [uniqueCategories]);
 
   if (loading) {
     return (
@@ -115,8 +234,10 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
     price: food.price,
     image: food.image,
     restaurantId: food.restaurantId?._id || food.restaurantId || '',
+    categoryId: food.categoryId?._id || food.categoryId || 'uncategorized',
+    isAvailable: food.isAvailable !== false,
     isPopular: food.isPopular || true
-  }));
+  })).filter(f => !activeCategory || f.categoryId === activeCategory);
 
   return (
     <View style={styles.container}>
@@ -124,22 +245,37 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
       
       <View style={styles.categoryTabs}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabsScroll}>
-          {['Món chính', 'Đồ uống', 'Khai vị', 'Combo'].map((cat, index) => (
-            <TouchableOpacity key={cat} style={[styles.tab, index === 0 && styles.activeTab]}>
-              <Text style={[styles.tabText, index === 0 && styles.activeTabText]}>{cat}</Text>
+          {uniqueCategories.map((cat) => (
+            <TouchableOpacity 
+              key={cat.id} 
+              style={[styles.tab, activeCategory === cat.id && styles.activeTab]}
+              onPress={() => setActiveCategory(cat.id)}
+            >
+              <Text style={[styles.tabText, activeCategory === cat.id && styles.activeTabText]}>
+                {cat.name}
+              </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       </View>
 
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
-        <Text style={styles.menuTitle}>Món ngon của quán</Text>
+        <Text style={styles.menuTitle}>
+          {activeCategory ? uniqueCategories.find(c => c.id === activeCategory)?.name : 'Món ngon của quán'}
+        </Text>
         {normalizedFoods.map((item) => (
           <FoodCard 
             key={item.id} 
-            item={item} 
-            onPress={() => navigation.navigate('FoodDetail', { item })} 
-            onAddPress={() => handleAddToCart(item.id)}
+            item={item}
+            isClosed={isClosed} 
+            onPress={() => {
+              if (!isClosed && item.isAvailable) {
+                navigation.navigate('FoodDetail', { item, restaurant });
+              }
+            }} 
+            onAddPress={() => {
+              if (!isClosed && item.isAvailable) handleAddToCart(item.id);
+            }}
           />
         ))}
       </ScrollView>
@@ -178,7 +314,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
-    height: 300,
+    paddingBottom: 15,
   },
   bannerImage: {
     width: '100%',
@@ -203,6 +339,19 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  closedBanner: {
+    backgroundColor: '#FF3B30',
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  closedBannerText: {
+    color: COLORS.white,
+    fontWeight: 'bold',
+    fontSize: 14,
+    textAlign: 'center',
   },
   headerActions: {
     flexDirection: 'row',
@@ -236,14 +385,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   restaurantInfoCard: {
-    position: 'absolute',
-    bottom: 0,
-    left: SIZES.padding,
-    right: SIZES.padding,
+    marginTop: -40,
+    marginHorizontal: SIZES.padding,
     backgroundColor: COLORS.white,
     borderRadius: SIZES.radiusLarge,
     padding: SIZES.padding,
     ...SHADOWS.medium,
+    zIndex: 2,
   },
   infoTop: {
     flexDirection: 'row',
@@ -379,6 +527,61 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  promotionsSection: {
+    marginTop: 15,
+  },
+  promotionsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 10,
+    paddingHorizontal: 20,
+  },
+  promoCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF9F8',
+    padding: 12,
+    borderRadius: 12,
+    marginRight: 15,
+    borderWidth: 1,
+    borderColor: '#FFEBE6',
+    width: 280,
+  },
+  promoIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFEBE6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  promoInfo: {
+    flex: 1,
+  },
+  promoTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 2,
+  },
+  promoDesc: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: '600',
+  },
+  applyBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+  },
+  applyBtnText: {
+    color: COLORS.white,
+    fontSize: 12,
+    fontWeight: 'bold',
   }
 });
 

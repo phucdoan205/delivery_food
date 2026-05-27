@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator, Modal } from 'react-native';
 import { ChevronLeft, Camera, Plus, Trash2, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
@@ -19,6 +19,10 @@ const AddEditDishScreen = ({ navigation, route }) => {
   const [imageUri, setImageUri] = useState(dish?.image || '');
   const [loading, setLoading] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
+  
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -129,6 +133,29 @@ const AddEditDishScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập tên danh mục');
+      return;
+    }
+    setIsCreatingCategory(true);
+    try {
+      const newCat = await request('/foods/categories', {
+        method: 'POST',
+        body: { name: newCategoryName.trim() }
+      });
+      setCategories([...categories, newCat]);
+      setSelectedCategory(newCat._id || newCat.id);
+      setNewCategoryName('');
+      setShowCategoryModal(false);
+      Alert.alert('Thành công', 'Đã thêm danh mục mới');
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể tạo danh mục mới');
+    } finally {
+      setIsCreatingCategory(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -188,11 +215,7 @@ const AddEditDishScreen = ({ navigation, route }) => {
               <Text style={styles.label}>Danh mục</Text>
               <TouchableOpacity 
                 style={styles.categoryPicker}
-                onPress={() => {
-                  if (categories.length === 0) return;
-                  const nextIndex = (categories.findIndex(c => c._id === selectedCategory) + 1) % categories.length;
-                  setSelectedCategory(categories[nextIndex]._id);
-                }}
+                onPress={() => setShowCategoryModal(true)}
               >
                 <Text style={styles.categoryText}>{getCategoryName()}</Text>
                 <ChevronRight size={18} color={Colors.textSecondary} />
@@ -247,6 +270,62 @@ const AddEditDishScreen = ({ navigation, route }) => {
         
         <View style={{ height: 40 }} />
       </ScrollView>
+
+      {/* Category Modal */}
+      <Modal visible={showCategoryModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn danh mục</Text>
+              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                <Text style={styles.modalClose}>Đóng</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.categoryList}>
+              {categories.map((cat) => (
+                <TouchableOpacity 
+                  key={cat._id || cat.id} 
+                  style={[styles.categoryOption, selectedCategory === (cat._id || cat.id) && styles.categoryOptionSelected]}
+                  onPress={() => {
+                    setSelectedCategory(cat._id || cat.id);
+                    setShowCategoryModal(false);
+                  }}
+                >
+                  <Text style={[styles.categoryOptionText, selectedCategory === (cat._id || cat.id) && styles.categoryOptionTextSelected]}>
+                    {cat.name}
+                  </Text>
+                  {selectedCategory === (cat._id || cat.id) && <Text style={styles.checkIcon}>✓</Text>}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <View style={styles.newCategorySection}>
+              <Text style={styles.newCategoryLabel}>Hoặc thêm danh mục mới</Text>
+              <View style={styles.newCategoryInputRow}>
+                <TextInput
+                  style={styles.newCategoryInput}
+                  value={newCategoryName}
+                  onChangeText={setNewCategoryName}
+                  placeholder="Tên danh mục..."
+                  placeholderTextColor={Colors.textSecondary}
+                />
+                <TouchableOpacity 
+                  style={styles.newCategoryBtn} 
+                  onPress={handleCreateCategory}
+                  disabled={isCreatingCategory}
+                >
+                  {isCreatingCategory ? (
+                    <ActivityIndicator size="small" color={Colors.white} />
+                  ) : (
+                    <Text style={styles.newCategoryBtnText}>Thêm</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -438,6 +517,101 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: Colors.error,
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: Colors.text,
+  },
+  modalClose: {
+    fontSize: 16,
+    color: Colors.primary,
+    fontWeight: 'bold',
+  },
+  categoryList: {
+    maxHeight: 200,
+    marginBottom: 20,
+  },
+  categoryOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  categoryOptionSelected: {
+    backgroundColor: '#FDEBE7',
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderBottomWidth: 0,
+  },
+  categoryOptionText: {
+    fontSize: 16,
+    color: Colors.text,
+  },
+  categoryOptionTextSelected: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+  },
+  checkIcon: {
+    color: Colors.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  newCategorySection: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 20,
+  },
+  newCategoryLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: Colors.text,
+    marginBottom: 10,
+  },
+  newCategoryInputRow: {
+    flexDirection: 'row',
+  },
+  newCategoryInput: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    fontSize: 15,
+    marginRight: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  newCategoryBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  newCategoryBtnText: {
+    color: Colors.white,
+    fontWeight: 'bold',
+    fontSize: 15,
   }
 });
 

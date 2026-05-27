@@ -29,7 +29,23 @@ const restaurantSchema = new mongoose.Schema({
     type: String,
     enum: ['pending', 'approved', 'rejected'],
     default: 'pending'
-  }
+  },
+  isTemporarilyClosed: {
+    type: Boolean,
+    default: false
+  },
+  operatingHours: [{
+    day: String,
+    open: String,
+    close: String,
+    enabled: { type: Boolean, default: true }
+  }],
+  bankAccounts: [{
+    bankName: String,
+    accountNumber: String,
+    accountHolder: String,
+    isDefault: { type: Boolean, default: false }
+  }]
 }, {
   timestamps: true
 })

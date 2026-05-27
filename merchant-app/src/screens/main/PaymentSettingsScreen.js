@@ -1,11 +1,18 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Modal,
+  TextInput,
+  Switch,
+  ActivityIndicator,
+  Alert
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
+import { request } from "../../api/client";
 import {
   ArrowLeft,
   Bell,
@@ -13,6 +20,8 @@ import {
   PencilLine,
   ChevronRight,
   CircleDollarSign,
+  Trash2,
+  Plus
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 
@@ -20,13 +29,104 @@ const PAYMENT_METHODS = [];
 const PAYOUT_HISTORY = [];
 
 const PaymentSettingsScreen = ({ route, navigation }) => {
-  const { restaurant } = route?.params || {};
+  const [restaurant, setRestaurant] = useState(route?.params?.restaurant || null);
+  const [bankAccounts, setBankAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [accountHolder, setAccountHolder] = useState("");
+  const [isDefault, setIsDefault] = useState(false);
+
+  const fetchRestaurant = async () => {
+    try {
+      const data = await request('/restaurants/mine');
+      setRestaurant(data);
+      setBankAccounts(data.bankAccounts || []);
+    } catch (e) {
+      console.log('Error fetching restaurant', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchRestaurant();
+    }, [])
+  );
+
+  const openAddModal = () => {
+    setEditingId(null);
+    setBankName("");
+    setAccountNumber("");
+    setAccountHolder("");
+    setIsDefault(false);
+    setModalVisible(true);
+  };
+
+  const openEditModal = (acc) => {
+    setEditingId(acc._id);
+    setBankName(acc.bankName);
+    setAccountNumber(acc.accountNumber);
+    setAccountHolder(acc.accountHolder);
+    setIsDefault(acc.isDefault);
+    setModalVisible(true);
+  };
+
+  const saveBankAccount = async () => {
+    if (!bankName || !accountNumber || !accountHolder) {
+      Alert.alert("Lỗi", "Vui lòng nhập đầy đủ thông tin");
+      return;
+    }
+    setIsSaving(true);
+    try {
+      const body = { bankName, accountNumber, accountHolder, isDefault };
+      if (editingId) {
+        await request(`/restaurants/${restaurant._id}/bank-accounts/${editingId}`, { method: 'PUT', body });
+      } else {
+        await request(`/restaurants/${restaurant._id}/bank-accounts`, { method: 'POST', body });
+      }
+      setModalVisible(false);
+      fetchRestaurant();
+    } catch (e) {
+      Alert.alert("Lỗi", "Không thể lưu tài khoản ngân hàng");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const deleteBankAccount = (id) => {
+    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa tài khoản này?", [
+      { text: "Hủy", style: "cancel" },
+      { text: "Xóa", style: "destructive", onPress: async () => {
+        try {
+          await request(`/restaurants/${restaurant._id}/bank-accounts/${id}`, { method: 'DELETE' });
+          fetchRestaurant();
+        } catch (e) {
+          Alert.alert("Lỗi", "Không thể xóa tài khoản");
+        }
+      }}
+    ]);
+  };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
+
   return (
-    <ScrollView 
-      style={styles.container} 
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-      showsVerticalScrollIndicator={false}
-    >
+    <View style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -41,17 +141,6 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.sectionLabel}>DOANH THU CHỜ THANH TOÁN</Text>
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceValue}>42.850.000 VND</Text>
-          <Text style={styles.balanceSubtext}>
-            Đã cập nhật theo chu kỳ T2CN, 2h sáng
-          </Text>
-          <TouchableOpacity style={styles.balanceAction}>
-            <Text style={styles.balanceActionText}>Xem đối soát chi tiết</Text>
-          </TouchableOpacity>
-        </View>
-
         <View style={styles.panel}>
           <View style={styles.panelHeader}>
             <View>
@@ -60,30 +149,43 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
                 Nơi nhận doanh thu sau đối soát
               </Text>
             </View>
-            <View style={styles.defaultTag}>
-              <Text style={styles.defaultTagText}>Mặc định</Text>
-            </View>
+            <TouchableOpacity onPress={openAddModal} style={styles.addBtn}>
+              <Plus size={16} color={Colors.primary} />
+              <Text style={styles.addBtnText}>Thêm mới</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.bankCard}>
-            <View style={styles.bankIcon}>
-              <Wallet size={18} color={Colors.textSecondary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.bankName}>
-                Ngân hàng TMCP Ngoại thương (VCB)
-              </Text>
-              <Text style={styles.bankMeta}>•••••••• 8951</Text>
-              <Text style={styles.bankMeta}>NGUYEN VAN MERCHANT</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity style={styles.textAction}>
-            <PencilLine size={15} color={Colors.primary} />
-            <Text style={styles.textActionLabel}>
-              Thay đổi thông tin nhận tiền
-            </Text>
-          </TouchableOpacity>
+          {bankAccounts.length === 0 ? (
+            <Text style={{ textAlign: 'center', color: Colors.textSecondary, marginVertical: 20 }}>Chưa có tài khoản nào</Text>
+          ) : (
+            bankAccounts.map(acc => (
+              <View key={acc._id} style={styles.bankCard}>
+                <View style={styles.bankIcon}>
+                  <Wallet size={18} color={Colors.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <Text style={styles.bankName}>{acc.bankName}</Text>
+                    {acc.isDefault && (
+                      <View style={styles.defaultTagSmall}>
+                        <Text style={styles.defaultTagTextSmall}>Mặc định</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.bankMeta}>•••••••• {acc.accountNumber.slice(-4)}</Text>
+                  <Text style={styles.bankMeta}>{acc.accountHolder}</Text>
+                </View>
+                <View style={styles.bankActions}>
+                  <TouchableOpacity onPress={() => openEditModal(acc)} style={styles.actionBtn}>
+                    <PencilLine size={16} color={Colors.primary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => deleteBankAccount(acc._id)} style={styles.actionBtn}>
+                    <Trash2 size={16} color="#E53935" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))
+          )}
         </View>
 
         <View style={styles.panel}>
@@ -147,6 +249,60 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
         </View>
       </View>
     </ScrollView>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.modalTitle}>{editingId ? 'Sửa thông tin tài khoản' : 'Thêm tài khoản mới'}</Text>
+
+            <Text style={styles.inputLabel}>Tên ngân hàng</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="VD: Vietcombank, Techcombank..."
+              value={bankName}
+              onChangeText={setBankName}
+            />
+
+            <Text style={styles.inputLabel}>Số tài khoản</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập số tài khoản"
+              keyboardType="numeric"
+              value={accountNumber}
+              onChangeText={setAccountNumber}
+            />
+
+            <Text style={styles.inputLabel}>Tên chủ tài khoản</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="VIET HOA KHONG DAU"
+              autoCapitalize="characters"
+              value={accountHolder}
+              onChangeText={setAccountHolder}
+            />
+
+            <View style={styles.switchRow}>
+              <Text style={styles.switchLabel}>Đặt làm tài khoản mặc định</Text>
+              <Switch value={isDefault} onValueChange={setIsDefault} trackColor={{ true: Colors.primary }} />
+            </View>
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+                <Text style={styles.cancelBtnText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveBtn} onPress={saveBankAccount} disabled={isSaving}>
+                {isSaving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Lưu</Text>}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -211,19 +367,31 @@ const styles = StyleSheet.create({
   },
   panelTitle: { fontSize: 16, fontWeight: "800", color: Colors.text },
   panelSubtext: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
-  defaultTag: {
-    backgroundColor: "#B8F5C7",
-    borderRadius: 12,
+  panelSubtext: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
+  addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FDECE7',
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderRadius: 8,
   },
-  defaultTagText: { color: "#0B8A42", fontSize: 11, fontWeight: "700" },
+  addBtnText: { color: Colors.primary, fontSize: 12, fontWeight: "700", marginLeft: 4 },
+  defaultTagSmall: {
+    backgroundColor: "#B8F5C7",
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  defaultTagTextSmall: { color: "#0B8A42", fontSize: 9, fontWeight: "700" },
   bankCard: {
     backgroundColor: Colors.white,
     borderRadius: 18,
     padding: 14,
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 10,
   },
   bankIcon: {
     width: 44,
@@ -241,12 +409,16 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   bankMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 3 },
-  textAction: { flexDirection: "row", alignItems: "center", marginTop: 14 },
-  textActionLabel: {
-    marginLeft: 8,
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "700",
+  bankMeta: { fontSize: 12, color: Colors.textSecondary, marginTop: 3 },
+  bankActions: {
+    flexDirection: "row",
+    marginLeft: 10,
+  },
+  actionBtn: {
+    padding: 8,
+    backgroundColor: '#F7F7F7',
+    borderRadius: 8,
+    marginLeft: 6,
   },
   methodCard: {
     backgroundColor: Colors.white,
@@ -314,6 +486,83 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
     marginTop: 4,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContainer: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: Colors.text,
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    marginBottom: 6,
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: "#F7F7F7",
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    height: 48,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  switchLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 15,
+  },
+  cancelBtn: {
+    flex: 1,
+    backgroundColor: "#F0F0F0",
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cancelBtnText: {
+    color: Colors.text,
+    fontSize: 15,
+    fontWeight: "600",
+  },
+  saveBtn: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  saveBtnText: {
+    color: Colors.white,
+    fontSize: 15,
+    fontWeight: "600",
   },
 });
 

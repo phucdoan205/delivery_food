@@ -7,7 +7,9 @@ const {
   updateFood,
   deleteFood,
   getCategories,
-  createCategory
+  createCategory,
+  incrementViewCount,
+  toggleLikeFood
 } = require('../controllers/foodController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -50,7 +52,7 @@ router.get('/restaurant/:restaurantId', getFoodsByRestaurant)
  *       201:
  *         description: Food item created
  */
-router.post('/', protect, authorize('merchant', 'admin'), createFood)
+router.post('/', protect, authorize('merchant', 'admin', 'staff'), createFood)
 
 /**
  * @swagger
@@ -87,8 +89,11 @@ router.post('/', protect, authorize('merchant', 'admin'), createFood)
  *         description: Food item updated
  */
 router.route('/:id')
-  .put(protect, authorize('merchant', 'admin'), updateFood)
-  .delete(protect, authorize('merchant', 'admin'), deleteFood)
+  .put(protect, authorize('merchant', 'admin', 'staff'), updateFood)
+  .delete(protect, authorize('merchant', 'admin', 'staff'), deleteFood)
+
+router.put('/:id/view', incrementViewCount)
+router.post('/:id/like', protect, toggleLikeFood)
 
 /**
  * @swagger
@@ -122,6 +127,6 @@ router.route('/:id')
  *         description: Category created
  */
 router.get('/categories', getCategories)
-router.post('/categories', protect, authorize('admin'), createCategory)
+router.post('/categories', protect, authorize('admin', 'merchant', 'staff'), createCategory)
 
 module.exports = router
