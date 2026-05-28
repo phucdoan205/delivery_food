@@ -46,49 +46,63 @@ const CheckoutScreen = ({ route, navigation }) => {
 
     setLoading(true);
     try {
-      const orderItems = items.map(item => ({
-        foodId: item.foodId?._id || item.foodId,
-        quantity: item.quantity,
-        price: item.foodId?.price || 0
+      const itemsByRest = items.reduce((acc, item) => {
+        const rId = item.foodId?.restaurantId?._id || item.foodId?.restaurantId?.id || item.foodId?.restaurantId;
+        if (rId) {
+          if (!acc[rId]) acc[rId] = [];
+          acc[rId].push(item);
+        }
+        return acc;
+      }, {});
+
+      const numOfRest = Object.keys(itemsByRest).length;
+
+      await Promise.all(Object.keys(itemsByRest).map(async (rId) => {
+        const groupItems = itemsByRest[rId];
+        const groupOrderItems = groupItems.map(item => ({
+          foodId: item.foodId?._id || item.foodId,
+          quantity: item.quantity,
+          price: item.foodId?.price || 0
+        }));
+
+        const groupSubtotal = groupItems.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
+        const groupShippingFee = 15000;
+        
+        let promoCode = '';
+        let discountAmount = 0;
+        const promo = appliedPromos[rId];
+        if (promo) {
+          promoCode = promo.code;
+          discountAmount = promo.discountType === 'percentage' 
+            ? (groupSubtotal * promo.discountValue) / 100 
+            : promo.discountValue;
+          if (discountAmount > groupSubtotal) discountAmount = groupSubtotal;
+        }
+
+        const momoDiscount = paymentMethod === 'momo' ? (15000 / numOfRest) : 0;
+        const groupTotal = Math.max(0, groupSubtotal + groupShippingFee - discountAmount - momoDiscount);
+
+        return request('/orders', {
+          method: 'POST',
+          body: {
+            restaurantId: rId,
+            items: groupOrderItems,
+            totalPrice: groupTotal,
+            deliveryAddress: userProfile?.address || "Chưa cập nhật địa chỉ",
+            paymentMethod,
+            promoCode,
+            discountAmount,
+            shippingFee: groupShippingFee
+          }
+        });
       }));
 
-      const restaurantId = items[0]?.foodId?.restaurantId?._id || items[0]?.foodId?.restaurantId;
-      const promo = appliedPromos[restaurantId];
-      let discountAmount = 0;
-      let promoCode = '';
-      
-      if (promo) {
-        promoCode = promo.code;
-        const groupSubtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
-        discountAmount = promo.discountType === 'percentage' 
-          ? (groupSubtotal * promo.discountValue) / 100 
-          : promo.discountValue;
-        if (discountAmount > groupSubtotal) discountAmount = groupSubtotal;
-      }
-
-      await request('/orders', {
-        method: 'POST',
-        body: {
-          restaurantId,
-          items: orderItems,
-          totalPrice: total,
-          deliveryAddress: userProfile?.address || "Chưa cập nhật địa chỉ",
-          paymentMethod,
-          promoCode,
-          discountAmount,
-          shippingFee
-        }
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'Main', params: { screen: 'Đơn hàng' } }
+        ]
       });
-
-      Alert.alert('Thành công', 'Đơn hàng của bạn đã được ghi nhận!', [
-        {
-          text: 'Xem đơn hàng',
-          onPress: () => navigation.reset({
-            index: 0,
-            routes: [{ name: 'Main', state: { routes: [{ name: 'Lịch sử' }] } }]
-          })
-        }
-      ]);
     } catch (error) {
       Alert.alert('Lỗi', error.message || 'Không thể đặt hàng, vui lòng thử lại');
     } finally {

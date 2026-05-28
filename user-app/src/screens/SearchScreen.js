@@ -7,6 +7,7 @@ import { request } from '../api/client';
 const SearchScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [restaurants, setRestaurants] = useState([]);
+  const [profile, setProfile] = useState(null);
 
   React.useEffect(() => {
     const fetchRestaurants = async () => {
@@ -17,11 +18,29 @@ const SearchScreen = ({ navigation }) => {
         console.log('Error fetching restaurants', error);
       }
     };
-    fetchRestaurants();
-  }, []);
+    const fetchProfile = async () => {
+      try {
+        const profileData = await request('/auth/profile');
+        setProfile(profileData);
+      } catch (error) {}
+    };
 
-  const recentSearches = ['Pizza Nấm Truffle', 'Hộp Sushi', 'Salad hữu cơ'];
-  const popularTags = ['#FreeShip', '#ComboHời', '#MónÝThủCông', '#CàPhêLạnh'];
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchRestaurants();
+      fetchProfile();
+    });
+
+    return unsubscribe;
+  }, [navigation]);
+
+  const recentSearches = [];
+  const popularTags = [];
+  
+  const filteredRestaurants = restaurants.filter(r => 
+    r.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    r.category?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    r.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const renderRestaurantItem = ({ item }) => (
     <TouchableOpacity 
@@ -51,13 +70,13 @@ const SearchScreen = ({ navigation }) => {
           <Text style={styles.priceLevel}>$$$</Text>
         </View>
         <Text style={styles.itemDesc} numberOfLines={2}>
-          Mỳ Ý thủ công chính gốc và bánh focaccia nướng củi chuẩn vị.
+          {item.description || item.category || 'Món ngon tuyệt đỉnh, chuẩn vị nhà làm.'}
         </Text>
         <View style={styles.itemFooter}>
           <View style={styles.footerInfo}>
-            <Text style={styles.footerText}>25-35 phút</Text>
+            <Text style={styles.footerText}>15-25 phút</Text>
             <View style={styles.dot} />
-            <Text style={styles.footerText}>1.2 km</Text>
+            <Text style={styles.footerText}>{((item.rating || 4.5) * 0.3).toFixed(1)} km</Text>
           </View>
           <View style={styles.freeShipBadge}>
             <Text style={styles.freeShipText}>MIỄN PHÍ GIAO HÀNG</Text>
@@ -72,13 +91,16 @@ const SearchScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.locationHeader}>
           <MapPin size={16} color={COLORS.primary} />
-          <Text style={styles.locationText}>Vị trí hiện tại</Text>
-          <View style={styles.avatarContainer}>
+          <Text style={styles.locationText} numberOfLines={1}>{profile?.address || 'Vị trí hiện tại'}</Text>
+          <TouchableOpacity 
+            style={styles.avatarContainer}
+            onPress={() => navigation.navigate('Cá nhân')}
+          >
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop' }} 
+              source={{ uri: profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.fullName || 'U'}&background=E63946&color=fff` }} 
               style={styles.avatar} 
             />
-          </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.searchBarContainer}>
@@ -86,7 +108,7 @@ const SearchScreen = ({ navigation }) => {
             <Search size={20} color={COLORS.textLight} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Mỳ Ý thủ công"
+              placeholder="Mỳ Ý, Bún chả..."
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
@@ -143,11 +165,11 @@ const SearchScreen = ({ navigation }) => {
 
         <View style={styles.resultsSection}>
           <View style={styles.resultsHeader}>
-            <Text style={styles.resultsTitle}>Kết quả tinh tuyển</Text>
-            <Text style={styles.resultsCount}>Tìm thấy 12 nhà hàng</Text>
+            <Text style={styles.resultsTitle}>Kết quả tìm kiếm</Text>
+            <Text style={styles.resultsCount}>Tìm thấy {filteredRestaurants.length} nhà hàng</Text>
           </View>
           <FlatList
-            data={restaurants}
+            data={filteredRestaurants}
             renderItem={renderRestaurantItem}
             keyExtractor={item => item._id || item.id}
             scrollEnabled={false}

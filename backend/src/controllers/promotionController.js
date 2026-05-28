@@ -196,6 +196,10 @@ const savePromotion = async (req, res) => {
       return res.status(400).json({ message: 'Promotion is no longer active' });
     }
 
+    if (promotion.usageLimit > 0 && promotion.usageCount >= promotion.usageLimit) {
+      return res.status(400).json({ message: 'Mã giảm giá này đã hết lượt sử dụng' });
+    }
+
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -211,6 +215,17 @@ const savePromotion = async (req, res) => {
 
     user.savedPromotions.push(promotion._id);
     await user.save();
+
+    promotion.usageCount += 1;
+    await promotion.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('promotion_updated', {
+        restaurantId: promotion.restaurantId,
+        promotion: promotion
+      });
+    }
 
     res.json({ message: 'Saved successfully', savedPromotions: user.savedPromotions });
   } catch (error) {

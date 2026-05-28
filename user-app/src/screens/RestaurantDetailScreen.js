@@ -114,28 +114,39 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
     }
   };
 
-  const renderPromoItem = ({ item }) => (
-    <View style={styles.promoCard}>
-      <View style={styles.promoIconBg}>
-        <Ticket size={20} color={COLORS.primary} />
+  const renderPromoItem = ({ item }) => {
+    const isExhausted = item.usageLimit > 0 && item.usageCount >= item.usageLimit;
+    const isApplied = appliedPromos[item._id];
+    
+    return (
+      <View style={[styles.promoCard, isExhausted && { opacity: 0.5 }]}>
+        <View style={styles.promoIconBg}>
+          <Ticket size={20} color={COLORS.primary} />
+        </View>
+        <View style={styles.promoInfo}>
+          <Text style={styles.promoTitle}>{item.title}</Text>
+          <Text style={styles.promoDesc}>
+            Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`}
+          </Text>
+        </View>
+        <TouchableOpacity 
+          style={[
+            styles.applyBtn, 
+            (isApplied || isExhausted) && { backgroundColor: '#F0F0F0' }
+          ]} 
+          onPress={() => handleApplyPromo(item)}
+          disabled={isApplied || isExhausted}
+        >
+          <Text style={[
+            styles.applyBtnText, 
+            (isApplied || isExhausted) && { color: COLORS.textSecondary }
+          ]}>
+            {isApplied ? 'Đã nhận' : (isExhausted ? 'Đã hết lượt' : 'Nhận')}
+          </Text>
+        </TouchableOpacity>
       </View>
-      <View style={styles.promoInfo}>
-        <Text style={styles.promoTitle}>{item.title}</Text>
-        <Text style={styles.promoDesc}>
-          Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`}
-        </Text>
-      </View>
-      <TouchableOpacity 
-        style={[styles.applyBtn, appliedPromos[item._id] && { backgroundColor: '#F0F0F0' }]} 
-        onPress={() => handleApplyPromo(item)}
-        disabled={appliedPromos[item._id]}
-      >
-        <Text style={[styles.applyBtnText, appliedPromos[item._id] && { color: COLORS.textSecondary }]}>
-          {appliedPromos[item._id] ? 'Đã nhận' : 'Nhận'}
-        </Text>
-      </TouchableOpacity>
-    </View>
-  );
+    );
+  };
 
   const renderHeader = () => (
     <View style={styles.header}>

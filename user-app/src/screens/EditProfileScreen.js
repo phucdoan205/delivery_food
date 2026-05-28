@@ -104,7 +104,7 @@ const EditProfileScreen = ({ navigation }) => {
     );
   }
 
-  const profileAvatar = avatar || 'https://images.unsplash.com/photo-1627087820883-7a102b79179a?q=80&w=200&auto=format&fit=crop';
+  const profileAvatar = avatar || `https://ui-avatars.com/api/?name=${name || 'U'}&background=E63946&color=fff`;
 
   return (
     <SafeAreaView style={styles.container}>

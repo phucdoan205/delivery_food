@@ -53,7 +53,7 @@ const ProfileScreen = ({ navigation }) => {
     );
   }
 
-  const userAvatar = profile?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=200&auto=format&fit=crop';
+  const userAvatar = profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.fullName || 'U'}&background=E63946&color=fff`;
 
   return (
     <SafeAreaView style={styles.container}>

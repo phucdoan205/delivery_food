@@ -11,7 +11,7 @@ const PromotionsScreen = ({ route, navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
+  
   // Form states
   const [title, setTitle] = useState('');
   const [code, setCode] = useState('');
@@ -19,6 +19,7 @@ const PromotionsScreen = ({ route, navigation }) => {
   const [discountValue, setDiscountValue] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [usageLimit, setUsageLimit] = useState('');
 
   const fetchPromotions = async () => {
     try {
@@ -48,6 +49,7 @@ const PromotionsScreen = ({ route, navigation }) => {
     const nextWeek = new Date();
     nextWeek.setDate(nextWeek.getDate() + 7);
     setEndDate(nextWeek.toISOString().split('T')[0]);
+    setUsageLimit('');
     setModalVisible(true);
   };
 
@@ -59,6 +61,7 @@ const PromotionsScreen = ({ route, navigation }) => {
     setDiscountValue(item.discountValue?.toString() || '');
     setStartDate(new Date(item.startDate).toISOString().split('T')[0]);
     setEndDate(new Date(item.endDate).toISOString().split('T')[0]);
+    setUsageLimit(item.usageLimit ? item.usageLimit.toString() : '');
     setModalVisible(true);
   };
 
@@ -99,7 +102,8 @@ const PromotionsScreen = ({ route, navigation }) => {
       discountType,
       discountValue: Number(discountValue),
       startDate: new Date(startDate).toISOString(),
-      endDate: new Date(endDate).toISOString()
+      endDate: new Date(endDate).toISOString(),
+      usageLimit: usageLimit ? Number(usageLimit) : 0
     };
 
     try {
@@ -139,7 +143,7 @@ const PromotionsScreen = ({ route, navigation }) => {
       <View style={styles.promoFooter}>
         <View style={styles.footerItem}>
           <Users size={14} color={Colors.textSecondary} />
-          <Text style={styles.footerText}>{item.usageCount || 0} lượt dùng</Text>
+          <Text style={styles.footerText}>{item.usageCount || 0}{item.usageLimit ? `/${item.usageLimit}` : ''} lượt dùng</Text>
         </View>
         <View style={styles.footerItem}>
           <Calendar size={14} color={Colors.textSecondary} />
@@ -275,6 +279,15 @@ const PromotionsScreen = ({ route, navigation }) => {
               placeholder="YYYY-MM-DD"
               value={endDate}
               onChangeText={setEndDate}
+            />
+
+            <Text style={styles.inputLabel}>Số lượt dùng (Nhập 0 hoặc để trống nếu không giới hạn)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="VD: 100"
+              value={usageLimit}
+              onChangeText={setUsageLimit}
+              keyboardType="numeric"
             />
 
             <View style={styles.modalActions}>

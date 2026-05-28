@@ -15,6 +15,15 @@ const ReadyScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [ignoredOrders, setIgnoredOrders] = useState([]);
 
+  // Deterministic pseudo-random based on string
+  const getOffset = (str, index) => {
+    if (!str) return 0;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    const val = Math.sin(hash++) * 10000;
+    return (val - Math.floor(val)) * 0.05 - 0.025;
+  };
+
   const fetchProfile = async () => {
     try {
       const data = await request('/auth/profile');
@@ -117,17 +126,35 @@ const ReadyScreen = ({ navigation }) => {
     );
   };
 
-  const renderMapPreview = () => (
-    <View style={styles.mapContainer}>
-      <MapTilerView center={[106.660172, 10.762622]} zoom={12} markers={[{ id: 1, lat: 10.762622, lng: 106.660172, title: 'Vị trí hiện tại', color: '#3B82F6' }]} />
-      <View pointerEvents="none" style={styles.mapOverlay}>
-        <View style={styles.locationBadge}>
-          <Ionicons name="navigate" size={16} color={COLORS.primary} />
-          <Text style={styles.locationText}>Quận 1, TP.HCM</Text>
+  const renderMapPreview = () => {
+    const availableOrders = orders.filter(o => o.status === 'ready' && !ignoredOrders.includes(o._id));
+    
+    const userMarker = { id: 'user', lat: 10.762622, lng: 106.660172, title: 'Vị trí hiện tại', color: '#3B82F6', label: 'U' };
+    
+    const orderMarkers = availableOrders.map((o, index) => {
+      const restId = o.restaurantId?._id || o._id;
+      return {
+        id: o._id,
+        lat: 10.762622 + getOffset(restId, index),
+        lng: 106.660172 + getOffset(restId + 'lng', index),
+        title: o.restaurantId?.name || 'Đơn hàng',
+        color: COLORS.primary,
+        label: (index + 1).toString()
+      };
+    });
+
+    return (
+      <View style={styles.mapContainer}>
+        <MapTilerView center={[106.660172, 10.762622]} zoom={12} markers={[userMarker, ...orderMarkers]} />
+        <View pointerEvents="none" style={styles.mapOverlay}>
+          <View style={styles.locationBadge}>
+            <Ionicons name="navigate" size={16} color={COLORS.primary} />
+            <Text style={styles.locationText}>Quận 1, TP.HCM</Text>
+          </View>
         </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   if (loading) {
     return (

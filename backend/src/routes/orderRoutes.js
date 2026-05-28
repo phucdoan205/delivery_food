@@ -7,7 +7,8 @@ const {
   getMyOrders,
   getMerchantOrders,
   getAllOrdersAdmin,
-  getShipperOrders
+  getShipperOrders,
+  getRoute
 } = require('../controllers/orderController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -18,6 +19,9 @@ const { authorize } = require('../middlewares/roleMiddleware')
  *   name: Orders
  *   description: Order processing and tracking
  */
+
+// Route proxy for OSRM to bypass mobile network blocks
+router.get('/route', getRoute)
 
 router.use(protect)
 

@@ -196,7 +196,7 @@ const CartScreen = ({ navigation }) => {
         <TouchableOpacity onPress={handleClearCart}><Text style={styles.clearAll}>Xoá tất cả</Text></TouchableOpacity>
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 130 }]}>
         
         {Object.values(groupedItems).map(group => {
           const rId = group.restaurant._id || group.restaurant.id;
@@ -329,11 +329,6 @@ const CartScreen = ({ navigation }) => {
             <Text style={styles.totalValue}>{total.toLocaleString()}đ</Text>
           </View>
         </View>
-
-        <TouchableOpacity style={styles.addressBar}>
-          <MapPin size={16} color={COLORS.textLight} />
-          <Text style={styles.addressText} numberOfLines={1}>Gửi đến: 123 Lê Lợi, Phường Bến Thành, Quận 1</Text>
-        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.footer}>

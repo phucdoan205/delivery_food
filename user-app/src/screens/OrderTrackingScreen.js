@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, Bell, HelpCircle, Phone, MessageSquare, ChevronRight, MapPin } from 'lucide-react-native';
-import { request } from '../api/client';
+import { ArrowLeft, Bell, HelpCircle, Phone, MessageSquare, MapPin } from 'lucide-react-native';
+import { request, API_URL } from '../api/client';
+import io from 'socket.io-client';
 import MapTilerView from '../components/MapTilerView';
 
 const OrderTrackingScreen = ({ route, navigation }) => {
   const { orderId } = route.params || {};
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [routeData, setRouteData] = useState(null);
 
   const fetchOrderDetails = async (showLoading = false) => {
     if (showLoading) setLoading(true);
@@ -35,14 +37,24 @@ const OrderTrackingScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
     fetchOrderDetails(true);
     
-    // Set up polling every 5 seconds to update status automatically
-    const interval = setInterval(() => {
-      fetchOrderDetails(false);
-    }, 5000);
+    try {
+      const socketUrl = API_URL.replace('/api', '');
+      socket = io(socketUrl);
+      socket.on('order_status_updated', (updatedOrder) => {
+        if (!orderId || updatedOrder._id === orderId) {
+          fetchOrderDetails(false);
+        }
+      });
+    } catch (error) {
+      console.log('Socket connection error', error);
+    }
 
-    return () => clearInterval(interval);
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, [orderId]);
 
   if (loading) {
@@ -80,6 +92,84 @@ const OrderTrackingScreen = ({ route, navigation }) => {
   const itemsCount = order.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
   const itemsText = order.items?.map(i => `${i.quantity}x ${i.foodId?.name || 'Món ăn'}`).join(', ') || '';
 
+  // Calculate deterministic offset similar to Shipper App for demo purposes
+  const getOffset = (seedStr, index) => {
+    let hash = 0;
+    const str = seedStr ? seedStr.toString() : index.toString();
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const offsetBase = (hash % 100) / 10000;
+    return offsetBase * (index % 2 === 0 ? 1 : -1);
+  };
+
+  const handleMarkerPress = async (id) => {
+    if (!order) return;
+    
+    // Default Shipper coordinates (or center)
+    const shipperLng = 106.660172;
+    const shipperLat = 10.762622;
+    
+    const restId = order.restaurantId?._id || order._id;
+    const custId = order.userId?._id || order.deliveryAddress || 'customer';
+    
+    let targetLng, targetLat;
+    if (id === 'rest') {
+      targetLng = 106.660172 + getOffset(restId + 'lng', 0);
+      targetLat = 10.762622 + getOffset(restId, 0);
+    } else if (id === 'cust') {
+      targetLng = 106.660172 + getOffset(custId + 'lng', 1);
+      targetLat = 10.762622 + getOffset(custId, 1);
+    } else {
+      return; // 'shipper' marker
+    }
+
+    try {
+      const coordinates = `${shipperLng},${shipperLat};${targetLng},${targetLat}`;
+      const json = await request(`/orders/route?coordinates=${coordinates}`);
+      if (json.routes && json.routes[0]) {
+        setRouteData(json.routes[0].geometry);
+      }
+    } catch (e) {
+      console.log('Routing failed, using fallback', e);
+      setRouteData({
+        type: 'LineString',
+        coordinates: [
+          [shipperLng, shipperLat],
+          [targetLng, targetLat]
+        ]
+      });
+    }
+  };
+
+  const getDynamicMarkers = () => {
+    const defaultShipper = { id: 'shipper', lat: 10.762622, lng: 106.660172, title: 'Shipper', color: '#3B82F6', label: 'U' };
+    if (!order) return [defaultShipper];
+
+    const restId = order.restaurantId?._id || order._id;
+    const custId = order.userId?._id || order.deliveryAddress || 'customer';
+    
+    return [
+      defaultShipper,
+      {
+        id: 'rest',
+        lat: 10.762622 + getOffset(restId, 0),
+        lng: 106.660172 + getOffset(restId + 'lng', 0),
+        title: order.restaurantId?.name || 'Nhà hàng',
+        color: COLORS.primary,
+        label: 'N'
+      },
+      {
+        id: 'cust',
+        lat: 10.762622 + getOffset(custId, 1),
+        lng: 106.660172 + getOffset(custId + 'lng', 1),
+        title: 'Bạn',
+        color: '#10B981',
+        label: 'K'
+      }
+    ];
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -95,10 +185,9 @@ const OrderTrackingScreen = ({ route, navigation }) => {
         <MapTilerView 
           center={[106.660172, 10.762622]} 
           zoom={13} 
-          markers={[
-            { id: 1, lat: 10.762622, lng: 106.660172, title: 'Nhà', color: '#10B981' },
-            { id: 2, lat: 10.772622, lng: 106.650172, title: 'Shipper', color: '#EF4444' }
-          ]} 
+          markers={getDynamicMarkers()} 
+          route={routeData}
+          onMarkerPress={handleMarkerPress}
         />
       </View>
 
@@ -140,10 +229,10 @@ const OrderTrackingScreen = ({ route, navigation }) => {
           </View>
         </View>
 
-        {order.shipperId ? (
+        {order.shipperId && (
           <View style={styles.driverCard}>
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=100&auto=format&fit=crop' }} 
+              source={{ uri: order.shipperId?.avatar || `https://ui-avatars.com/api/?name=${order.shipperId?.fullName || 'T'}&background=3B82F6&color=fff` }} 
               style={styles.driverAvatar} 
             />
             <View style={styles.driverInfo}>
@@ -155,14 +244,6 @@ const OrderTrackingScreen = ({ route, navigation }) => {
               <TouchableOpacity style={[styles.driverActionBtn, { backgroundColor: COLORS.primary }]} onPress={() => Alert.alert('Gọi tài xế', `Đang gọi đến số: ${order.shipperId.phone}`)}><Phone size={20} color={COLORS.white} /></TouchableOpacity>
             </View>
           </View>
-        ) : (
-          <View style={[styles.driverCard, { backgroundColor: '#F5F5F5' }]}>
-            <View style={{ flex: 1, alignItems: 'center', paddingVertical: 5 }}>
-              <Text style={{ fontWeight: 'bold', color: COLORS.textSecondary }}>
-                {order.status === 'preparing' ? 'Cửa hàng đang làm món...' : 'Đang tìm kiếm tài xế thích hợp...'}
-              </Text>
-            </View>
-          </View>
         )}
 
         <View style={styles.orderDetailsCard}>
@@ -170,7 +251,13 @@ const OrderTrackingScreen = ({ route, navigation }) => {
             <Text style={styles.orderTitle}>Chi tiết đơn hàng</Text>
           </View>
           <View style={styles.orderItem}>
-            <View style={styles.itemIcon}><Text>🍱</Text></View>
+            <View style={[styles.itemIcon, { backgroundColor: 'transparent', overflow: 'hidden' }]}>
+              {order.items?.[0]?.foodId?.image ? (
+                <Image source={{ uri: order.items[0].foodId.image }} style={{ width: '100%', height: '100%' }} />
+              ) : (
+                <Text>🍱</Text>
+              )}
+            </View>
             <View style={styles.itemInfo}>
               <Text style={styles.itemName} numberOfLines={1}>{order.restaurantId?.name || 'Nhà hàng'}</Text>
               <Text style={styles.itemMeta} numberOfLines={1}>{itemsCount} món • {itemsText}</Text>
@@ -179,7 +266,7 @@ const OrderTrackingScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.addrRow}>
             <MapPin size={16} color={COLORS.primary} />
-            <Text style={styles.addrText}>{order.deliveryAddress}</Text>
+            <Text style={styles.addrText}>{order.restaurantId?.address || 'Địa chỉ cửa hàng'}</Text>
           </View>
         </View>
       </ScrollView>

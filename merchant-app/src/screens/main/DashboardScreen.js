@@ -4,7 +4,8 @@ import { Bell, ChevronRight, TrendingUp } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import StatCard from '../../components/StatCard';
 import { LayoutDashboard, ShoppingBag, Star, TrendingUp as TrendingUpIcon } from 'lucide-react-native';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
+import io from 'socket.io-client';
 
 const { width } = Dimensions.get('window');
 
@@ -34,30 +35,32 @@ const DashboardScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
+    
     const unsubscribe = navigation.addListener('focus', () => {
       fetchData();
     });
-    return unsubscribe;
-  }, [navigation]);
-
-  const handleUpdateStatus = async (orderId, currentStatus) => {
-    let nextStatus = 'confirmed';
-    if (currentStatus === 'pending') nextStatus = 'confirmed';
-    else if (currentStatus === 'confirmed') nextStatus = 'preparing';
-    else if (currentStatus === 'preparing') nextStatus = 'delivering';
-    else return;
 
     try {
-      await request(`/orders/${orderId}/status`, {
-        method: 'PUT',
-        body: { status: nextStatus }
+      const socketUrl = API_URL.replace('/api', '');
+      socket = io(socketUrl);
+      socket.on('new_order', () => {
+        fetchData();
       });
-      Alert.alert('Thành công', 'Cập nhật trạng thái đơn hàng thành công');
-      fetchData();
+      socket.on('order_status_updated', () => {
+        fetchData();
+      });
     } catch (error) {
-      Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái đơn hàng');
+      console.log('Socket connection error', error);
     }
-  };
+
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
+  }, [navigation]);
+
+
 
   if (loading) {
     return (
@@ -78,12 +81,7 @@ const DashboardScreen = ({ navigation }) => {
 
   const displayOrders = orders.slice(0, 3);
 
-  const getActionButtonText = (status) => {
-    if (status === 'pending') return 'Chấp nhận';
-    if (status === 'confirmed') return 'Chuẩn bị';
-    if (status === 'preparing') return 'Giao hàng';
-    return null;
-  };
+
 
   return (
     <ScrollView 
@@ -173,27 +171,22 @@ const DashboardScreen = ({ navigation }) => {
         ) : (
           displayOrders.map((order, index) => {
             const firstItemName = order.items?.[0]?.foodId?.name || 'Món ăn';
+            const firstItemImage = order.items?.[0]?.foodId?.image || 'https://via.placeholder.com/150';
             const extraItemsCount = (order.items?.length || 1) - 1;
             const itemText = extraItemsCount > 0 ? `${firstItemName} +${extraItemsCount} món` : firstItemName;
-            const actionText = getActionButtonText(order.status);
 
             return (
               <View key={index} style={styles.orderItem}>
-                <View style={styles.orderBadge}>
-                  <Text style={styles.orderBadgeText}>#{order._id.substring(order._id.length - 4).toUpperCase()}</Text>
+                <View style={{ alignItems: 'center' }}>
+                  <Image source={{ uri: firstItemImage }} style={{ width: 50, height: 50, borderRadius: 15 }} />
+                  <Text style={{ fontSize: 10, fontWeight: '800', color: Colors.primary, marginTop: 4 }}>
+                    #{order._id.substring(order._id.length - 6).toUpperCase()}
+                  </Text>
                 </View>
                 <View style={styles.orderInfo}>
                   <Text style={styles.orderName}>{itemText}</Text>
                   <Text style={styles.orderNote}>Trạng thái: {order.status.toUpperCase()}</Text>
                 </View>
-                {actionText && (
-                  <TouchableOpacity 
-                    style={styles.orderAction}
-                    onPress={() => handleUpdateStatus(order._id, order.status)}
-                  >
-                    <Text style={styles.orderActionText}>{actionText}</Text>
-                  </TouchableOpacity>
-                )}
               </View>
             );
           })

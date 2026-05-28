@@ -9,14 +9,19 @@ import { Alert } from 'react-native';
 const OrderHistoryScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Hiện tại');
   const [orders, setOrders] = useState([]);
+  const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchOrders = async () => {
+  const fetchData = async () => {
     try {
-      const data = await request('/orders/myorders');
-      setOrders(data);
+      const [ordersData, profileData] = await Promise.all([
+        request('/orders/myorders'),
+        request('/auth/profile').catch(() => null)
+      ]);
+      setOrders(ordersData);
+      setProfile(profileData);
     } catch (error) {
-      console.log('Error fetching user orders:', error);
+      console.log('Error fetching data:', error);
     } finally {
       setLoading(false);
     }
@@ -25,14 +30,14 @@ const OrderHistoryScreen = ({ navigation }) => {
   useEffect(() => {
     let socket;
     const unsubscribe = navigation.addListener('focus', () => {
-      fetchOrders();
+      fetchData();
       
       if (!socket) {
         const socketUrl = API_URL.replace('/api', '');
         socket = io(socketUrl);
         
         socket.on('order_status_updated', (data) => {
-          fetchOrders(); // Tải lại danh sách đơn
+          fetchData(); // Tải lại danh sách đơn
         });
       }
     });
@@ -51,7 +56,7 @@ const OrderHistoryScreen = ({ navigation }) => {
         body: { status: 'completed' }
       });
       Alert.alert('Thành công', 'Cảm ơn bạn đã xác nhận nhận hàng!');
-      fetchOrders();
+      fetchData();
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể cập nhật trạng thái đơn hàng');
       setLoading(false);
@@ -174,7 +179,7 @@ const OrderHistoryScreen = ({ navigation }) => {
           <Text style={styles.locationText}>Vị trí hiện tại</Text>
         </View>
         <Image 
-          source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop' }} 
+          source={{ uri: profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.fullName || 'U'}&background=E63946&color=fff` }} 
           style={styles.avatar} 
         />
       </View>

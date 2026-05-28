@@ -99,7 +99,10 @@ const updateOrderStatus = async (req, res) => {
 // @route   GET /api/orders/myorders
 // @access  Private
 const getMyOrders = async (req, res) => {
-  const orders = await Order.find({ userId: req.user._id }).sort({ createdAt: -1 })
+  const orders = await Order.find({ userId: req.user._id })
+    .populate('restaurantId', 'name image address')
+    .populate('items.foodId', 'name price image')
+    .sort({ createdAt: -1 })
   res.json(orders)
 }
 
@@ -115,14 +118,14 @@ const getMerchantOrders = async (req, res) => {
   }
 
   const orders = await Order.find({ restaurantId: req.params.restaurantId })
-    .populate('items.foodId', 'name price')
+    .populate('items.foodId', 'name price image')
     .sort({ createdAt: -1 })
   res.json(orders)
 }
 
 const getAllOrdersAdmin = async (req, res) => {
   const orders = await Order.find({})
-    .populate('userId', 'fullName email')
+    .populate('userId', 'fullName email phone')
     .populate('restaurantId', 'name address')
     .populate('shipperId', 'fullName phone')
     .populate('items.foodId', 'name price image description')
@@ -151,5 +154,29 @@ module.exports = {
   getMyOrders,
   getMerchantOrders,
   getAllOrdersAdmin,
-  getShipperOrders
+  getShipperOrders,
+  getRoute: async (req, res) => {
+    try {
+      const { coordinates } = req.query;
+      if (!coordinates) {
+        return res.status(400).json({ message: 'Coordinates are required' });
+      }
+      
+      const response = await fetch(`http://router.project-osrm.org/route/v1/driving/${coordinates}?geometries=geojson`, {
+        headers: {
+          'User-Agent': 'FoodAppBackend/1.0'
+        }
+      });
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ message: 'OSRM API failed' });
+      }
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error('getRoute proxy error:', error);
+      res.status(500).json({ message: 'Server Error during routing fetch' });
+    }
+  }
 }

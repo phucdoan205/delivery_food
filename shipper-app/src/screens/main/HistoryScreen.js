@@ -9,6 +9,28 @@ const HistoryScreen = ({ navigation }) => {
   const [completedOrders, setCompletedOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Deterministic pseudo-random based on string (must match Map logic)
+  const getOffset = (str, index) => {
+    if (!str) return 0;
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    const val = Math.sin(hash++) * 10000;
+    return (val - Math.floor(val)) * 0.05 - 0.025;
+  };
+
+  // Haversine formula to calculate distance between two coordinates in km
+  const getDistanceFromLatLonInKm = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; // Distance in km
+  };
+
   const fetchHistory = async () => {
     try {
       const data = await request('/orders/shipper');
@@ -71,6 +93,26 @@ const HistoryScreen = ({ navigation }) => {
   }
 
   const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.9, 0);
+  
+  // Calculate exact total distance
+  let totalDistance = 0;
+  completedOrders.forEach(order => {
+    const restId = order.restaurantId?._id || order._id;
+    const custId = order.userId?._id || order.deliveryAddress || 'customer';
+    
+    const shipperLng = 106.660172, shipperLat = 10.762622;
+    const restLng = 106.660172 + getOffset(restId + 'lng', 0);
+    const restLat = 10.762622 + getOffset(restId, 0);
+    const custLng = 106.660172 + getOffset(custId + 'lng', 1);
+    const custLat = 10.762622 + getOffset(custId, 1);
+    
+    // Shipper -> Rest + Rest -> Cust
+    const dist1 = getDistanceFromLatLonInKm(shipperLat, shipperLng, restLat, restLng);
+    const dist2 = getDistanceFromLatLonInKm(restLat, restLng, custLat, custLng);
+    
+    // Multiply by 1.3 to simulate real road detour distance instead of straight line
+    totalDistance += (dist1 + dist2) * 1.3;
+  });
 
   return (
     <View style={styles.container}>
@@ -101,7 +143,7 @@ const HistoryScreen = ({ navigation }) => {
             </View>
             <View style={styles.miniCard}>
                <Text style={styles.miniLabel}>QUÃNG ĐƯỜNG</Text>
-               <Text style={styles.miniValue}>{completedOrders.length * 3} <Text style={{fontSize: 14, color: COLORS.secondary}}>km</Text></Text>
+               <Text style={styles.miniValue}>{totalDistance.toFixed(1)} <Text style={{fontSize: 14, color: COLORS.secondary}}>km</Text></Text>
             </View>
          </View>
       </View>

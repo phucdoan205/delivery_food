@@ -1,25 +1,111 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { Search, MapPin } from 'lucide-react-native';
-
-const selectedRestaurant = {
-  name: 'No data',
-  rating: '0.0',
-  distance: '0 km',
-  time: '0 min',
-  image: 'https://via.placeholder.com/150'
-};
+import MapTilerView from '../components/MapTilerView';
+import { request } from '../api/client';
 
 const { width, height } = Dimensions.get('window');
 
-const MapScreen = () => {
+const MapScreen = ({ navigation }) => {
+  const [restaurants, setRestaurants] = useState([]);
+  const [selectedRest, setSelectedRest] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const [mapCenter, setMapCenter] = useState([106.660172, 10.762622]);
+  const [routeData, setRouteData] = useState(null);
+
+  // Deterministic pseudo-random based on string to match Shipper App perfectly
+  const getOffset = (seedStr, index) => {
+    let hash = 0;
+    const str = seedStr ? seedStr.toString() : index.toString();
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const offsetBase = (hash % 100) / 10000;
+    return offsetBase * (index % 2 === 0 ? 1 : -1);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchData = async () => {
+        try {
+          const [restData, profileData] = await Promise.all([
+            request('/restaurants'),
+            request('/auth/profile')
+          ]);
+          setRestaurants(restData);
+          setProfile(profileData);
+        } catch (error) {
+          console.log('Error fetching data in MapScreen', error);
+        }
+      };
+      fetchData();
+    }, [])
+  );
+
+  const userMarker = {
+    id: 'user',
+    lat: 10.762622,
+    lng: 106.660172,
+    title: 'Vị trí của bạn',
+    color: '#3B82F6', // Blue for user
+    label: 'U'
+  };
+
+  const markers = [
+    userMarker,
+    ...restaurants.map((r, index) => ({
+      id: r._id,
+      lat: r.coordinates?.lat || 10.762622 + getOffset(r._id, index),
+      lng: r.coordinates?.lng || 106.660172 + getOffset(r._id + 'lng', index),
+      title: r.name,
+      color: COLORS.primary, // Orange for restaurants
+      label: (index + 1).toString()
+    }))
+  ];
+
   return (
     <View style={styles.container}>
-      {/* Mock Map Image Background */}
-      <Image 
-        source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1000&auto=format&fit=crop' }} 
-        style={styles.mapMock}
+      <MapTilerView 
+        markers={markers} 
+        center={mapCenter} 
+        zoom={13} 
+        route={routeData}
+        onMarkerPress={async (id) => {
+          if (id === 'user') return;
+          const rest = restaurants.find(r => r._id === id);
+          if (rest) {
+            setSelectedRest(rest);
+            // Fetch route from user to restaurant
+            try {
+              const userLng = 106.660172;
+              const userLat = 10.762622;
+              const index = restaurants.indexOf(rest);
+              const restLng = rest.coordinates?.lng || 106.660172 + getOffset(rest._id + 'lng', index);
+              const restLat = rest.coordinates?.lat || 10.762622 + getOffset(rest._id, index);
+              
+              const coordinates = `${userLng},${userLat};${restLng},${restLat}`;
+              const json = await request(`/orders/route?coordinates=${coordinates}`);
+              if (json.routes && json.routes[0]) {
+                setRouteData(json.routes[0].geometry);
+              }
+            } catch (e) {
+              console.log('Route error', e);
+              const index = restaurants.indexOf(rest);
+              setRouteData({
+                type: 'LineString',
+                coordinates: [
+                  [106.660172, 10.762622],
+                  [
+                    rest.coordinates?.lng || 106.660172 + getOffset(rest._id + 'lng', index), 
+                    rest.coordinates?.lat || 10.762622 + getOffset(rest._id, index)
+                  ]
+                ]
+              });
+            }
+          }
+        }}
       />
 
       <SafeAreaView style={styles.overlay}>
@@ -29,15 +115,18 @@ const MapScreen = () => {
             <MapPin size={18} color={COLORS.primary} fill={COLORS.primary} />
             <View style={styles.locationTextContainer}>
               <Text style={styles.locationTitle}>VỊ TRÍ CỦA BẠN</Text>
-              <Text style={styles.locationAddress} numberOfLines={1}>Vị trí hiện tại</Text>
+              <Text style={styles.locationAddress} numberOfLines={1}>{profile?.address || 'Vị trí hiện tại'}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.searchBtn}>
+          <TouchableOpacity style={styles.searchBtn} onPress={() => navigation.navigate('Search')}>
             <Search size={20} color={COLORS.text} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.profileBtn}>
+          <TouchableOpacity 
+            style={styles.profileBtn}
+            onPress={() => navigation.navigate('Cá nhân')}
+          >
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=100&auto=format&fit=crop' }} 
+              source={{ uri: profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.fullName || 'U'}&background=E63946&color=fff` }} 
               style={styles.avatar} 
             />
           </TouchableOpacity>
@@ -45,55 +134,53 @@ const MapScreen = () => {
 
         {/* Floating Map Controls */}
         <View style={styles.controls}>
-          <TouchableOpacity style={styles.controlBtn}>
-            <MapPin size={24} color={COLORS.text} />
+          <TouchableOpacity 
+            style={styles.controlBtn}
+            onPress={() => setMapCenter([106.660172 + Math.random()*0.0000000001, 10.762622])}
+          >
+            <MapPin size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </View>
 
         {/* Selected Restaurant Card */}
-        <View style={styles.cardContainer}>
-          <View style={styles.restaurantCard}>
-            <Image source={{ uri: selectedRestaurant.image }} style={styles.cardImage} />
-            <View style={styles.cardInfo}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>{selectedRestaurant.name}</Text>
-                <View style={styles.ratingBadge}>
-                  <Text style={styles.ratingText}>⭐ {selectedRestaurant.rating}</Text>
+        {selectedRest && (
+          <View style={styles.cardContainer}>
+            <View style={styles.restaurantCard}>
+              <Image source={{ uri: selectedRest.image }} style={styles.cardImage} />
+              <View style={styles.cardInfo}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.cardTitle}>{selectedRest.name}</Text>
+                  <View style={styles.ratingBadge}>
+                    <Text style={styles.ratingText}>⭐ {selectedRest.rating}</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.tagBadge}>
+                  <Text style={styles.tagText}>{selectedRest.category || 'Món ngon'}</Text>
+                </View>
+                
+                <Text style={styles.cardAddress} numberOfLines={1}>{selectedRest.address}</Text>
+                
+                <View style={styles.statsRow}>
+                  <View style={styles.statItem}>
+                    <MapPin size={14} color={COLORS.textLight} />
+                    <Text style={styles.statText}>{((selectedRest.rating || 4.5) * 0.3).toFixed(1)} km</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statText}>🕒 15-25 phút</Text>
+                  </View>
                 </View>
               </View>
-              
-              <View style={styles.tagBadge}>
-                <Text style={styles.tagText}>Tinh tuyển</Text>
-              </View>
-              
-              <Text style={styles.cardAddress} numberOfLines={1}>Pháp hiện đại • $$$$</Text>
-              
-              <View style={styles.statsRow}>
-                <View style={styles.statItem}>
-                  <MapPin size={14} color={COLORS.textLight} />
-                  <Text style={styles.statText}>0.4 miles</Text>
-                </View>
-                <View style={styles.statItem}>
-                  <Text style={styles.statText}>🕒 15-25 phút</Text>
-                </View>
-              </View>
+              <TouchableOpacity 
+                style={styles.arrowBtn}
+                onPress={() => navigation.navigate('RestaurantDetail', { restaurant: selectedRest })}
+              >
+                <MapPin size={24} color={COLORS.white} />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity style={styles.arrowBtn}>
-              <MapPin size={24} color={COLORS.white} />
-            </TouchableOpacity>
           </View>
-        </View>
+        )}
       </SafeAreaView>
-
-      {/* Map Markers Overlay (Visual Simulation) */}
-      <View style={[styles.marker, { top: '40%', left: '50%' }]}>
-        <View style={styles.markerContainer}>
-          <View style={styles.markerIcon}>
-            <Text style={{ color: COLORS.white }}>🍽️</Text>
-          </View>
-          <Text style={styles.markerText}>{selectedRestaurant.name}</Text>
-        </View>
-      </View>
     </View>
   );
 };
