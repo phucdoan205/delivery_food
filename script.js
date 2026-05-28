@@ -1,0 +1,4 @@
+const fs = require('fs');
+let file = fs.readFileSync('d:/app_food/shipper-app/src/screens/main/ReadyScreen.js', 'utf8');
+file = file.replace(/useEffect\(\(\) => \{\s*const unsubscribe = navigation\.addListener\('focus', \(\) => \{\s*fetchOrders\(\);\s*fetchProfile\(\);\s*\}\);\s*return unsubscribe;\s*\}, \[navigation\]\);/, `useEffect(() => { let socket; const unsubscribe = navigation.addListener('focus', () => { fetchOrders(); fetchProfile(); if (!socket) { const socketUrl = API_URL.replace('/api', ''); socket = io(socketUrl); socket.on('new_order', () => fetchOrders()); socket.on('order_status_updated', () => fetchOrders()); } }); return () => { unsubscribe(); if (socket) socket.disconnect(); }; }, [navigation]);`);
+fs.writeFileSync('d:/app_food/shipper-app/src/screens/main/ReadyScreen.js', file);

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Dimensions } from 'react-native';
 import { ChevronLeft, MessageSquare, Phone, MapPin, Clock, CreditCard, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,22 @@ const OrderDetailScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     fetchOrderDetail();
+    let socket;
+    
+    if (!socket) {
+      const socketUrl = API_URL.replace('/api', '');
+      socket = io(socketUrl);
+      
+      socket.on('order_status_updated', (data) => {
+        if (data._id === orderId || data.id === orderId) {
+          fetchOrderDetail();
+        }
+      });
+    }
+
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, [orderId]);
 
   const handleUpdateStatus = async (nextStatus) => {
@@ -97,12 +114,12 @@ const OrderDetailScreen = ({ navigation, route }) => {
         <View style={styles.customerCard}>
           <View style={styles.customerTop}>
             <Image 
-              source={{ uri: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' }} 
+              source={{ uri: order.userId?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=200' }} 
               style={styles.avatar} 
             />
             <View style={styles.customerInfo}>
               <Text style={styles.customerName}>{order.userId?.fullName || 'Khách hàng'}</Text>
-              <Text style={styles.customerPhone}>+84 900 000 000</Text>
+              <Text style={styles.customerPhone}>{order.userId?.phone || 'Chưa cung cấp SĐT'}</Text>
               <Text style={styles.customerType}>Khách hàng trên hệ thống</Text>
             </View>
             <TouchableOpacity style={styles.messageBtn}>
@@ -145,7 +162,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
           {items.map((item, index) => (
             <View key={index} style={styles.itemRow}>
               <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200' }} 
+                source={{ uri: item.foodId?.image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200' }} 
                 style={styles.itemImage} 
               />
               <View style={styles.itemContent}>
@@ -163,12 +180,20 @@ const OrderDetailScreen = ({ navigation, route }) => {
         <View style={styles.summaryBox}>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tạm tính ({items.length} món)</Text>
-            <Text style={styles.summaryValue}>{order.totalPrice?.toLocaleString()}đ</Text>
+            <Text style={styles.summaryValue}>
+              {items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0).toLocaleString()}đ
+            </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Phí giao hàng & Dịch vụ</Text>
             <Text style={styles.summaryValue}>0đ</Text>
           </View>
+          {order.discountAmount > 0 && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>Mã giảm giá ({order.promoCode})</Text>
+              <Text style={[styles.summaryValue, { color: Colors.primary }]}>-{order.discountAmount.toLocaleString()}đ</Text>
+            </View>
+          )}
           
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>

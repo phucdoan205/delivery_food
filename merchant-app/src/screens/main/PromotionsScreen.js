@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { ChevronLeft, Plus, Ticket, Users, Calendar, ChevronRight, Edit2, Trash2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { request } from '../../api/client';
@@ -63,17 +63,26 @@ const PromotionsScreen = ({ route, navigation }) => {
   };
 
   const deletePromo = (id) => {
-    Alert.alert("Xác nhận", "Bạn có chắc muốn xóa khuyến mãi này?", [
-      { text: "Hủy", style: "cancel" },
-      { text: "Xóa", style: "destructive", onPress: async () => {
-        try {
-          await request(`/promotions/${id}`, { method: 'DELETE' });
-          fetchPromotions();
-        } catch(e) {
-          Alert.alert("Lỗi", "Không thể xóa");
-        }
-      }}
-    ]);
+    if (Platform.OS === 'web') {
+      const confirm = window.confirm("Bạn có chắc muốn xóa khuyến mãi này?");
+      if (confirm) {
+        request(`/promotions/${id}`, { method: 'DELETE' })
+          .then(() => fetchPromotions())
+          .catch(() => window.alert("Không thể xóa"));
+      }
+    } else {
+      Alert.alert("Xác nhận", "Bạn có chắc muốn xóa khuyến mãi này?", [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xóa", style: "destructive", onPress: async () => {
+          try {
+            await request(`/promotions/${id}`, { method: 'DELETE' });
+            fetchPromotions();
+          } catch(e) {
+            Alert.alert("Lỗi", "Không thể xóa");
+          }
+        }}
+      ]);
+    }
   };
 
   const savePromo = async () => {

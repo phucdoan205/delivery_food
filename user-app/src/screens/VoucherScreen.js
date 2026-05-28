@@ -1,40 +1,51 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TextInput, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, TextInput, Image, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Search, Search as Ticket, Search as Info, Search as Truck, Search as Utensils, Search as Zap } from 'lucide-react-native';
-
-const VOUCHERS = [];
+import { request } from '../api/client';
 
 const VoucherScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Tất cả');
   const [promoCode, setPromoCode] = useState('');
+  const [vouchers, setVouchers] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchVouchers();
+  }, []);
+
+  const fetchVouchers = async () => {
+    try {
+      const data = await request('/promotions/user/saved');
+      setVouchers(data || []);
+    } catch (e) {
+      console.log('Error fetching vouchers:', e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const renderVoucherItem = ({ item }) => {
-    let Icon = Utensils;
+    let Icon = Ticket;
     let bgColor = '#FFF1E8';
-    if (item.type === 'FREE_SHIP') {
-      Icon = Truck;
-      bgColor = '#E8F5E9';
-    } else if (item.type === 'CASH') {
-      Icon = Zap;
-      bgColor = '#FFFDE7';
-    }
 
     return (
       <View style={styles.voucherCard}>
         <View style={[styles.voucherLeft, { backgroundColor: bgColor }]}>
-          <Icon size={24} color={item.type === 'FREE_SHIP' ? COLORS.green : COLORS.primary} />
-          <Text style={styles.voucherValue}>{item.value}</Text>
+          <Icon size={24} color={COLORS.primary} />
+          <Text style={styles.voucherValue}>{item.code}</Text>
         </View>
         <View style={styles.voucherRight}>
-          <Text style={styles.voucherName}>{item.name}</Text>
-          <Text style={styles.voucherDesc} numberOfLines={2}>{item.description}</Text>
+          <Text style={styles.voucherName}>{item.title}</Text>
+          <Text style={styles.voucherDesc} numberOfLines={2}>
+            Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`} tại {item.restaurantId?.name || 'nhà hàng'}
+          </Text>
           <View style={styles.voucherFooter}>
             <View style={styles.expiryRow}>
               <Text style={{ fontSize: 10 }}>🕒</Text>
-              <Text style={styles.expiryText}>Hết hạn trong 2 ngày</Text>
+              <Text style={styles.expiryText}>Hết hạn: {new Date(item.endDate).toLocaleDateString('vi-VN')}</Text>
             </View>
-            <TouchableOpacity style={styles.useBtn}>
+            <TouchableOpacity style={styles.useBtn} onPress={() => navigation.navigate('Home')}>
               <Text style={styles.useBtnText}>DÙNG NGAY</Text>
             </TouchableOpacity>
           </View>
@@ -85,45 +96,22 @@ const VoucherScreen = ({ navigation }) => {
           />
         </View>
 
-        <FlatList
-          data={VOUCHERS}
-          renderItem={renderVoucherItem}
-          keyExtractor={item => item.id}
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.listContent}
-          ListHeaderComponent={() => (
-            <View>
-              <Text style={styles.sectionTitle}>Đặc quyền cho bạn</Text>
-              <View style={styles.featuredCard}>
-                <View style={styles.featuredIconContainer}>
-                  <Utensils size={30} color={COLORS.primary} />
-                </View>
-                <Text style={styles.featuredLabel}>MÃ ĐỘC QUYỀN</Text>
-                <Text style={styles.featuredTitle}>Giảm 50% Toàn menu</Text>
-                <Text style={styles.featuredSubtitle}>Áp dụng cho mọi nhà hàng đối tác 12:14:00 - 16:00</Text>
-                <TouchableOpacity style={styles.featuredBtn}>
-                  <Text style={styles.featuredBtnText}>Dùng ngay</Text>
-                </TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator size="large" color={COLORS.primary} style={{ marginTop: 20 }} />
+        ) : (
+          <FlatList
+            data={vouchers}
+            renderItem={renderVoucherItem}
+            keyExtractor={item => item._id}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            ListEmptyComponent={() => (
+              <View style={{ alignItems: 'center', marginTop: 40 }}>
+                <Text style={{ color: COLORS.textLight }}>Bạn chưa nhận mã giảm giá nào.</Text>
               </View>
-              <Text style={styles.sectionTitle}>Mã giảm giá khả dụng</Text>
-            </View>
-          )}
-          ListFooterComponent={() => (
-            <View style={styles.referralCard}>
-              <Image 
-                source={{ uri: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=300&auto=format&fit=crop' }} 
-                style={styles.referralImage} 
-              />
-              <View style={styles.referralOverlay}>
-                <Text style={styles.referralTitle}>Mời bạn mới</Text>
-                <Text style={styles.referralSubtitle}>Nhận ngay voucher 50.000đ</Text>
-                <TouchableOpacity style={styles.referralBtn}>
-                  <Text style={styles.referralBtnText}>Chia sẻ ngay</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+            )}
         />
+        )}
       </View>
     </SafeAreaView>
   );

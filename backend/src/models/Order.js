@@ -34,12 +34,24 @@ const orderSchema = new mongoose.Schema({
     type: String,
     enum: ['cash', 'momo', 'zalopay']
   },
+  promoCode: {
+    type: String
+  },
+  discountAmount: {
+    type: Number,
+    default: 0
+  },
+  shippingFee: {
+    type: Number,
+    default: 0
+  },
   status: {
     type: String,
     enum: [
       'pending',
       'confirmed',
       'preparing',
+      'ready',
       'delivering',
       'completed',
       'cancelled'

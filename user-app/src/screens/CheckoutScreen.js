@@ -1,20 +1,42 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, MapPin, ChevronRight, CreditCard, DollarSign } from 'lucide-react-native';
 import { request } from '../api/client';
 
 const CheckoutScreen = ({ route, navigation }) => {
-  const { cart, promoDiscount = 0, promoCode } = route.params || {};
+  const { cart, appliedPromos = {}, total: cartTotal = 0, totalPromoDiscount = 0 } = route.params || {};
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
+  const [userProfile, setUserProfile] = useState(null);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const profile = await request('/auth/profile');
+        setUserProfile(profile);
+      } catch (error) {
+        console.log('Error fetching profile:', error);
+      }
+    };
+    fetchProfile();
+  }, []);
 
   const items = cart?.items || [];
   const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
-  const shippingFee = subtotal > 0 ? 15000 : 0;
+  
+  const groupedItems = items.reduce((acc, item) => {
+    const rId = item.foodId?.restaurantId?._id || item.foodId?.restaurantId?.id || item.foodId?.restaurantId;
+    if (rId) acc[rId] = true;
+    return acc;
+  }, {});
+  const numberOfRestaurants = Object.keys(groupedItems).length;
+  
+  const shippingFee = subtotal > 0 ? (15000 * numberOfRestaurants) : 0;
   const paymentDiscount = (paymentMethod === 'momo' ? 15000 : 0);
-  const shippingDiscount = shippingFee;
-  const total = Math.max(0, subtotal + shippingFee - shippingDiscount - paymentDiscount - promoDiscount);
+  
+  // Recalculate total with payment discount
+  const total = Math.max(0, cartTotal - paymentDiscount);
 
   const handlePlaceOrder = async () => {
     if (items.length === 0) {
@@ -31,6 +53,18 @@ const CheckoutScreen = ({ route, navigation }) => {
       }));
 
       const restaurantId = items[0]?.foodId?.restaurantId?._id || items[0]?.foodId?.restaurantId;
+      const promo = appliedPromos[restaurantId];
+      let discountAmount = 0;
+      let promoCode = '';
+      
+      if (promo) {
+        promoCode = promo.code;
+        const groupSubtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
+        discountAmount = promo.discountType === 'percentage' 
+          ? (groupSubtotal * promo.discountValue) / 100 
+          : promo.discountValue;
+        if (discountAmount > groupSubtotal) discountAmount = groupSubtotal;
+      }
 
       await request('/orders', {
         method: 'POST',
@@ -38,8 +72,11 @@ const CheckoutScreen = ({ route, navigation }) => {
           restaurantId,
           items: orderItems,
           totalPrice: total,
-          deliveryAddress: "123 Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh",
-          paymentMethod
+          deliveryAddress: userProfile?.address || "Chưa cập nhật địa chỉ",
+          paymentMethod,
+          promoCode,
+          discountAmount,
+          shippingFee
         }
       });
 
@@ -76,8 +113,8 @@ const CheckoutScreen = ({ route, navigation }) => {
           </View>
           <View style={styles.addressCard}>
             <View style={styles.addressInfo}>
-              <Text style={styles.userName}>Khách hàng | 090 123 4567</Text>
-              <Text style={styles.addressDetail}>123 Lê Lợi, Phường Bến Thành, Quận 1, TP. Hồ Chí Minh</Text>
+              <Text style={styles.userName}>{userProfile?.fullName || 'Khách hàng'} | {userProfile?.phone || 'Chưa có SĐT'}</Text>
+              <Text style={styles.addressDetail}>{userProfile?.address || 'Chưa cập nhật địa chỉ'}</Text>
             </View>
             <Image 
               source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=100&auto=format&fit=crop' }} 
@@ -141,12 +178,44 @@ const CheckoutScreen = ({ route, navigation }) => {
             <Text style={styles.sectionTitle}>Tóm tắt đơn hàng</Text>
           </View>
           <View style={styles.summaryCard}>
+            {Object.values(groupedItems).map((_, index, arr) => {
+              const rId = Object.keys(groupedItems)[index];
+              const isLast = index === arr.length - 1;
+              const groupItems = items.filter(i => (i.foodId?.restaurantId?._id || i.foodId?.restaurantId?.id || i.foodId?.restaurantId) === rId);
+              const groupSubtotal = groupItems.reduce((sum, i) => sum + (i.foodId?.price || 0) * i.quantity, 0);
+              
+              const promo = appliedPromos[rId];
+              let discount = 0;
+              if (promo) {
+                discount = promo.discountType === 'percentage' 
+                  ? (groupSubtotal * promo.discountValue) / 100 
+                  : promo.discountValue;
+                if (discount > groupSubtotal) discount = groupSubtotal;
+              }
+
+              const restaurantName = groupItems[0]?.foodId?.restaurantId?.name || `Nhà hàng ${index + 1}`;
+
+              return (
+                <View key={rId} style={{ marginBottom: isLast ? 0 : 15, paddingBottom: isLast ? 0 : 10, borderBottomWidth: isLast ? 0 : 1, borderBottomColor: COLORS.border }}>
+                  <Text style={{ fontWeight: 'bold', fontSize: 13, marginBottom: 8, color: COLORS.text }}>{restaurantName}</Text>
+                  <View style={styles.summaryItem}>
+                    <Text style={styles.summaryLabel}>Tạm tính ({groupItems.length} món)</Text>
+                    <Text style={styles.summaryValue}>{groupSubtotal.toLocaleString()}đ</Text>
+                  </View>
+                  {promo && (
+                    <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Mã giảm giá ({promo.code})</Text>
+                      <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{discount.toLocaleString()}đ</Text>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+
+            <View style={{ height: 1, backgroundColor: COLORS.border, marginVertical: 15 }} />
+
             <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Tổng tiền món</Text>
-              <Text style={styles.summaryValue}>{subtotal.toLocaleString()}đ</Text>
-            </View>
-            <View style={styles.summaryItem}>
-              <Text style={styles.summaryLabel}>Phí giao hàng (2.5km)</Text>
+              <Text style={styles.summaryLabel}>Phí giao hàng tổng cộng</Text>
               <Text style={styles.summaryValue}>{shippingFee.toLocaleString()}đ</Text>
             </View>
             <View style={styles.summaryItem}>
@@ -157,12 +226,6 @@ const CheckoutScreen = ({ route, navigation }) => {
               <View style={styles.summaryItem}>
                 <Text style={styles.summaryLabel}>Khuyến mãi MoMo</Text>
                 <Text style={[styles.summaryValue, { color: COLORS.green }]}>-15.000đ</Text>
-              </View>
-            )}
-            {promoDiscount > 0 && (
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Mã giảm giá ({promoCode})</Text>
-                <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{promoDiscount.toLocaleString()}đ</Text>
               </View>
             )}
             <View style={[styles.summaryItem, styles.totalRow]}>

@@ -26,6 +26,7 @@ import AddressScreen from '../screens/AddressScreen';
 import FavoriteScreen from '../screens/FavoriteScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import VoucherScreen from '../screens/VoucherScreen';
+import ReviewScreen from '../screens/ReviewScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -89,6 +90,7 @@ const AppNavigator = () => {
       <Stack.Screen name="Favorite" component={FavoriteScreen} />
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
       <Stack.Screen name="Voucher" component={VoucherScreen} />
+      <Stack.Screen name="Review" component={ReviewScreen} />
     </Stack.Navigator>
   );
 };

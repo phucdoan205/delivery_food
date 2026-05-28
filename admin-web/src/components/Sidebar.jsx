@@ -1,26 +1,42 @@
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Store, 
-  Truck, 
-  ClipboardList, 
-  BarChart3, 
-  Settings, 
+import {
+  LayoutDashboard,
+  Users,
+  Store,
+  Truck,
+  ClipboardList,
+  BarChart3,
+  Settings,
   LogOut,
-  UtensilsCrossed
+  UtensilsCrossed,
 } from "lucide-react";
-import { setToken, request } from "../api/client";
+import { setToken, request, API_URL } from "../api/client";
 import useNotificationStore from "../store/useNotificationStore";
 import { useEffect } from "react";
+import io from 'socket.io-client';
 
-const getMenuItems = (pendingRestaurants, pendingDrivers) => [
+const getMenuItems = (pendingRestaurants, pendingDrivers, pendingOrders) => [
   { icon: LayoutDashboard, label: "Bảng điều khiển", path: "/" },
   { icon: Users, label: "Người dùng", path: "/users" },
-  { icon: Store, label: "Nhà hàng", path: "/restaurants", badge: pendingRestaurants > 0 ? pendingRestaurants : null },
-  { icon: Truck, label: "Tài xế", path: "/drivers", badge: pendingDrivers > 0 ? pendingDrivers : null },
-  { icon: ClipboardList, label: "Đơn hàng", path: "/orders", badge: 12 },
+  {
+    icon: Store,
+    label: "Nhà hàng",
+    path: "/restaurants",
+    badge: pendingRestaurants > 0 ? pendingRestaurants : null,
+  },
+  {
+    icon: Truck,
+    label: "Tài xế",
+    path: "/drivers",
+    badge: pendingDrivers > 0 ? pendingDrivers : null,
+  },
+  { 
+    icon: ClipboardList, 
+    label: "Đơn hàng", 
+    path: "/orders",
+    badge: pendingOrders > 0 ? pendingOrders : null,
+  },
   { icon: BarChart3, label: "Báo cáo & Phân tích", path: "/analytics" },
   { icon: Settings, label: "Cài đặt", path: "/settings" },
 ];
@@ -28,26 +44,51 @@ const getMenuItems = (pendingRestaurants, pendingDrivers) => [
 const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { pendingRestaurants, pendingDrivers, setPendingRestaurants, setPendingDrivers } = useNotificationStore();
+  const {
+    pendingRestaurants,
+    pendingDrivers,
+    pendingOrders,
+    setPendingRestaurants,
+    setPendingDrivers,
+    setPendingOrders,
+  } = useNotificationStore();
 
   useEffect(() => {
     const fetchCounts = async () => {
       try {
         const restaurantsData = await request("/restaurants/admin");
-        const pendingResCount = restaurantsData.filter(r => r.status === "pending").length;
+        const pendingResCount = restaurantsData.filter(
+          (r) => r.status === "pending",
+        ).length;
         setPendingRestaurants(pendingResCount);
 
         const usersData = await request("/auth/users");
-        const pendingShippersCount = usersData.filter(u => u.role === "shipper" && u.status === "pending").length;
+        const pendingShippersCount = usersData.filter(
+          (u) => u.role === "shipper" && u.status === "pending",
+        ).length;
         setPendingDrivers(pendingShippersCount);
+        const ordersData = await request("/orders/admin");
+        const pendingOrdersCount = ordersData.filter(
+          (o) => o.status === "pending" || o.status === "confirmed"
+        ).length;
+        setPendingOrders(pendingOrdersCount);
       } catch (error) {
         console.error("Failed to fetch notification counts", error);
       }
     };
     fetchCounts();
-  }, [setPendingRestaurants, setPendingDrivers]);
 
-  const menuItems = getMenuItems(pendingRestaurants, pendingDrivers);
+    const socketUrl = API_URL.replace('/api', '');
+    const socket = io(socketUrl);
+    socket.on('new_order', () => fetchCounts());
+    socket.on('order_status_updated', () => fetchCounts());
+    
+    return () => {
+      socket.disconnect();
+    };
+  }, [setPendingRestaurants, setPendingDrivers, setPendingOrders]);
+
+  const menuItems = getMenuItems(pendingRestaurants, pendingDrivers, pendingOrders);
 
   const handleLogout = () => {
     setToken(null);
@@ -55,7 +96,9 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   return (
-    <aside className={`w-64 h-screen bg-white border-r border-slate-100 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}`}>
+    <aside
+      className={`w-64 h-screen bg-white border-r border-slate-100 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+    >
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white shadow-premium">
           <UtensilsCrossed size={24} />
@@ -76,18 +119,27 @@ const Sidebar = ({ isOpen, onClose }) => {
               key={item.path}
               to={item.path}
               className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
-                isActive 
-                  ? "bg-brand-primary text-white shadow-premium" 
+                isActive
+                  ? "bg-brand-primary text-white shadow-premium"
                   : "text-slate-500 hover:bg-brand-bg hover:text-brand-primary"
               }`}
               onClick={onClose}
             >
               <div className="flex items-center gap-3">
-                <item.icon size={20} className={isActive ? "text-white" : "text-slate-400 group-hover:text-brand-primary"} />
+                <item.icon
+                  size={20}
+                  className={
+                    isActive
+                      ? "text-white"
+                      : "text-slate-400 group-hover:text-brand-primary"
+                  }
+                />
                 <span className="font-medium text-sm">{item.label}</span>
               </div>
               {item.badge && (
-                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white text-brand-primary" : "bg-red-500 text-white"}`}>
+                <span
+                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${isActive ? "bg-white text-brand-primary" : "bg-red-500 text-white"}`}
+                >
                   {item.badge}
                 </span>
               )}
@@ -97,9 +149,10 @@ const Sidebar = ({ isOpen, onClose }) => {
       </nav>
 
       <div className="p-4 border-t border-slate-100">
-        <button 
+        <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200">
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+        >
           <LogOut size={20} />
           <span className="font-medium text-sm">Đăng xuất</span>
         </button>

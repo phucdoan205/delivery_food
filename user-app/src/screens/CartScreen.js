@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { ArrowLeft, ChevronRight, Minus, Plus, Tag } from 'lucide-react-native';
+import { ArrowLeft, ChevronRight, Minus, Plus, Tag, Search, X, Ticket } from 'lucide-react-native';
 import { request } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartScreen = ({ navigation }) => {
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [promo, setPromo] = useState(null);
+  
+  const [savedPromos, setSavedPromos] = useState([]);
+  const [appliedPromos, setAppliedPromos] = useState({});
+  const [promoModalVisible, setPromoModalVisible] = useState(false);
+  const [searchPromo, setSearchPromo] = useState('');
 
   const fetchCart = async () => {
     try {
@@ -22,19 +26,16 @@ const CartScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
-    fetchCart();
-    
-    const loadPromo = async () => {
-      const savedPromo = await AsyncStorage.getItem('appliedPromo');
-      if (savedPromo) {
-        setPromo(JSON.parse(savedPromo));
-      }
+    const loadData = async () => {
+      fetchCart();
+      try {
+        const promos = await request('/promotions/user/saved');
+        setSavedPromos(promos || []);
+      } catch (e) {}
     };
     
-    const unsubscribe = navigation.addListener('focus', () => {
-      loadPromo();
-    });
-    loadPromo();
+    const unsubscribe = navigation.addListener('focus', loadData);
+    loadData();
     
     return unsubscribe;
   }, [navigation]);
@@ -75,8 +76,7 @@ const CartScreen = ({ navigation }) => {
     try {
       await request('/cart', { method: 'DELETE' });
       setCart({ items: [] });
-      await AsyncStorage.removeItem('appliedPromo');
-      setPromo(null);
+      setAppliedPromos({});
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể xoá giỏ hàng');
     }
@@ -91,29 +91,76 @@ const CartScreen = ({ navigation }) => {
   }
 
   const items = cart?.items || [];
-  const subtotal = items.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0);
-  const shippingFee = subtotal > 0 ? 15000 : 0;
-  const shippingDiscount = shippingFee; // Free ship for demo
   
-  // Find a representative restaurant name if items exist
-  const firstItem = items[0];
-  const restaurantId = firstItem?.foodId?.restaurantId?._id || firstItem?.foodId?.restaurantId?.id;
-  const restaurantName = firstItem?.foodId?.restaurantId?.name || "Cửa hàng đối tác";
-  const restaurantAddress = firstItem?.foodId?.restaurantId?.address || "Hà Nội, Việt Nam";
-  const restaurantImage = firstItem?.foodId?.restaurantId?.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=100&auto=format&fit=crop';
-
-  let promoDiscount = 0;
-  if (promo && promo.restaurantId === restaurantId) {
-    if (promo.discountType === 'percentage') {
-      promoDiscount = (subtotal * promo.discountValue) / 100;
-    } else {
-      promoDiscount = promo.discountValue;
+  // Group items by restaurant
+  const groupedItems = items.reduce((acc, item) => {
+    const restaurant = item.foodId?.restaurantId;
+    if (!restaurant) return acc;
+    const rId = restaurant._id || restaurant.id;
+    if (!acc[rId]) {
+      acc[rId] = {
+        restaurant,
+        items: [],
+        subtotal: 0
+      };
     }
-    // Cap discount to not exceed subtotal
-    if (promoDiscount > subtotal) promoDiscount = subtotal;
-  }
+    acc[rId].items.push(item);
+    acc[rId].subtotal += (item.foodId?.price || 0) * item.quantity;
+    return acc;
+  }, {});
 
-  const total = subtotal + shippingFee - shippingDiscount - promoDiscount;
+  let totalSubtotal = 0;
+  let totalShipping = 0;
+  let totalShippingDiscount = 0;
+  let totalPromoDiscount = 0;
+
+  Object.values(groupedItems).forEach(group => {
+    totalSubtotal += group.subtotal;
+    totalShipping += 15000; // 15k per restaurant
+    totalShippingDiscount += 15000; // Free ship demo
+
+    const rId = group.restaurant._id || group.restaurant.id;
+    const promo = appliedPromos[rId];
+    if (promo) {
+      let discount = promo.discountType === 'percentage' 
+        ? (group.subtotal * promo.discountValue) / 100 
+        : promo.discountValue;
+      if (discount > group.subtotal) discount = group.subtotal;
+      totalPromoDiscount += discount;
+    }
+  });
+
+  const total = totalSubtotal + totalShipping - totalShippingDiscount - totalPromoDiscount;
+
+  const handleSelectPromo = (promo) => {
+    const rId = promo.restaurantId?._id || promo.restaurantId;
+    if (!groupedItems[rId]) {
+      Alert.alert('Lỗi', 'Mã giảm giá này không áp dụng cho các nhà hàng trong giỏ hàng.');
+      return;
+    }
+    setAppliedPromos(prev => ({ ...prev, [rId]: promo }));
+    setPromoModalVisible(false);
+    setSearchPromo('');
+  };
+
+  const handleRemovePromo = (rId) => {
+    setAppliedPromos(prev => {
+      const copy = { ...prev };
+      delete copy[rId];
+      return copy;
+    });
+  };
+
+  // Filter promos for modal
+  const applicablePromos = savedPromos.filter(p => {
+    const rId = p.restaurantId?._id || p.restaurantId;
+    return !!groupedItems[rId];
+  });
+  
+  const displayPromos = applicablePromos.filter(p => 
+    p.code.toLowerCase().includes(searchPromo.toLowerCase()) || 
+    p.title.toLowerCase().includes(searchPromo.toLowerCase())
+  );
 
   if (items.length === 0) {
     return (
@@ -150,46 +197,54 @@ const CartScreen = ({ navigation }) => {
       </View>
 
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
-        <View style={styles.restaurantSection}>
-          <Image 
-            source={{ uri: restaurantImage }} 
-            style={styles.restaurantThumb} 
-          />
-          <View style={styles.restaurantInfo}>
-            <Text style={styles.restaurantName}>{restaurantName}</Text>
-            <Text style={styles.restaurantAddr}>{restaurantAddress}</Text>
-          </View>
-          <ChevronRight size={20} color={COLORS.textLight} />
-        </View>
-
-        {items.map((item) => {
-          const food = item.foodId;
-          if (!food) return null;
+        
+        {Object.values(groupedItems).map(group => {
+          const rId = group.restaurant._id || group.restaurant.id;
           return (
-            <View key={food._id} style={styles.cartItem}>
-              <Image source={{ uri: food.image }} style={styles.itemImage} />
-              <View style={styles.itemDetails}>
-                <Text style={styles.itemName} numberOfLines={1}>{food.name}</Text>
-                <Text style={styles.itemDesc} numberOfLines={1}>{food.description}</Text>
-                <View style={styles.itemFooter}>
-                  <Text style={styles.itemPrice}>{food.price.toLocaleString()}đ</Text>
-                  <View style={styles.quantityControls}>
-                    <TouchableOpacity 
-                      style={styles.qBtn}
-                      onPress={() => handleUpdateQuantity(food._id, -1)}
-                    >
-                      <Minus size={14} color={COLORS.text} />
-                    </TouchableOpacity>
-                    <Text style={styles.qText}>{item.quantity}</Text>
-                    <TouchableOpacity 
-                      style={styles.qBtn}
-                      onPress={() => handleUpdateQuantity(food._id, 1)}
-                    >
-                      <Plus size={14} color={COLORS.text} />
-                    </TouchableOpacity>
-                  </View>
+            <View key={rId} style={{ marginBottom: 20 }}>
+              <View style={styles.restaurantSection}>
+                <Image 
+                  source={{ uri: group.restaurant.image || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=100&auto=format&fit=crop' }} 
+                  style={styles.restaurantThumb} 
+                />
+                <View style={styles.restaurantInfo}>
+                  <Text style={styles.restaurantName}>{group.restaurant.name}</Text>
+                  <Text style={styles.restaurantAddr}>{group.restaurant.address || "Việt Nam"}</Text>
                 </View>
+                <ChevronRight size={20} color={COLORS.textLight} />
               </View>
+
+              {group.items.map((item) => {
+                const food = item.foodId;
+                if (!food) return null;
+                return (
+                  <View key={food._id} style={styles.cartItem}>
+                    <Image source={{ uri: food.image }} style={styles.itemImage} />
+                    <View style={styles.itemDetails}>
+                      <Text style={styles.itemName} numberOfLines={1}>{food.name}</Text>
+                      <Text style={styles.itemDesc} numberOfLines={1}>{food.description}</Text>
+                      <View style={styles.itemFooter}>
+                        <Text style={styles.itemPrice}>{food.price.toLocaleString()}đ</Text>
+                        <View style={styles.quantityControls}>
+                          <TouchableOpacity 
+                            style={styles.qBtn}
+                            onPress={() => handleUpdateQuantity(food._id, -1)}
+                          >
+                            <Minus size={14} color={COLORS.text} />
+                          </TouchableOpacity>
+                          <Text style={styles.qText}>{item.quantity}</Text>
+                          <TouchableOpacity 
+                            style={styles.qBtn}
+                            onPress={() => handleUpdateQuantity(food._id, 1)}
+                          >
+                            <Plus size={14} color={COLORS.text} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
             </View>
           );
         })}
@@ -198,59 +253,77 @@ const CartScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Tag size={20} color={COLORS.primary} />
             <Text style={styles.sectionTitle}>Mã giảm giá (Voucher)</Text>
-            <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.chooseVoucher}>Chọn ưu đãi</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setPromoModalVisible(true)}><Text style={styles.chooseVoucher}>Chọn ưu đãi</Text></TouchableOpacity>
           </View>
-          <View style={styles.voucherInputRow}>
-            {promo && promo.restaurantId === restaurantId ? (
-              <View style={[styles.voucherInput, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderColor: '#A5D6A7' }]}>
-                <Text style={{ color: '#2E7D32', fontWeight: 'bold' }}>{promo.code}</Text>
-                <Text style={{ color: '#2E7D32', marginLeft: 10 }}>
-                  (Giảm {promo.discountType === 'percentage' ? `${promo.discountValue}%` : `${promo.discountValue.toLocaleString()}đ`})
-                </Text>
+          
+          {Object.values(appliedPromos).map(promo => {
+            const rId = promo.restaurantId?._id || promo.restaurantId;
+            return (
+              <View key={promo._id} style={[styles.voucherInputRow, { marginBottom: 10 }]}>
+                <View style={[styles.voucherInput, { flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', borderColor: '#A5D6A7' }]}>
+                  <Text style={{ color: '#2E7D32', fontWeight: 'bold' }}>{promo.code}</Text>
+                  <Text style={{ color: '#2E7D32', marginLeft: 10, fontSize: 11, flex: 1 }} numberOfLines={1}>
+                    (Giảm {promo.discountType === 'percentage' ? `${promo.discountValue}%` : `${promo.discountValue.toLocaleString()}đ`} cho {promo.restaurantId?.name})
+                  </Text>
+                </View>
+                <TouchableOpacity style={[styles.applyBtn, { backgroundColor: '#F44336' }]} onPress={() => handleRemovePromo(rId)}>
+                  <Text style={styles.applyText}>Gỡ</Text>
+                </TouchableOpacity>
               </View>
-            ) : (
-              <TextInput 
-                style={styles.voucherInput} 
-                placeholder="Nhập mã ưu đãi tại đây..." 
-                placeholderTextColor={COLORS.textLight}
-              />
-            )}
-            {promo && promo.restaurantId === restaurantId ? (
-              <TouchableOpacity style={[styles.applyBtn, { backgroundColor: '#F44336' }]} onPress={async () => {
-                await AsyncStorage.removeItem('appliedPromo');
-                setPromo(null);
-              }}>
-                <Text style={styles.applyText}>Gỡ</Text>
-              </TouchableOpacity>
-            ) : (
-              <TouchableOpacity style={styles.applyBtn}><Text style={styles.applyText}>Áp dụng</Text></TouchableOpacity>
-            )}
-          </View>
+            )
+          })}
+          
+          <TouchableOpacity style={styles.voucherInputRow} onPress={() => setPromoModalVisible(true)}>
+            <View style={[styles.voucherInput, { justifyContent: 'center' }]}>
+              <Text style={{ color: COLORS.textLight }}>Nhập hoặc chọn thêm mã ưu đãi...</Text>
+            </View>
+            <View style={styles.applyBtn}><Text style={styles.applyText}>Thêm</Text></View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.summarySection}>
           <Text style={styles.summaryTitle}>CHI TIẾT ĐƠN HÀNG</Text>
+          
+          {Object.values(groupedItems).map(group => {
+            const rId = group.restaurant._id || group.restaurant.id;
+            const promo = appliedPromos[rId];
+            let discount = 0;
+            if (promo) {
+              discount = promo.discountType === 'percentage' 
+                ? (group.subtotal * promo.discountValue) / 100 
+                : promo.discountValue;
+              if (discount > group.subtotal) discount = group.subtotal;
+            }
+            
+            return (
+              <View key={rId} style={{ marginBottom: 15, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 12, marginBottom: 8, color: COLORS.text }}>{group.restaurant.name}</Text>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.summaryLabel}>Tạm tính ({group.items.length} món)</Text>
+                  <Text style={styles.summaryValue}>{group.subtotal.toLocaleString()}đ</Text>
+                </View>
+                {promo && (
+                  <View style={styles.summaryRow}>
+                    <Text style={styles.summaryLabel}>Mã giảm giá ({promo.code})</Text>
+                    <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{discount.toLocaleString()}đ</Text>
+                  </View>
+                )}
+              </View>
+            );
+          })}
+
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Tạm tính ({items.length} món)</Text>
-            <Text style={styles.summaryValue}>{subtotal.toLocaleString()}đ</Text>
-          </View>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Phí giao hàng (2.4 km)</Text>
-            <Text style={styles.summaryValue}>{shippingFee.toLocaleString()}đ</Text>
+            <Text style={styles.summaryLabel}>Phí giao hàng tổng cộng</Text>
+            <Text style={styles.summaryValue}>{totalShipping.toLocaleString()}đ</Text>
           </View>
           <View style={styles.summaryRow}>
             <View style={styles.discountRow}>
               <Text style={styles.summaryLabel}>Giảm giá phí giao hàng </Text>
               <View style={styles.freeBadge}><Text style={styles.freeText}>FREE</Text></View>
             </View>
-            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{shippingDiscount.toLocaleString()}đ</Text>
+            <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{totalShippingDiscount.toLocaleString()}đ</Text>
           </View>
-          {promoDiscount > 0 && (
-            <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Mã giảm giá ({promo.code})</Text>
-              <Text style={[styles.summaryValue, { color: COLORS.green }]}>-{promoDiscount.toLocaleString()}đ</Text>
-            </View>
-          )}
+          
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>Tổng cộng</Text>
             <Text style={styles.totalValue}>{total.toLocaleString()}đ</Text>
@@ -270,11 +343,74 @@ const CartScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity 
           style={styles.payBtn}
-          onPress={() => navigation.navigate('Checkout', { cart, promoDiscount, promoCode: promo?.code, total })}
+          onPress={() => navigation.navigate('Checkout', { cart, appliedPromos, total, totalPromoDiscount })}
         >
           <Text style={styles.payText}>Thanh toán ngay</Text>
         </TouchableOpacity>
       </View>
+
+      <Modal
+        visible={promoModalVisible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setPromoModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Chọn mã giảm giá</Text>
+              <TouchableOpacity onPress={() => setPromoModalVisible(false)}>
+                <X size={24} color={COLORS.text} />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.searchPromoContainer}>
+              <Search size={20} color={COLORS.textLight} />
+              <TextInput
+                style={styles.searchPromoInput}
+                placeholder="Nhập mã ưu đãi..."
+                value={searchPromo}
+                onChangeText={setSearchPromo}
+              />
+            </View>
+
+            <FlatList
+              data={displayPromos}
+              keyExtractor={item => item._id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 20 }}
+              ListEmptyComponent={
+                <Text style={{ textAlign: 'center', color: COLORS.textLight, marginTop: 20 }}>
+                  Không tìm thấy mã ưu đãi khả dụng.
+                </Text>
+              }
+              renderItem={({ item }) => {
+                const rId = item.restaurantId?._id || item.restaurantId;
+                const isApplied = appliedPromos[rId]?._id === item._id;
+                return (
+                  <TouchableOpacity 
+                    style={[styles.promoModalItem, isApplied && { borderColor: COLORS.primary, backgroundColor: '#FFF1E8' }]}
+                    onPress={() => handleSelectPromo(item)}
+                  >
+                    <View style={styles.promoModalLeft}>
+                      <Ticket size={24} color={COLORS.primary} />
+                    </View>
+                    <View style={styles.promoModalRight}>
+                      <Text style={styles.promoModalTitle}>{item.title}</Text>
+                      <Text style={styles.promoModalCode}>Mã: {item.code}</Text>
+                      <Text style={styles.promoModalDesc} numberOfLines={2}>
+                        Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`} tại {item.restaurantId?.name || 'nhà hàng'}
+                      </Text>
+                      <Text style={styles.promoModalExpiry}>Hết hạn: {new Date(item.endDate).toLocaleDateString('vi-VN')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                )
+              }}
+            />
+          </View>
+        </View>
+      </Modal>
+
     </SafeAreaView>
   );
 };
@@ -544,6 +680,84 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContainer: {
+    backgroundColor: COLORS.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  searchPromoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    marginBottom: 15,
+    height: 44,
+  },
+  searchPromoInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 14,
+    color: COLORS.text,
+  },
+  promoModalItem: {
+    flexDirection: 'row',
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  promoModalLeft: {
+    width: 60,
+    backgroundColor: '#FFF1E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  promoModalRight: {
+    flex: 1,
+    padding: 12,
+  },
+  promoModalTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.text,
+  },
+  promoModalCode: {
+    fontSize: 12,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    marginTop: 2,
+  },
+  promoModalDesc: {
+    fontSize: 11,
+    color: COLORS.textLight,
+    marginTop: 2,
+  },
+  promoModalExpiry: {
+    fontSize: 10,
+    color: COLORS.textLight,
+    marginTop: 6,
   }
 });
 

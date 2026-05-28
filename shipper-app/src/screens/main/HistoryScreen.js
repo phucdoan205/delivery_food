@@ -38,7 +38,7 @@ const HistoryScreen = ({ navigation }) => {
             <Text style={styles.orderId}>#{item._id.substring(item._id.length - 6).toUpperCase()}</Text>
             <Text style={styles.timeText}>{orderTime}</Text>
           </View>
-          <Text style={styles.amountText}>{item.totalPrice?.toLocaleString()}đ</Text>
+          <Text style={styles.amountText}>{((item.totalPrice || 0) * 0.9).toLocaleString()}đ</Text>
         </View>
 
         <View style={styles.timeline}>
@@ -70,7 +70,7 @@ const HistoryScreen = ({ navigation }) => {
     );
   }
 
-  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.9, 0);
 
   return (
     <View style={styles.container}>

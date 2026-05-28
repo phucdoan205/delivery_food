@@ -19,12 +19,15 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     const loadSavedPromo = async () => {
-      const saved = await AsyncStorage.getItem('appliedPromo');
-      if (saved) {
-        const promo = JSON.parse(saved);
-        if (promo.restaurantId === (restaurant.id || restaurant._id)) {
-          setAppliedPromos({ [promo._id]: true });
-        }
+      try {
+        const promos = await request('/promotions/user/saved');
+        const appliedMap = {};
+        promos.forEach(p => {
+          appliedMap[p._id] = true;
+        });
+        setAppliedPromos(appliedMap);
+      } catch (error) {
+        console.log('Error loading saved promos:', error);
       }
     };
     loadSavedPromo();
@@ -102,9 +105,13 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
   const cartPrice = cart?.items?.reduce((sum, item) => sum + (item.foodId?.price || 0) * item.quantity, 0) || 0;
 
   const handleApplyPromo = async (promo) => {
-    setAppliedPromos(prev => ({ ...prev, [promo._id]: true }));
-    await AsyncStorage.setItem('appliedPromo', JSON.stringify(promo));
-    Alert.alert('Thành công', 'Đã lưu khuyến mãi để sử dụng khi thanh toán!');
+    try {
+      await request(`/promotions/${promo._id}/save`, { method: 'POST' });
+      setAppliedPromos(prev => ({ ...prev, [promo._id]: true }));
+      Alert.alert('Thành công', 'Đã nhận voucher thành công!');
+    } catch (error) {
+      Alert.alert('Lỗi', error.message || 'Không thể nhận voucher');
+    }
   };
 
   const renderPromoItem = ({ item }) => (
@@ -124,7 +131,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
         disabled={appliedPromos[item._id]}
       >
         <Text style={[styles.applyBtnText, appliedPromos[item._id] && { color: COLORS.textSecondary }]}>
-          {appliedPromos[item._id] ? 'Đã lưu' : 'Áp dụng'}
+          {appliedPromos[item._id] ? 'Đã nhận' : 'Nhận'}
         </Text>
       </TouchableOpacity>
     </View>

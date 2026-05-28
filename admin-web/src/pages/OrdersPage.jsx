@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import AdminLayout from "../layouts/AdminLayout";
 import { Search, Filter, ShoppingBag, ChevronRight, Clock, MapPin, CreditCard } from "lucide-react";
-import { request } from "../api/client";
+import { request, API_URL } from "../api/client";
 import toast from "react-hot-toast";
+import io from 'socket.io-client';
 
 const statusColors = {
   pending: "bg-amber-100 text-amber-600",
@@ -45,7 +46,19 @@ const OrdersPage = () => {
   };
 
   useEffect(() => {
+    let socket;
     fetchOrders();
+    const socketUrl = API_URL.replace('/api', '');
+    socket = io(socketUrl);
+    socket.on('new_order', () => {
+      fetchOrders();
+    });
+    socket.on('order_status_updated', () => {
+      fetchOrders();
+    });
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, []);
 
   const tabs = ["Tất cả", "Đang xử lý", "Đang giao", "Hoàn tất", "Đã hủy"];

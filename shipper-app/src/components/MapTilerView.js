@@ -34,7 +34,24 @@ const MapTilerView = ({ markers = [], center = [106.660172, 10.762622], zoom = 1
       <script>
         var map = new maplibregl.Map({
           container: 'map',
-          style: 'https://api.maptiler.com/maps/streets-v4/style.json?key=VQHIJC9n9GeP4CUF5uDy',
+          style: {
+            version: 8,
+            sources: {
+              'osm': {
+                type: 'raster',
+                tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+                tileSize: 256,
+                attribution: '© OpenStreetMap contributors'
+              }
+            },
+            layers: [{
+              id: 'osm',
+              type: 'raster',
+              source: 'osm',
+              minzoom: 0,
+              maxzoom: 19
+            }]
+          },
           center: [${center[0]}, ${center[1]}],
           zoom: ${zoom},
           attributionControl: false

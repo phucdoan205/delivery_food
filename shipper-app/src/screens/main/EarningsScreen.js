@@ -48,8 +48,8 @@ const EarningsScreen = ({ navigation }) => {
           </Text>
         </View>
         <View style={styles.transactionAmount}>
-          <Text style={styles.amountValue}>+{item.totalPrice?.toLocaleString()}đ</Text>
-          <Text style={styles.statusText}>Hoàn thành</Text>
+          <Text style={styles.amountValue}>+{((item.totalPrice || 0) * 0.9).toLocaleString()}đ</Text>
+          <Text style={styles.statusText}>Hệ thống thu: 10%</Text>
         </View>
       </View>
     );
@@ -63,7 +63,7 @@ const EarningsScreen = ({ navigation }) => {
     );
   }
 
-  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+  const todayEarnings = completedOrders.reduce((sum, o) => sum + (o.totalPrice || 0) * 0.9, 0);
 
   // Generate charts data based on last 7 days completed orders or mock placeholder matching actual total
   const dailyEarnings = [

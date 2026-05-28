@@ -4,7 +4,8 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import StatCard from '../../components/StatCard';
 import OrderCard from '../../components/OrderCard';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
+import io from 'socket.io-client';
 import MapTilerView from '../../components/MapTilerView';
 
 const ReadyScreen = ({ navigation }) => {
@@ -12,6 +13,7 @@ const ReadyScreen = ({ navigation }) => {
   const [orders, setOrders] = useState([]);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [ignoredOrders, setIgnoredOrders] = useState([]);
 
   const fetchProfile = async () => {
     try {
@@ -34,12 +36,27 @@ const ReadyScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
     const unsubscribe = navigation.addListener('focus', () => {
       fetchOrders();
       fetchProfile();
+      
+      if (!socket) {
+        const socketUrl = API_URL.replace('/api', '');
+        socket = io(socketUrl);
+        socket.on('new_order', () => fetchOrders());
+        socket.on('order_status_updated', () => fetchOrders());
+      }
     });
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
   }, [navigation]);
+
+  const handleRejectOrder = (orderId) => {
+    setIgnoredOrders(prev => [...prev, orderId]);
+  };
 
   const handleAcceptOrder = async (orderId) => {
     try {
@@ -82,7 +99,7 @@ const ReadyScreen = ({ navigation }) => {
 
   const renderStats = () => {
     const todayOrdersCount = orders.filter(o => o.status === 'completed').length;
-    const todayEarnings = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+    const todayEarnings = orders.filter(o => o.status === 'completed').reduce((sum, o) => sum + (o.totalPrice || 0) * 0.9, 0);
 
     return (
       <View style={styles.statsContainer}>
@@ -120,8 +137,8 @@ const ReadyScreen = ({ navigation }) => {
     );
   }
 
-  // Filter available orders (status is preparing)
-  const availableOrders = orders.filter(o => o.status === 'preparing');
+  // Filter available orders (status is ready and not ignored)
+  const availableOrders = orders.filter(o => o.status === 'ready' && !ignoredOrders.includes(o._id));
 
   return (
     <View style={styles.container}>
@@ -161,7 +178,7 @@ const ReadyScreen = ({ navigation }) => {
                 order={mappedOrder} 
                 onPress={() => navigation.navigate('DeliveryDetail', { orderId: order._id })}
                 onAccept={() => handleAcceptOrder(order._id)}
-                onReject={() => {}}
+                onReject={() => handleRejectOrder(order._id)}
               />
             );
           })

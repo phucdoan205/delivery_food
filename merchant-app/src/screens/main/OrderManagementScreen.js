@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIn
 import { Clock, Star } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import OrderCard from '../../components/OrderCard';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const OrderManagementScreen = ({ navigation }) => {
   const [restaurant, setRestaurant] = useState(null);
@@ -31,11 +32,36 @@ const OrderManagementScreen = ({ navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    if (!restaurant) return;
+    
+    const socketUrl = API_URL.replace('/api', '');
+    const socket = io(socketUrl);
+    
+    socket.on('order_status_updated', (data) => {
+      const restId = typeof data.restaurantId === 'object' ? data.restaurantId._id : data.restaurantId;
+      if (restId === restaurant._id || restId === restaurant.id) {
+        fetchOrders();
+      }
+    });
+    
+    socket.on('new_order', (data) => {
+      const restId = typeof data.restaurantId === 'object' ? data.restaurantId._id : data.restaurantId;
+      if (restId === restaurant._id || restId === restaurant.id) {
+        fetchOrders();
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [restaurant]);
+
   const handleUpdateStatus = async (orderId, currentStatus) => {
     let nextStatus = 'confirmed';
     if (currentStatus === 'pending') nextStatus = 'confirmed';
     else if (currentStatus === 'confirmed') nextStatus = 'preparing';
-    else if (currentStatus === 'preparing') nextStatus = 'delivering';
+    else if (currentStatus === 'preparing') nextStatus = 'ready';
     else return;
 
     try {
@@ -59,24 +85,24 @@ const OrderManagementScreen = ({ navigation }) => {
   }
 
   // Filter orders by active tab
-  // new: pending, confirmed
-  // preparing: preparing
-  // ready: delivering, completed, cancelled
   const filteredOrders = orders.filter(o => {
     if (activeTab === 'new') return ['pending', 'confirmed'].includes(o.status);
     if (activeTab === 'preparing') return o.status === 'preparing';
-    if (activeTab === 'ready') return ['delivering', 'completed', 'cancelled'].includes(o.status);
+    if (activeTab === 'ready') return ['ready', 'delivering'].includes(o.status);
+    if (activeTab === 'completed') return ['completed', 'cancelled'].includes(o.status);
     return false;
   });
 
   const newCount = orders.filter(o => ['pending', 'confirmed'].includes(o.status)).length;
   const preparingCount = orders.filter(o => o.status === 'preparing').length;
-  const readyCount = orders.filter(o => ['delivering', 'completed'].includes(o.status)).length;
+  const readyCount = orders.filter(o => ['ready', 'delivering'].includes(o.status)).length;
+  const completedCount = orders.filter(o => ['completed', 'cancelled'].includes(o.status)).length;
 
   const tabs = [
     { id: 'new', label: `MỚI (${newCount})` },
     { id: 'preparing', label: `ĐANG CHUẨN BỊ (${preparingCount})` },
     { id: 'ready', label: `SẴN SÀNG (${readyCount})` },
+    { id: 'completed', label: `HOÀN THÀNH (${completedCount})` },
   ];
 
   return (

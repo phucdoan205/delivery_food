@@ -6,7 +6,7 @@ const Restaurant = require('../models/Restaurant')
 // @route   POST /api/orders
 // @access  Private
 const createOrder = async (req, res) => {
-  const { restaurantId, items, totalPrice, deliveryAddress, paymentMethod } = req.body
+  const { restaurantId, items, totalPrice, deliveryAddress, paymentMethod, promoCode, discountAmount, shippingFee } = req.body
 
   if (items && items.length === 0) {
     res.status(400).json({ message: 'No order items' })
@@ -19,13 +19,21 @@ const createOrder = async (req, res) => {
     items,
     totalPrice,
     deliveryAddress,
-    paymentMethod
+    paymentMethod,
+    promoCode,
+    discountAmount,
+    shippingFee
   })
 
   const createdOrder = await order.save()
 
   // Clear cart after order
   await Cart.findOneAndUpdate({ userId: req.user._id }, { items: [] })
+
+  const io = req.app.get('io')
+  if (io) {
+    io.emit('new_order', createdOrder)
+  }
 
   res.status(201).json(createdOrder)
 }
@@ -35,10 +43,10 @@ const createOrder = async (req, res) => {
 // @access  Private
 const getOrderById = async (req, res) => {
   const order = await Order.findById(req.params.id)
-    .populate('userId', 'fullName email')
+    .populate('userId', 'fullName email phone avatar')
     .populate('restaurantId', 'name address')
     .populate('shipperId', 'fullName phone')
-    .populate('items.foodId', 'name price')
+    .populate('items.foodId', 'name price image')
 
   if (order) {
     res.json(order)
@@ -60,15 +68,27 @@ const updateOrderStatus = async (req, res) => {
       if (restaurant?.ownerId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Unauthorized' })
     } else if (req.user.role === 'staff') {
       if (order.restaurantId.toString() !== req.user.restaurantId.toString()) return res.status(403).json({ message: 'Unauthorized' })
+    } else if (req.user.role === 'user') {
+      if (order.userId.toString() !== req.user._id.toString()) return res.status(403).json({ message: 'Unauthorized' })
+      if (status !== 'completed' && status !== 'cancelled') return res.status(403).json({ message: 'Users can only complete or cancel orders' })
     }
 
     order.status = status || order.status
     
     if (status === 'delivering' && req.user.role === 'shipper') {
+      if (order.shipperId) {
+        return res.status(400).json({ message: 'Đơn hàng này đã được shipper khác nhận' })
+      }
       order.shipperId = req.user._id
     }
 
     const updatedOrder = await order.save()
+
+    const io = req.app.get('io')
+    if (io) {
+      io.emit('order_status_updated', updatedOrder)
+    }
+
     res.json(updatedOrder)
   } else {
     res.status(404).json({ message: 'Order not found' })
@@ -94,7 +114,9 @@ const getMerchantOrders = async (req, res) => {
     if (req.user.restaurantId.toString() !== req.params.restaurantId.toString()) return res.status(403).json({ message: 'Unauthorized' })
   }
 
-  const orders = await Order.find({ restaurantId: req.params.restaurantId }).sort({ createdAt: -1 })
+  const orders = await Order.find({ restaurantId: req.params.restaurantId })
+    .populate('items.foodId', 'name price')
+    .sort({ createdAt: -1 })
   res.json(orders)
 }
 
@@ -111,7 +133,7 @@ const getAllOrdersAdmin = async (req, res) => {
 const getShipperOrders = async (req, res) => {
   const orders = await Order.find({
     $or: [
-      { status: 'preparing' },
+      { status: 'ready' },
       { status: 'delivering', shipperId: req.user._id },
       { status: 'completed', shipperId: req.user._id }
     ]

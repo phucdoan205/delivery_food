@@ -50,7 +50,11 @@ const userSchema = new mongoose.Schema({
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant'
-  }
+  },
+  savedPromotions: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Promotion'
+  }]
 }, {
   timestamps: true
 })

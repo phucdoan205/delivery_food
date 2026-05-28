@@ -6,8 +6,9 @@ import Header from '../../components/Header';
 
 const { width } = Dimensions.get('window');
 
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
 import { Alert, ActivityIndicator } from 'react-native';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const DeliveryDetailScreen = ({ navigation, route }) => {
   const { orderId } = route.params || {};
@@ -27,9 +28,20 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
   };
 
   React.useEffect(() => {
+    let socket;
     if (orderId) {
       fetchOrderDetail();
+      const socketUrl = API_URL.replace('/api', '');
+      socket = io(socketUrl);
+      socket.on('order_status_updated', (data) => {
+        if (data._id === orderId) {
+          fetchOrderDetail();
+        }
+      });
     }
+    return () => {
+      if (socket) socket.disconnect();
+    };
   }, [orderId]);
 
   const handleUpdateStatus = async (nextStatus) => {

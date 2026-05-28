@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
+  TextInput,
 } from "react-native";
 import {
   ArrowLeft,
@@ -13,17 +14,68 @@ import {
   ThumbsUp,
   ThumbsDown,
   Star,
+  Send
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-
-const CUSTOMER_REVIEWS = [];
-const REVIEW_SUMMARY = { average: 0, total: 0, positive: 0, negative: 0, ratingDistribution: [] };
+import { request } from "../../api/client";
 
 const FILTERS = ["Tất cả", "Đánh giá 5★", "Điểm 1-3★", "Chưa phản hồi"];
 
 const CustomerFeedbackScreen = ({ route, navigation }) => {
   const { restaurant } = route?.params || {};
   const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
+  const [reviews, setReviews] = useState([]);
+  const [stats, setStats] = useState({ average: 0, total: 0, positive: 0, negative: 0, unreplied: 0 });
+  const [loading, setLoading] = useState(true);
+  
+  const [replyText, setReplyText] = useState('');
+  const [replyingTo, setReplyingTo] = useState(null); // review _id
+
+  useEffect(() => {
+    fetchReviews();
+  }, []);
+
+  const fetchReviews = async () => {
+    if (!restaurant?._id) return;
+    try {
+      setLoading(true);
+      const data = await request(`/reviews/restaurant/${restaurant._id}`);
+      setReviews(data.reviews || []);
+      setStats({
+        average: data.stats?.averageRating || 0,
+        total: data.stats?.total || 0,
+        positive: data.stats?.goodCount || 0,
+        negative: data.stats?.badCount || 0,
+        unreplied: data.stats?.unrepliedCount || 0,
+      });
+    } catch (error) {
+      console.log('Error fetching reviews:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleReply = async (reviewId) => {
+    if (!replyText.trim()) return;
+    try {
+      await request(`/reviews/${reviewId}/reply`, {
+        method: 'POST',
+        body: { reply: replyText }
+      });
+      setReplyText('');
+      setReplyingTo(null);
+      fetchReviews();
+    } catch (error) {
+      console.log('Reply error', error);
+    }
+  };
+
+  const filteredReviews = reviews.filter(r => {
+    if (activeFilter === "Đánh giá 5★") return r.rating === 5;
+    if (activeFilter === "Điểm 1-3★") return r.rating <= 3;
+    if (activeFilter === "Chưa phản hồi") return !r.reply;
+    return true;
+  });
 
   return (
     <ScrollView 
@@ -53,21 +105,21 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
         <View style={styles.summaryBlock}>
           <Text style={styles.summaryLabel}>Trung bình</Text>
           <View style={styles.ratingRow}>
-            <Text style={styles.ratingValue}>{REVIEW_SUMMARY.average}</Text>
+            <Text style={styles.ratingValue}>{stats.average}</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map((item) => (
-                <Star key={item} size={14} color="#F5A623" fill="#F5A623" />
+                <Star key={item} size={14} color={item <= Math.round(stats.average) ? "#F5A623" : "#E0E0E0"} fill={item <= Math.round(stats.average) ? "#F5A623" : "transparent"} />
               ))}
             </View>
           </View>
-          <Text style={styles.summaryHint}>Từ 468 đánh giá gần đây</Text>
+          <Text style={styles.summaryHint}>Từ {stats.total} đánh giá gần đây</Text>
         </View>
 
         <View style={[styles.metricCard, styles.positiveCard]}>
           <View>
             <Text style={styles.metricTitle}>Đánh giá tốt</Text>
             <Text style={styles.metricValue}>
-              {REVIEW_SUMMARY.positiveCount}
+              {stats.positive}
             </Text>
             <Text style={styles.metricHint}>Khách hàng hài lòng</Text>
           </View>
@@ -78,7 +130,7 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
           <View>
             <Text style={styles.metricTitle}>Cần cải thiện</Text>
             <Text style={styles.metricValue}>
-              {REVIEW_SUMMARY.negativeCount}
+              {stats.negative}
             </Text>
             <Text style={styles.metricHint}>Đánh giá có vấn đề mới</Text>
           </View>
@@ -107,34 +159,49 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
           ))}
         </View>
 
-        {CUSTOMER_REVIEWS.map((item) => (
+        {filteredReviews.length === 0 && (
+          <Text style={{ textAlign: 'center', marginTop: 30, color: Colors.textSecondary }}>Chưa có đánh giá nào</Text>
+        )}
+
+        {filteredReviews.map((item) => (
           <View
-            key={item.id}
+            key={item._id}
             style={[
               styles.reviewCard,
-              item.needsAttention && styles.reviewCardAlert,
+              item.rating <= 3 && styles.reviewCardAlert,
             ]}
           >
             <View style={styles.reviewHeader}>
-              <Image source={{ uri: item.avatar }} style={styles.avatar} />
+              <Image source={{ uri: item.userId?.avatar || 'https://via.placeholder.com/100' }} style={styles.avatar} />
               <View style={{ flex: 1 }}>
-                <Text style={styles.reviewerName}>{item.name}</Text>
+                <Text style={styles.reviewerName}>{item.userId?.fullName || 'Khách hàng'}</Text>
                 <View style={styles.reviewerMeta}>
-                  <Text style={styles.reviewerTime}>{item.time}</Text>
+                  <Text style={styles.reviewerTime}>{new Date(item.createdAt).toLocaleDateString('vi-VN')}</Text>
                   <Text style={styles.reviewerDivider}>•</Text>
                   <View style={styles.inlineStars}>
-                    {Array.from({ length: item.rating }).map((_, index) => (
+                    {Array.from({ length: 5 }).map((_, index) => (
                       <Star
                         key={index}
                         size={12}
-                        color="#F5A623"
-                        fill="#F5A623"
+                        color={index < item.rating ? "#F5A623" : "#E0E0E0"}
+                        fill={index < item.rating ? "#F5A623" : "transparent"}
                       />
                     ))}
                   </View>
                 </View>
               </View>
             </View>
+
+            {item.foodReviews && item.foodReviews.length > 0 && (
+              <View style={styles.foodReviewList}>
+                {item.foodReviews.map((fr, idx) => (
+                  <View key={idx} style={styles.foodReviewItem}>
+                    {fr.isLiked ? <ThumbsUp size={12} color="#12A150" /> : <ThumbsDown size={12} color="#D4494E" />}
+                    <Text style={styles.foodReviewText} numberOfLines={1}>{fr.foodId?.name || 'Món ăn'}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <Text style={styles.commentText}>{item.comment}</Text>
 
@@ -143,16 +210,37 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
                 <Text style={styles.replyLabel}>Phản hồi của quán</Text>
                 <Text style={styles.replyText}>{item.reply}</Text>
               </View>
-            ) : null}
-
-            <View style={styles.actionRow}>
-              <TouchableOpacity style={styles.primaryAction}>
-                <Text style={styles.primaryActionText}>Phản hồi ngay</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.secondaryAction}>
-                <Text style={styles.secondaryActionText}>Chi tiết</Text>
-              </TouchableOpacity>
-            </View>
+            ) : (
+              replyingTo === item._id ? (
+                <View style={{ marginTop: 15, flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput 
+                    style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: 20, paddingHorizontal: 15, paddingVertical: 8, fontSize: 13, backgroundColor: '#FAFAFA' }}
+                    placeholder="Viết phản hồi..."
+                    value={replyText}
+                    onChangeText={setReplyText}
+                    autoFocus
+                  />
+                  <TouchableOpacity 
+                    style={{ backgroundColor: Colors.primary, width: 36, height: 36, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginLeft: 10 }}
+                    onPress={() => handleReply(item._id)}
+                  >
+                    <Send size={16} color={Colors.white} />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={{ padding: 10 }}
+                    onPress={() => setReplyingTo(null)}
+                  >
+                    <Text style={{ color: Colors.textSecondary, fontSize: 12 }}>Hủy</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.actionRow}>
+                  <TouchableOpacity style={styles.primaryAction} onPress={() => { setReplyingTo(item._id); setReplyText(''); }}>
+                    <Text style={styles.primaryActionText}>Phản hồi ngay</Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            )}
           </View>
         ))}
       </View>
@@ -284,6 +372,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "700",
   },
+  foodReviewList: {
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  foodReviewItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
+  foodReviewText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginLeft: 6,
+  }
 });
 
 export default CustomerFeedbackScreen;

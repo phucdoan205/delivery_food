@@ -1,5 +1,6 @@
 const Promotion = require('../models/Promotion')
 const Restaurant = require('../models/Restaurant')
+const User = require('../models/User')
 
 // Helper function to check and update expiration status
 const checkAndUpdateExpiration = async (promotions) => {
@@ -181,9 +182,80 @@ const deletePromotion = async (req, res) => {
   res.json({ message: 'Promotion removed' });
 };
 
+// @desc    Save a promotion for a user
+// @route   POST /api/promotions/:id/save
+// @access  Private
+const savePromotion = async (req, res) => {
+  try {
+    const promotion = await Promotion.findById(req.params.id);
+    if (!promotion) {
+      return res.status(404).json({ message: 'Promotion not found' });
+    }
+
+    if (promotion.status !== 'active') {
+      return res.status(400).json({ message: 'Promotion is no longer active' });
+    }
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.savedPromotions && user.savedPromotions.includes(promotion._id)) {
+      return res.status(400).json({ message: 'Bạn đã nhận mã giảm giá này rồi' });
+    }
+
+    if (!user.savedPromotions) {
+      user.savedPromotions = [];
+    }
+
+    user.savedPromotions.push(promotion._id);
+    await user.save();
+
+    res.json({ message: 'Saved successfully', savedPromotions: user.savedPromotions });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// @desc    Get user's saved promotions
+// @route   GET /api/promotions/user/saved
+// @access  Private
+const getSavedPromotions = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate({
+      path: 'savedPromotions',
+      populate: {
+        path: 'restaurantId',
+        select: 'name image address'
+      }
+    });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check expiration and remove or mark them
+    let promotions = user.savedPromotions || [];
+    const wasUpdated = await checkAndUpdateExpiration(promotions);
+    if (wasUpdated) {
+      promotions = await Promotion.find({ _id: { $in: promotions.map(p => p._id) } }).populate('restaurantId', 'name image address');
+    }
+
+    // Filter out expired or deleted ones to only return active ones
+    const activePromotions = promotions.filter(p => p && p.status === 'active');
+
+    res.json(activePromotions);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 module.exports = {
   getPromotionsByRestaurant,
   createPromotion,
   updatePromotion,
-  deletePromotion
+  deletePromotion,
+  savePromotion,
+  getSavedPromotions
 };

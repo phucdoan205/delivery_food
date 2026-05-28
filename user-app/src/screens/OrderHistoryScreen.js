@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
-import { MapPin, Search as ChevronRight, Search as RotateCcw } from 'lucide-react-native';
-import { request } from '../api/client';
+import { MapPin, Search as ChevronRight, Search as RotateCcw, CheckCircle } from 'lucide-react-native';
+import { request, API_URL } from '../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
+import { Alert } from 'react-native';
 
 const OrderHistoryScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState('Hiện tại');
@@ -21,11 +23,40 @@ const OrderHistoryScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
     const unsubscribe = navigation.addListener('focus', () => {
       fetchOrders();
+      
+      if (!socket) {
+        const socketUrl = API_URL.replace('/api', '');
+        socket = io(socketUrl);
+        
+        socket.on('order_status_updated', (data) => {
+          fetchOrders(); // Tải lại danh sách đơn
+        });
+      }
     });
-    return unsubscribe;
+    
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
   }, [navigation]);
+
+  const handleCompleteOrder = async (orderId) => {
+    try {
+      setLoading(true);
+      await request(`/orders/${orderId}/status`, {
+        method: 'PUT',
+        body: { status: 'completed' }
+      });
+      Alert.alert('Thành công', 'Cảm ơn bạn đã xác nhận nhận hàng!');
+      fetchOrders();
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái đơn hàng');
+      setLoading(false);
+    }
+  };
 
   const renderOrderItem = ({ item }) => {
     const isCurrent = ['pending', 'confirmed', 'preparing', 'delivering'].includes(item.status);
@@ -71,13 +102,24 @@ const OrderHistoryScreen = ({ navigation }) => {
               </View>
               <View style={styles.priceRow}>
                 <Text style={styles.price}>{item.totalPrice.toLocaleString()}đ</Text>
-                <TouchableOpacity 
-                  style={styles.trackBtn} 
-                  onPress={() => navigation.navigate('OrderTracking', { orderId: item._id })}
-                >
-                  <MapPin size={16} color={COLORS.white} />
-                  <Text style={styles.trackBtnText}>Theo dõi</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {item.status === 'delivering' && (
+                    <TouchableOpacity 
+                      style={[styles.trackBtn, { backgroundColor: COLORS.green }]} 
+                      onPress={() => handleCompleteOrder(item._id)}
+                    >
+                      <CheckCircle size={16} color={COLORS.white} />
+                      <Text style={styles.trackBtnText}>Đã nhận</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity 
+                    style={styles.trackBtn} 
+                    onPress={() => navigation.navigate('OrderTracking', { orderId: item._id })}
+                  >
+                    <MapPin size={16} color={COLORS.white} />
+                    <Text style={styles.trackBtnText}>Theo dõi</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           </>
@@ -92,8 +134,18 @@ const OrderHistoryScreen = ({ navigation }) => {
               <Text style={styles.orderItemsSmall} numberOfLines={1}>{itemsSummary}</Text>
               <View style={styles.pastOrderFooter}>
                 <Text style={styles.priceSmall}>{item.totalPrice.toLocaleString()}đ</Text>
-                <View style={[styles.tagBadge, { backgroundColor: item.status === 'completed' ? COLORS.green : '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10 }]}>
-                  <Text style={[styles.tagText, { fontSize: 8, color: item.status === 'completed' ? COLORS.white : '#616161' }]}>{getStatusLabel(item.status)}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  {item.status === 'completed' && (
+                    <TouchableOpacity 
+                      style={{ backgroundColor: COLORS.primary, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 10, marginRight: 8 }}
+                      onPress={() => navigation.navigate('Review', { order: item })}
+                    >
+                      <Text style={{ color: COLORS.white, fontSize: 10, fontWeight: 'bold' }}>Đánh giá</Text>
+                    </TouchableOpacity>
+                  )}
+                  <View style={[styles.tagBadge, { backgroundColor: item.status === 'completed' ? COLORS.green : '#E0E0E0', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 10, marginBottom: 0 }]}>
+                    <Text style={[styles.tagText, { fontSize: 8, color: item.status === 'completed' ? COLORS.white : '#616161' }]}>{getStatusLabel(item.status)}</Text>
+                  </View>
                 </View>
               </View>
             </View>
