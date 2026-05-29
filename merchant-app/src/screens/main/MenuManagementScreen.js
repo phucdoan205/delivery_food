@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, Plus, Filter, ArrowUpDown } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
@@ -77,7 +77,11 @@ const MenuManagementScreen = ({ navigation }) => {
             </View>
           </View>
           <TouchableOpacity style={styles.profileBtn} onPress={() => navigation.navigate('Profile')}>
-            <Text style={styles.profileIcon}>👤</Text>
+            {restaurant?.image ? (
+              <Image source={{ uri: restaurant.image }} style={{ width: 36, height: 36, borderRadius: 18 }} />
+            ) : (
+              <Text style={styles.profileIcon}>👤</Text>
+            )}
           </TouchableOpacity>
         </View>
         
@@ -93,38 +97,39 @@ const MenuManagementScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Search & Filter */}
-      <View style={styles.searchSection}>
-        <View style={styles.searchBar}>
-          <Search size={20} color={Colors.textSecondary} />
-          <TextInput 
-            placeholder="Tìm kiếm tên món..." 
-            style={styles.searchInput}
-            placeholderTextColor="#A0A0A0"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-          />
-        </View>
-      </View>
-
-      {/* Stats Summary */}
-      <View style={styles.summarySection}>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>TỔNG SỐ MÓN</Text>
-          <Text style={styles.summaryValue}>{menuItems.length}</Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>ĐANG BÁN</Text>
-          <Text style={[styles.summaryValue, { color: '#2ECC71' }]}>{activeCount}</Text>
-        </View>
-        <View style={styles.summaryItem}>
-          <Text style={styles.summaryLabel}>HẾT MÓN</Text>
-          <Text style={[styles.summaryValue, { color: '#E53935' }]}>{inactiveCount}</Text>
-        </View>
-      </View>
-
-      {/* Menu List */}
+      {/* Scrollable Content */}
       <ScrollView style={styles.listContainer} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Search & Filter */}
+        <View style={styles.searchSection}>
+          <View style={styles.searchBar}>
+            <Search size={20} color={Colors.textSecondary} />
+            <TextInput 
+              placeholder="Tìm kiếm tên món..." 
+              style={styles.searchInput}
+              placeholderTextColor="#A0A0A0"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+            />
+          </View>
+        </View>
+
+        {/* Stats Summary */}
+        <View style={styles.summarySection}>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>TỔNG SỐ MÓN</Text>
+            <Text style={styles.summaryValue}>{menuItems.length}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>ĐANG BÁN</Text>
+            <Text style={[styles.summaryValue, { color: '#2ECC71' }]}>{activeCount}</Text>
+          </View>
+          <View style={styles.summaryItem}>
+            <Text style={styles.summaryLabel}>HẾT MÓN</Text>
+            <Text style={[styles.summaryValue, { color: '#E53935' }]}>{inactiveCount}</Text>
+          </View>
+        </View>
+
+        {/* Menu List */}
         {filteredItems.map((item, index) => {
           const mappedItem = {
             ...item,
@@ -228,7 +233,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   searchSection: {
-    paddingHorizontal: 20,
     marginBottom: 20,
   },
   searchBar: {
@@ -269,13 +273,12 @@ const styles = StyleSheet.create({
   summarySection: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 15,
     marginBottom: 20,
+    justifyContent: 'space-between',
   },
   summaryItem: {
-    width: '45%',
+    width: '48%',
     backgroundColor: Colors.white,
-    marginHorizontal: '2.5%',
     marginBottom: 10,
     padding: 15,
     borderRadius: 16,

@@ -9,6 +9,7 @@ const cartRoutes = require('./routes/cartRoutes')
 const orderRoutes = require('./routes/orderRoutes')
 const promotionRoutes = require('./routes/promotionRoutes')
 const reviewRoutes = require('./routes/reviewRoutes')
+const notificationRoutes = require('./routes/notificationRoutes')
 
 const app = express()
 
@@ -25,6 +26,7 @@ app.use('/api/cart', cartRoutes)
 app.use('/api/orders', orderRoutes)
 app.use('/api/promotions', promotionRoutes)
 app.use('/api/reviews', reviewRoutes)
+app.use('/api/notifications', notificationRoutes)
 
 app.get('/', (req, res) => {
   res.send('API Running... Visit /api-docs for documentation.')

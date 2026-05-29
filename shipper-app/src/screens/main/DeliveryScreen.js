@@ -5,8 +5,10 @@ import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
-import { request } from '../../api/client';
+import { request, API_URL } from '../../api/client';
 import MapTilerView from '../../components/MapTilerView';
+import io from 'socket.io-client/dist/socket.io.js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -15,6 +17,7 @@ const DeliveryScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const insets = useSafeAreaInsets();
 
   // Deterministic pseudo-random based on string
@@ -64,6 +67,11 @@ const DeliveryScreen = ({ navigation }) => {
           });
         }
       }
+      
+      const unreadData = await request('/notifications/unread');
+      if (unreadData && unreadData.count !== undefined) {
+        setUnreadCount(unreadData.count);
+      }
     } catch (error) {
       console.log('Error fetching active shipper deliveries:', error);
     } finally {
@@ -107,10 +115,40 @@ const DeliveryScreen = ({ navigation }) => {
   };
 
   useEffect(() => {
+    let socket;
+    
     const unsubscribe = navigation.addListener('focus', () => {
       fetchActiveDeliveries();
     });
-    return unsubscribe;
+
+    const initSocket = async () => {
+      try {
+        const userInfo = await AsyncStorage.getItem('userInfo');
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          const socketUrl = API_URL.replace('/api', '');
+          socket = io(socketUrl);
+          socket.emit('join', user._id);
+          socket.on('new_notification', () => {
+            setUnreadCount(prev => prev + 1);
+          });
+          socket.on('new_order', () => {
+            fetchActiveDeliveries();
+          });
+          socket.on('order_status_updated', () => {
+            fetchActiveDeliveries();
+          });
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    initSocket();
+
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
   }, [navigation]);
 
   const handleCompleteOrder = async (orderId) => {
@@ -177,13 +215,27 @@ const DeliveryScreen = ({ navigation }) => {
       </View>
 
       <Header 
-        showBack={false}
-        title="Đang giao hàng"
+        title="Đơn hàng đang giao" 
+        showBack={false} 
         style={[styles.header, { marginTop: Math.max(insets.top, 40) }]}
         rightComponent={
-          <View style={styles.incomeBadge}>
-            <Text style={styles.incomeText}>GIAO</Text>
-          </View>
+          <TouchableOpacity 
+            style={{ padding: 5, position: 'relative' }}
+            onPress={() => navigation.navigate('Notification')}
+          >
+            <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
+            {unreadCount > 0 && (
+              <View style={{
+                position: 'absolute', top: 2, right: 2, backgroundColor: COLORS.primary, 
+                width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center',
+                borderWidth: 1, borderColor: COLORS.white
+              }}>
+                <Text style={{ color: COLORS.white, fontSize: 10, fontWeight: 'bold' }}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
         }
       />
 

@@ -1,12 +1,38 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
-import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity,  } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { Bell, ShoppingBag, CreditCard, Settings, Star, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
-
-const NOTIFICATIONS = [];
+import { request } from '../../api/client';
 
 const NotificationScreen = ({ navigation }) => {
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [limit, setLimit] = useState(5);
+
+  const fetchNotifications = async (currentLimit) => {
+    try {
+      const data = await request(`/notifications?limit=${currentLimit}`);
+      setNotifications(data || []);
+      // Mark as read
+      await request('/notifications/read-all', { method: 'PUT' });
+    } catch (error) {
+      console.log('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications(limit);
+  }, [limit]);
+
+  const loadMore = () => {
+    setLoadingMore(true);
+    setLimit(prev => prev + 3);
+  };
   const getIcon = (type) => {
     switch (type) {
       case 'order': return <ShoppingBag size={20} color={Colors.primary} />;
@@ -38,9 +64,9 @@ const NotificationScreen = ({ navigation }) => {
       <View style={styles.contentContainer}>
         <View style={styles.headerRow}>
           <Text style={[styles.title, !item.isRead && styles.unreadTitle]}>{item.title}</Text>
-          <Text style={styles.timeText}>{item.time}</Text>
+          <Text style={styles.timeText}>{new Date(item.createdAt).toLocaleString('vi-VN')}</Text>
         </View>
-        <Text style={styles.description} numberOfLines={2}>{item.description}</Text>
+        <Text style={styles.description} numberOfLines={2}>{item.message}</Text>
       </View>
       {!item.isRead && <View style={styles.unreadDot} />}
     </TouchableOpacity>
@@ -58,19 +84,30 @@ const NotificationScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <FlatList
-        data={NOTIFICATIONS}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        contentContainerStyle={styles.listContent}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Bell size={64} color={Colors.border} />
-            <Text style={styles.emptyText}>Bạn chưa có thông báo nào</Text>
-          </View>
-        }
-      />
+      {loading ? (
+        <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 50 }} />
+      ) : (
+        <FlatList
+          data={notifications}
+          renderItem={renderItem}
+          keyExtractor={item => item._id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Bell size={64} color={Colors.border} />
+              <Text style={styles.emptyText}>Bạn chưa có thông báo nào</Text>
+            </View>
+          }
+          ListFooterComponent={
+            notifications.length >= limit ? (
+              <TouchableOpacity style={styles.loadMoreBtn} onPress={loadMore} disabled={loadingMore}>
+                {loadingMore ? <ActivityIndicator size="small" color={Colors.primary} /> : <Text style={styles.loadMoreText}>Đọc tiếp</Text>}
+              </TouchableOpacity>
+            ) : null
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -177,6 +214,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textSecondary,
     fontWeight: '600',
+  },
+  loadMoreBtn: {
+    padding: 15,
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    borderRadius: 12,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+  },
+  loadMoreText: {
+    color: Colors.primary,
+    fontWeight: '700',
+    fontSize: 14,
   }
 });
 

@@ -6,7 +6,8 @@ import { MapPin, Search as SearchIcon, Bell, ChevronRight, ShoppingCart } from '
 import CategoryChip from '../components/CategoryChip';
 import RestaurantCard from '../components/RestaurantCard';
 import FoodCard from '../components/FoodCard';
-import { request } from '../api/client';
+import { request, API_URL } from '../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const HomeScreen = ({ navigation }) => {
   const [categories, setCategories] = useState([]);
@@ -16,6 +17,7 @@ const HomeScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const fetchHomeData = async () => {
     try {
@@ -35,6 +37,18 @@ const HomeScreen = ({ navigation }) => {
       if (cartData && cartData.items) {
         setCartCount(cartData.items.reduce((sum, item) => sum + item.quantity, 0));
       }
+      
+      if (profileData && profileData._id) {
+        try {
+          const unreadData = await request('/notifications/unread');
+          if (unreadData && unreadData.count !== undefined) {
+            setUnreadCount(unreadData.count);
+          }
+        } catch (e) {
+          console.log('Error fetching unread count', e);
+        }
+      }
+
       if (cats.length) setSelectedCategory(cats[0]._id || cats[0].id);
     } catch (error) {
       console.log('Error fetching home data, falling back to mocks:', error);
@@ -51,8 +65,22 @@ const HomeScreen = ({ navigation }) => {
     const unsubscribe = navigation.addListener('focus', () => {
       fetchHomeData();
     });
-    return unsubscribe;
-  }, [navigation]);
+
+    let socket;
+    if (profile && profile._id) {
+      const socketUrl = API_URL.replace('/api', '');
+      socket = io(socketUrl);
+      socket.emit('join', profile._id);
+      socket.on('new_notification', () => {
+        setUnreadCount(prev => prev + 1);
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
+  }, [navigation, profile?._id]);
 
   const renderHeader = () => (
     <View style={styles.header}>
@@ -67,8 +95,13 @@ const HomeScreen = ({ navigation }) => {
         <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Tìm kiếm')}>
           <SearchIcon size={20} color={COLORS.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.iconBtn}>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Notification')}>
           <Bell size={20} color={COLORS.text} />
+          {unreadCount > 0 && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
         <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.navigate('Cart')}>
           <ShoppingCart size={20} color={COLORS.text} />
@@ -256,6 +289,7 @@ const styles = StyleSheet.create({
   },
   iconBtn: {
     marginLeft: 15,
+    position: 'relative',
   },
   badge: {
     position: 'absolute',

@@ -19,6 +19,7 @@ import DeliveryScreen from '../screens/main/DeliveryScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 import EarningsScreen from '../screens/main/EarningsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
+import NotificationScreen from '../screens/main/NotificationScreen';
 
 import PickupConfirmationScreen from '../screens/details/PickupConfirmationScreen';
 import DeliveryDetailScreen from '../screens/details/DeliveryDetailScreen';
@@ -93,6 +94,7 @@ const AppNavigator = () => {
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="HelpCenter" component={HelpCenterScreen} />
         <Stack.Screen name="Security" component={SecurityScreen} />
+        <Stack.Screen name="Notification" component={NotificationScreen} />
       </Stack.Navigator>
 
     </NavigationContainer>

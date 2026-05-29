@@ -1,6 +1,7 @@
 const Order = require('../models/Order')
 const Cart = require('../models/Cart')
 const Restaurant = require('../models/Restaurant')
+const { sendNotification } = require('../utils/notify')
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -33,6 +34,15 @@ const createOrder = async (req, res) => {
   const io = req.app.get('io')
   if (io) {
     io.emit('new_order', createdOrder)
+    
+    // Notify Merchant
+    const restaurant = await Restaurant.findById(restaurantId)
+    if (restaurant && restaurant.ownerId) {
+      await sendNotification(io, restaurant.ownerId, 'Đơn hàng mới', 'Bạn có một đơn hàng mới cần xử lý')
+    }
+    
+    // Notify Admin
+    await sendNotification(io, 'admin', 'Đơn hàng mới', 'Một đơn hàng mới vừa được tạo trên hệ thống')
   }
 
   res.status(201).json(createdOrder)
@@ -87,6 +97,19 @@ const updateOrderStatus = async (req, res) => {
     const io = req.app.get('io')
     if (io) {
       io.emit('order_status_updated', updatedOrder)
+      
+      // Notify User
+      if (['confirmed', 'preparing'].includes(status)) {
+        await sendNotification(io, order.userId, 'Cập nhật đơn hàng', 'Cửa hàng đã xác nhận và đang chuẩn bị đơn hàng của bạn.')
+      } else if (status === 'delivering' && req.user.role === 'shipper') {
+        await sendNotification(io, req.user._id, 'Nhận đơn thành công', 'Bạn đã nhận giao đơn hàng này.')
+        await sendNotification(io, order.userId, 'Đang giao hàng', 'Tài xế đang giao đơn hàng cho bạn.')
+      } else if (status === 'completed' && req.user.role === 'shipper') {
+        await sendNotification(io, req.user._id, 'Hoàn thành đơn', 'Bạn đã giao đơn hàng thành công.')
+        await sendNotification(io, order.userId, 'Hoàn thành đơn', 'Đơn hàng của bạn đã được giao thành công.')
+      } else if (status === 'cancelled') {
+        await sendNotification(io, order.userId, 'Đơn hàng đã hủy', 'Đơn hàng của bạn đã bị hủy.')
+      }
     }
 
     res.json(updatedOrder)

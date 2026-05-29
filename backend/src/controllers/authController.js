@@ -1,6 +1,7 @@
 const User = require('../models/User')
 const bcrypt = require('bcryptjs')
 const generateToken = require('../utils/generateToken')
+const { sendNotification } = require('../utils/notify')
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -33,6 +34,13 @@ const registerUser = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       io.emit('new_user_registered');
+      
+      let msg = '';
+      if (role === 'merchant') msg = `Có một cửa hàng mới (${fullName}) vừa đăng ký và đang chờ duyệt.`;
+      else if (role === 'shipper') msg = `Có một tài xế mới (${fullName}) vừa đăng ký và đang chờ duyệt.`;
+      else msg = `Người dùng mới (${fullName}) vừa tham gia hệ thống.`;
+      
+      await sendNotification(io, 'admin', 'Đăng ký mới', msg);
       
       if (userStatus === 'pending') {
         io.emit('new_registration_pending', {

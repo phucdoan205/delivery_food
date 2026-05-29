@@ -15,6 +15,7 @@ const DashboardScreen = ({ navigation }) => {
   const [restaurant, setRestaurant] = useState(null);
   const [orders, setOrders] = useState([]);
   const [dishes, setDishes] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -22,13 +23,17 @@ const DashboardScreen = ({ navigation }) => {
       const rest = await request('/restaurants/mine');
       setRestaurant(rest);
       
-      const [ordersData, foodsData] = await Promise.all([
+      const [ordersData, foodsData, unread] = await Promise.all([
         request(`/orders/merchant/${rest._id}`),
-        request(`/foods?restaurantId=${rest._id}`)
+        request(`/foods?restaurantId=${rest._id}`),
+        request('/notifications/unread')
       ]);
       
       setOrders(ordersData || []);
       setDishes(foodsData || []);
+      if (unread && unread.count !== undefined) {
+        setUnreadCount(unread.count);
+      }
     } catch (error) {
       console.log('Error fetching dashboard data:', error);
     } finally {
@@ -46,21 +51,31 @@ const DashboardScreen = ({ navigation }) => {
     try {
       const socketUrl = API_URL.replace('/api', '');
       socket = io(socketUrl);
+      
+      if (restaurant && restaurant.ownerId) {
+        socket.emit('join', restaurant.ownerId);
+      }
+      
       socket.on('new_order', () => {
         fetchData();
       });
       socket.on('order_status_updated', () => {
         fetchData();
       });
+      socket.on('new_notification', () => {
+        setUnreadCount(prev => prev + 1);
+      });
     } catch (error) {
-      console.log('Socket connection error', error);
+      console.log('Socket connection error:', error);
     }
 
     return () => {
       unsubscribe();
-      if (socket) socket.disconnect();
+      if (socket) {
+        socket.disconnect();
+      }
     };
-  }, [navigation]);
+  }, [navigation, restaurant?.ownerId]);
 
 
 
@@ -88,7 +103,7 @@ const DashboardScreen = ({ navigation }) => {
   return (
     <ScrollView 
       style={[styles.container, { paddingTop: insets.top }]} 
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -108,7 +123,11 @@ const DashboardScreen = ({ navigation }) => {
           onPress={() => navigation.navigate('Notification')}
         >
           <Bell size={24} color={Colors.text} />
-          {newOrdersCount > 0 && <View style={styles.dot} />}
+          {unreadCount > 0 && (
+            <View style={styles.dot}>
+              <Text style={{color: 'white', fontSize: 10, fontWeight: 'bold'}}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -240,6 +259,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   userInfo: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -271,14 +291,16 @@ const styles = StyleSheet.create({
   },
   dot: {
     position: 'absolute',
-    top: 12,
-    right: 12,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 6,
+    right: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     backgroundColor: Colors.primary,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: Colors.white,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statsGrid: {
     flexDirection: 'row',

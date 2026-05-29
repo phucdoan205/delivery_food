@@ -2,7 +2,7 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Home, Search, MapPin as MapIcon, Search as ClipboardList, User } from 'lucide-react-native';
+import { Home, Search, MapPin as MapIcon, ClipboardList, User } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
 // Screens
@@ -28,6 +28,7 @@ import FavoriteScreen from '../screens/FavoriteScreen';
 import NotificationSettingsScreen from '../screens/NotificationSettingsScreen';
 import VoucherScreen from '../screens/VoucherScreen';
 import ReviewScreen from '../screens/ReviewScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
@@ -95,6 +96,7 @@ const AppNavigator = () => {
       <Stack.Screen name="NotificationSettings" component={NotificationSettingsScreen} />
       <Stack.Screen name="Voucher" component={VoucherScreen} />
       <Stack.Screen name="Review" component={ReviewScreen} />
+      <Stack.Screen name="Notification" component={NotificationScreen} />
     </Stack.Navigator>
   );
 };

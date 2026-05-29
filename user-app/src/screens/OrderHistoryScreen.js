@@ -177,7 +177,9 @@ const OrderHistoryScreen = ({ navigation }) => {
       <View style={styles.header}>
         <View style={styles.locationHeader}>
           <MapPin size={16} color={COLORS.primary} fill={COLORS.primary} />
-          <Text style={styles.locationText}>Vị trí hiện tại</Text>
+          <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">
+            {profile?.address || 'Vị trí hiện tại'}
+          </Text>
         </View>
         <Image 
           source={{ uri: profile?.avatar || `https://ui-avatars.com/api/?name=${profile?.fullName || 'U'}&background=E63946&color=fff` }} 
@@ -252,6 +254,8 @@ const styles = StyleSheet.create({
   locationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
   },
   locationText: {
     fontSize: 14,

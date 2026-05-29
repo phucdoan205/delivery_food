@@ -1,5 +1,7 @@
 const Review = require('../models/Review');
 const Order = require('../models/Order');
+const Restaurant = require('../models/Restaurant');
+const { sendNotification } = require('../utils/notify');
 
 // @desc    Create a new review
 // @route   POST /api/reviews
@@ -36,6 +38,10 @@ const createReview = async (req, res) => {
     const io = req.app.get('io');
     if (io) {
       io.emit('new_review_for_merchant', { restaurantId, reviewId: review._id });
+      const restaurant = await Restaurant.findById(restaurantId);
+      if (restaurant && restaurant.ownerId) {
+        await sendNotification(io, restaurant.ownerId, 'Đánh giá mới', `Cửa hàng của bạn vừa nhận được đánh giá ${rating} sao.`);
+      }
     }
 
     res.status(201).json(review);
@@ -107,7 +113,8 @@ const replyToReview = async (req, res) => {
 
     const io = req.app.get('io');
     if (io) {
-      io.emit('new_reply_for_user', { orderId: review.orderId, reviewId: review._id });
+      io.emit('new_reply_for_user', { reviewId: review._id, reply: review.reply });
+      await sendNotification(io, review.userId, 'Phản hồi từ cửa hàng', 'Cửa hàng đã phản hồi đánh giá của bạn.');
     }
 
     res.json(review);
