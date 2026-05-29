@@ -183,8 +183,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(211, 84, 0, 0.05)',
     borderWidth: 1,
     borderColor: COLORS.border,
-    alignItems: 'center',
-    justifyContent: 'center',
+    textAlign: 'center',
+    lineHeight: 55,
+    padding: 0,
   },
   activeOtpBox: {
     borderColor: COLORS.primary,
