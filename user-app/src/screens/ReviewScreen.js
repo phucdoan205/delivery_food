@@ -3,7 +3,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  TouchableOpacity, Image, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Star, ThumbsUp, ThumbsDown } from 'lucide-react-native';
-import { request } from '../api/client';
+import { request, API_URL } from '../api/client';
+import io from 'socket.io-client/dist/socket.io.js';
 
 const ReviewScreen = ({ route, navigation }) => {
   const { order } = route.params;
@@ -12,9 +13,21 @@ const ReviewScreen = ({ route, navigation }) => {
   const [foodReviews, setFoodReviews] = useState({});
   const [loading, setLoading] = useState(false);
   const [isReviewed, setIsReviewed] = useState(false);
+  const [merchantReply, setMerchantReply] = useState(null);
 
   useEffect(() => {
     checkReviewStatus();
+
+    const socket = io(API_URL);
+    socket.on('new_reply_for_user', (data) => {
+      if (data.orderId === order._id) {
+        checkReviewStatus(); // Refresh review data to get the reply
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const checkReviewStatus = async () => {
@@ -31,6 +44,9 @@ const ReviewScreen = ({ route, navigation }) => {
           });
         }
         setFoodReviews(fr);
+        if (data.review.reply) {
+          setMerchantReply(data.review.reply);
+        }
       }
     } catch (error) {
       console.log('Lỗi kiểm tra trạng thái review:', error);
@@ -101,7 +117,7 @@ const ReviewScreen = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ArrowLeft size={24} color={COLORS.text} />
@@ -184,6 +200,13 @@ const ReviewScreen = ({ route, navigation }) => {
         {isReviewed && (
           <View style={{ alignItems: 'center', marginVertical: 20 }}>
             <Text style={{ color: COLORS.green, fontWeight: 'bold' }}>Bạn đã đánh giá đơn hàng này!</Text>
+          </View>
+        )}
+
+        {isReviewed && merchantReply && (
+          <View style={styles.replyBox}>
+            <Text style={styles.replyLabel}>Phản hồi từ cửa hàng</Text>
+            <Text style={styles.replyText}>{merchantReply}</Text>
           </View>
         )}
 
@@ -341,6 +364,25 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  replyBox: {
+    backgroundColor: '#E3F2FD',
+    borderRadius: SIZES.radius,
+    padding: 20,
+    marginBottom: 30,
+    borderLeftWidth: 4,
+    borderLeftColor: '#2196F3',
+  },
+  replyLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#1565C0',
+    marginBottom: 8,
+  },
+  replyText: {
+    fontSize: 14,
+    color: COLORS.text,
+    lineHeight: 22,
   }
 });
 

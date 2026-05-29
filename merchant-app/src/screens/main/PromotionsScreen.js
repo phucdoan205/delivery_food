@@ -168,7 +168,7 @@ const PromotionsScreen = ({ route, navigation }) => {
   const totalUsage = promotions.reduce((sum, p) => sum + (p.usageCount || 0), 0);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft size={24} color={Colors.text} />

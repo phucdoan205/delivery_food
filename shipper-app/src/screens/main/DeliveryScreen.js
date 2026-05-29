@@ -14,6 +14,7 @@ const DeliveryScreen = ({ navigation }) => {
   const [activeOrders, setActiveOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const insets = useSafeAreaInsets();
 
   // Deterministic pseudo-random based on string
@@ -197,6 +198,14 @@ const DeliveryScreen = ({ navigation }) => {
           </View>
         ) : (
           <View style={styles.orderCard}>
+            <TouchableOpacity 
+              style={styles.dragHandle}
+              onPress={() => setIsCollapsed(!isCollapsed)}
+            >
+              <View style={styles.dragBar} />
+              <Ionicons name={isCollapsed ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textLight} />
+            </TouchableOpacity>
+
             <View style={styles.orderHeader}>
                <View style={styles.tag}>
                   <Ionicons name="bicycle" size={14} color={COLORS.white} />
@@ -208,8 +217,10 @@ const DeliveryScreen = ({ navigation }) => {
                </View>
             </View>
 
-            <View style={styles.restaurantRow}>
-               <Image source={{ uri: order.restaurantId?.image || 'https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=200' }} style={styles.resImage} />
+            {!isCollapsed && (
+              <>
+                <View style={styles.restaurantRow}>
+                   <Image source={{ uri: order.restaurantId?.image || 'https://images.unsplash.com/photo-1552611052-33e04de081de?q=80&w=200' }} style={styles.resImage} />
                <View style={styles.resInfo}>
                   <Text style={styles.resName}>{order.restaurantId?.name || 'Cửa hàng'}</Text>
                   <View style={styles.resStats}>
@@ -230,6 +241,8 @@ const DeliveryScreen = ({ navigation }) => {
                   </View>
                </View>
             </View>
+              </>
+            )}
 
             <View style={styles.actions}>
                <CustomButton 
@@ -287,11 +300,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 30,
     padding: SIZES.padding,
+    paddingTop: SIZES.base,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 10,
+  },
+  dragHandle: {
+    alignItems: 'center',
+    paddingVertical: SIZES.base,
+    marginBottom: SIZES.base,
+  },
+  dragBar: {
+    width: 40, 
+    height: 4, 
+    backgroundColor: COLORS.border, 
+    borderRadius: 2, 
+    marginBottom: 4 
   },
   orderHeader: {
     flexDirection: 'row',

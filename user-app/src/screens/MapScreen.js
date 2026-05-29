@@ -109,7 +109,7 @@ const MapScreen = ({ navigation }) => {
         }}
       />
 
-      <SafeAreaView style={styles.overlay}>
+      <SafeAreaView edges={['top']} style={styles.overlay}>
         {/* Header Search */}
         <View style={styles.header}>
           <View style={styles.locationContainer}>

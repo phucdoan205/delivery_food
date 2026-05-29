@@ -9,7 +9,7 @@ const OTPScreen = ({ navigation }) => {
   const [otp, setOtp] = useState(['7', '3', '', '', '', '']);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <Header />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Xác thực tài khoản</Text>

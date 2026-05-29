@@ -152,7 +152,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
   const renderHeader = () => (
     <View style={styles.header}>
       <Image source={{ uri: restaurant.image }} style={styles.bannerImage} />
-      <SafeAreaView style={styles.headerContent}>
+      <SafeAreaView edges={['top']} style={styles.headerContent}>
         {isClosed && (
           <View style={styles.closedBanner}>
             <Text style={styles.closedBannerText}>Nhà hàng tạm thời đóng cửa</Text>
@@ -240,7 +240,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
         <ActivityIndicator size="large" color={COLORS.primary} />
       </SafeAreaView>
     );

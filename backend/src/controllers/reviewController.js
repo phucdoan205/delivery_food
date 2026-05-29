@@ -33,6 +33,11 @@ const createReview = async (req, res) => {
       foodReviews
     });
 
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_review_for_merchant', { restaurantId, reviewId: review._id });
+    }
+
     res.status(201).json(review);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -99,6 +104,11 @@ const replyToReview = async (req, res) => {
 
     review.reply = reply;
     await review.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('new_reply_for_user', { orderId: review.orderId, reviewId: review._id });
+    }
 
     res.json(review);
   } catch (error) {

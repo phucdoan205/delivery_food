@@ -84,7 +84,7 @@ const FoodDetailScreen = ({ route, navigation }) => {
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         <View style={styles.imageContainer}>
           <Image source={{ uri: item.image }} style={styles.image} />
-          <SafeAreaView style={styles.header}>
+          <SafeAreaView edges={['top']} style={styles.header}>
             <View style={styles.headerRow}>
               <TouchableOpacity style={styles.iconBtn} onPress={() => navigation.goBack()}>
                 <ArrowLeft size={24} color={COLORS.text} />

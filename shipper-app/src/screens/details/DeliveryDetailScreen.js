@@ -16,6 +16,7 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
   const insets = useSafeAreaInsets();
   
@@ -208,6 +209,14 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
 
       <View style={styles.bottomContainer}>
          <View style={styles.infoCard}>
+            <TouchableOpacity 
+              style={styles.dragHandle}
+              onPress={() => setIsCollapsed(!isCollapsed)}
+            >
+              <View style={styles.dragBar} />
+              <Ionicons name={isCollapsed ? "chevron-up" : "chevron-down"} size={16} color={COLORS.textLight} />
+            </TouchableOpacity>
+
             <View style={styles.cardHeader}>
                <View style={styles.statusRow}>
                   <View style={styles.dot} />
@@ -220,8 +229,10 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
                </View>
             </View>
 
-            <View style={styles.customerRow}>
-               <Image source={{ uri: order.userId?.avatar || `https://ui-avatars.com/api/?name=${order.userId?.fullName || 'Khach'}&background=random` }} style={styles.customerAvatar} />
+            {!isCollapsed && (
+              <>
+                <View style={styles.customerRow}>
+                   <Image source={{ uri: order.userId?.avatar || `https://ui-avatars.com/api/?name=${order.userId?.fullName || 'Khach'}&background=random` }} style={styles.customerAvatar} />
                <View style={styles.customerInfo}>
                   <Text style={styles.customerName}>{order.userId?.fullName || 'Khách hàng'}</Text>
                   <Text style={styles.customerAddress} numberOfLines={1}>{order.deliveryAddress || 'Địa chỉ giao hàng'}</Text>
@@ -262,8 +273,10 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
                      <Text style={[styles.stepTitle, order.status !== 'completed' && { color: COLORS.textLight }]}>Đã giao thành công</Text>
                      <Text style={styles.stepTime}>{order.status === 'completed' ? 'Hoàn thành' : 'Chưa hoàn thành'}</Text>
                   </View>
-               </View>
             </View>
+          </View>
+          </>
+        )}
 
             {order.status === 'preparing' && (
               <TouchableOpacity 
@@ -367,11 +380,24 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 30,
     padding: SIZES.padding,
+    paddingTop: SIZES.base,
     shadowColor: COLORS.black,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 10,
+  },
+  dragHandle: {
+    alignItems: 'center',
+    paddingVertical: SIZES.base,
+    marginBottom: SIZES.base,
+  },
+  dragBar: {
+    width: 40, 
+    height: 4, 
+    backgroundColor: COLORS.border, 
+    borderRadius: 2, 
+    marginBottom: 4 
   },
   cardHeader: {
     flexDirection: 'row',

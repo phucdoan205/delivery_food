@@ -88,7 +88,7 @@ const SearchScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView edges={['top']} style={styles.container}>
       <View style={styles.header}>
         <View style={styles.locationHeader}>
           <MapPin size={16} color={COLORS.primary} />

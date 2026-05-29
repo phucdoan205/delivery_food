@@ -21,28 +21,53 @@ import {
   Clock,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { request, setToken } from "../../api/client";
+import { request, setToken, API_URL } from "../../api/client";
+import io from "socket.io-client/dist/socket.io.js";
 
 const ProfileScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [unrepliedCount, setUnrepliedCount] = useState(0);
 
   useEffect(() => {
-    const fetchRestaurant = async () => {
+    const fetchRestaurantAndStats = async () => {
       try {
         const user = await request('/auth/profile');
         setCurrentUser(user);
         const rest = await request('/restaurants/mine');
         setRestaurant(rest);
+        
+        if (rest && rest._id) {
+          const reviewsData = await request(`/reviews/restaurant/${rest._id}`);
+          if (reviewsData && reviewsData.stats) {
+            setUnrepliedCount(reviewsData.stats.unrepliedCount || 0);
+          }
+        }
       } catch (error) {
-        console.log('Error fetching restaurant for profile:', error);
+        console.log('Error fetching restaurant/stats for profile:', error);
       }
     };
-    const unsubscribe = navigation.addListener('focus', () => {
-      fetchRestaurant();
+    
+    const unsubscribeFocus = navigation.addListener('focus', () => {
+      fetchRestaurantAndStats();
     });
-    return unsubscribe;
+
+    const newSocket = io(API_URL);
+    newSocket.on('new_review_for_merchant', (data) => {
+      // If we already have the restaurant state and the event belongs to this restaurant
+      setRestaurant(prev => {
+        if (prev && prev._id === data.restaurantId) {
+          setUnrepliedCount(count => count + 1);
+        }
+        return prev;
+      });
+    });
+
+    return () => {
+      unsubscribeFocus();
+      newSocket.disconnect();
+    };
   }, [navigation]);
   const handleLogout = () => {
     setToken('');
@@ -84,6 +109,7 @@ const ProfileScreen = ({ navigation }) => {
       label: "Phản hồi khách hàng",
       sub: "Những phản hồi của khách hàng",
       screen: "CustomerFeedback",
+      badge: unrepliedCount > 0 ? unrepliedCount.toString() : null,
     },
     {
       icon: HelpCircle,

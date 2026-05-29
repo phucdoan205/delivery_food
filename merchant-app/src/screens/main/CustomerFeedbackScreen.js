@@ -18,7 +18,8 @@ import {
   Send
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
-import { request } from "../../api/client";
+import { request, API_URL } from "../../api/client";
+import io from "socket.io-client/dist/socket.io.js";
 
 const FILTERS = ["Tất cả", "Đánh giá 5★", "Điểm 1-3★", "Chưa phản hồi"];
 
@@ -35,7 +36,18 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     fetchReviews();
-  }, []);
+
+    const socket = io(API_URL);
+    socket.on('new_review_for_merchant', (data) => {
+      if (restaurant && data.restaurantId === restaurant._id) {
+        fetchReviews(); // Auto refetch when new review arrives
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [restaurant]);
 
   const fetchReviews = async () => {
     if (!restaurant?._id) return;

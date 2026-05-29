@@ -13,7 +13,7 @@ const OnboardingScreen = ({ navigation }) => {
     >
       <View style={styles.overlay} />
       
-      <SafeAreaView style={styles.content}>
+      <SafeAreaView edges={['top']} style={styles.content}>
         <View style={styles.header}>
           <View style={styles.badge}>
             <Utensils size={14} color={COLORS.secondary} />
