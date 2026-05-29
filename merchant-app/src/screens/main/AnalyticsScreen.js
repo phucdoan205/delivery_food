@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   FileText,
   Download,
@@ -19,8 +20,9 @@ import { Colors } from "../../constants/colors";
 const DASHBOARD_STATS = { performanceData: [] };
 
 const AnalyticsScreen = () => {
+  const insets = useSafeAreaInsets();
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <ScrollView style={[styles.container, { paddingTop: insets.top }]} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <Image

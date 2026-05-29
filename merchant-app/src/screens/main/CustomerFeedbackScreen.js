@@ -8,6 +8,7 @@ import {
   Image,
   TextInput,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Bell,
@@ -22,6 +23,7 @@ import { request } from "../../api/client";
 const FILTERS = ["Tất cả", "Đánh giá 5★", "Điểm 1-3★", "Chưa phản hồi"];
 
 const CustomerFeedbackScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route?.params || {};
   const [activeFilter, setActiveFilter] = useState(FILTERS[0]);
   const [reviews, setReviews] = useState([]);
@@ -79,7 +81,7 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

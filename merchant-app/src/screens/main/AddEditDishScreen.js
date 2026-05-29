@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet,  ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator, Modal } from 'react-native';
 import { ChevronLeft, Camera, Plus, Trash2, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';

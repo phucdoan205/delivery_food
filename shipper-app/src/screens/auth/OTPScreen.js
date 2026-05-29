@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
@@ -8,7 +9,7 @@ const OTPScreen = ({ navigation }) => {
   const [otp, setOtp] = useState(['7', '3', '', '', '', '']);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Header />
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Xác thực tài khoản</Text>
@@ -45,7 +46,7 @@ const OTPScreen = ({ navigation }) => {
           <Text style={styles.changeMethodText}>Thay đổi số điện thoại / Email</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

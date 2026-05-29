@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet,  ScrollView, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import { MapPin, Search as SearchIcon, Bell, ChevronRight, ShoppingCart } from 'lucide-react-native';
 import CategoryChip from '../components/CategoryChip';

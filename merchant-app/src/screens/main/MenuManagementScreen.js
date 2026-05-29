@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Search, Plus, Filter, ArrowUpDown } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import FoodItemCard from '../../components/FoodItemCard';
@@ -7,6 +8,7 @@ import { request, API_URL } from '../../api/client';
 import io from 'socket.io-client/dist/socket.io.js';
 
 const MenuManagementScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,7 +66,7 @@ const MenuManagementScreen = ({ navigation }) => {
   const inactiveCount = menuItems.filter(i => i.isAvailable === false).length;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>

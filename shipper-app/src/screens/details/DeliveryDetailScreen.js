@@ -1,24 +1,72 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Image, Dimensions, TouchableOpacity, Animated, PanResponder, Alert, ActivityIndicator } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
+import MapTilerView from '../../components/MapTilerView';
 
 const { width } = Dimensions.get('window');
 
 import { request, API_URL } from '../../api/client';
-import { Alert, ActivityIndicator } from 'react-native';
 import io from 'socket.io-client/dist/socket.io.js';
 
 const DeliveryDetailScreen = ({ navigation, route }) => {
   const { orderId } = route.params || {};
-  const [order, setOrder] = React.useState(null);
-  const [loading, setLoading] = React.useState(true);
+  const [order, setOrder] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [routeData, setRouteData] = useState(null);
+  
+  const insets = useSafeAreaInsets();
+  
+  // Slider Animation
+  const sliderAnimation = useRef(new Animated.Value(0)).current;
+  const maxSlideDistance = width - SIZES.padding * 2 - 20 - 64; // width minus padding, border, thumb size
+  
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onPanResponderMove: (_, gestureState) => {
+        let newX = gestureState.dx;
+        if (newX < 0) newX = 0;
+        if (newX > maxSlideDistance) newX = maxSlideDistance;
+        sliderAnimation.setValue(newX);
+      },
+      onPanResponderRelease: (_, gestureState) => {
+        if (gestureState.dx > maxSlideDistance * 0.8) {
+          Animated.timing(sliderAnimation, {
+            toValue: maxSlideDistance + 10,
+            duration: 200,
+            useNativeDriver: false,
+          }).start(() => {
+            handleUpdateStatus('completed');
+          });
+        } else {
+          Animated.spring(sliderAnimation, {
+            toValue: 0,
+            useNativeDriver: false,
+          }).start();
+        }
+      },
+    })
+  ).current;
+
+  // Offset logic for mock coordinates
+  const getOffset = (seedStr, index) => {
+    let hash = 0;
+    const str = seedStr ? seedStr.toString() : index.toString();
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const offsetBase = (hash % 100) / 10000;
+    return offsetBase * (index % 2 === 0 ? 1 : -1);
+  };
 
   const fetchOrderDetail = async () => {
     try {
       const data = await request(`/orders/${orderId}`);
       setOrder(data);
+      if (data) fetchRouteData(data);
     } catch (error) {
       Alert.alert('Lỗi', 'Không thể tải thông tin chi tiết đơn hàng');
       console.log('Error fetching order detail:', error);
@@ -27,7 +75,25 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
     }
   };
 
-  React.useEffect(() => {
+  const fetchRouteData = async (orderData) => {
+    try {
+      const shipperLng = 106.660172;
+      const shipperLat = 10.762622;
+      const restId = orderData.restaurantId?._id || orderData._id;
+      const targetLng = 106.660172 + getOffset(restId + 'lng', 0);
+      const targetLat = 10.762622 + getOffset(restId, 0);
+
+      const coordinates = `${shipperLng},${shipperLat};${targetLng},${targetLat}`;
+      const json = await request(`/orders/route?coordinates=${coordinates}`);
+      if (json.routes && json.routes[0]) {
+        setRouteData(json.routes[0].geometry);
+      }
+    } catch (e) {
+      console.log('Routing failed', e);
+    }
+  };
+
+  useEffect(() => {
     let socket;
     if (orderId) {
       fetchOrderDetail();
@@ -52,9 +118,14 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
         body: { status: nextStatus }
       });
       Alert.alert('Thành công', 'Đã cập nhật trạng thái đơn hàng');
+      // Reset slider if it wasn't a completed status (though usually we don't go backwards)
+      if (nextStatus !== 'completed') {
+        sliderAnimation.setValue(0);
+      }
       fetchOrderDetail();
     } catch (error) {
       Alert.alert('Lỗi', error.message || 'Không thể cập nhật trạng thái');
+      sliderAnimation.setValue(0);
       setLoading(false);
     }
   };
@@ -76,17 +147,49 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
     }
   };
 
+  const getDynamicMarkers = () => {
+    const defaultShipper = { id: 'shipper', lat: 10.762622, lng: 106.660172, title: 'Bạn (Shipper)', color: '#3B82F6', label: 'S' };
+    if (!order) return [defaultShipper];
+
+    const restId = order.restaurantId?._id || order._id;
+    const custId = order.userId?._id || order.deliveryAddress || 'customer';
+    
+    return [
+      defaultShipper,
+      {
+        id: 'rest',
+        lat: 10.762622 + getOffset(restId, 0),
+        lng: 106.660172 + getOffset(restId + 'lng', 0),
+        title: order.restaurantId?.name || 'Nhà hàng',
+        color: COLORS.primary,
+        label: 'N'
+      },
+      {
+        id: 'cust',
+        lat: 10.762622 + getOffset(custId, 1),
+        lng: 106.660172 + getOffset(custId + 'lng', 1),
+        title: order.userId?.fullName || 'Khách hàng',
+        color: '#10B981',
+        label: 'K'
+      }
+    ];
+  };
+
   return (
     <View style={styles.container}>
       {/* Map Preview */}
-      <Image 
-        source={{ uri: 'https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=1200&auto=format&fit=crop' }} 
-        style={styles.map}
-      />
+      <View style={styles.map}>
+        <MapTilerView 
+          center={[106.660172, 10.762622]} 
+          zoom={13} 
+          markers={getDynamicMarkers()} 
+          route={routeData}
+        />
+      </View>
 
       <Header 
         title="Giao hàng"
-        style={styles.header}
+        style={[styles.header, { marginTop: Math.max(insets.top + 10, 40) }]}
         navigation={navigation}
         rightComponent={
           <View style={styles.incomeBadge}>
@@ -118,7 +221,7 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
             </View>
 
             <View style={styles.customerRow}>
-               <Image source={{ uri: 'https://i.pravatar.cc/150?u=a' }} style={styles.customerAvatar} />
+               <Image source={{ uri: order.userId?.avatar || `https://ui-avatars.com/api/?name=${order.userId?.fullName || 'Khach'}&background=random` }} style={styles.customerAvatar} />
                <View style={styles.customerInfo}>
                   <Text style={styles.customerName}>{order.userId?.fullName || 'Khách hàng'}</Text>
                   <Text style={styles.customerAddress} numberOfLines={1}>{order.deliveryAddress || 'Địa chỉ giao hàng'}</Text>
@@ -175,15 +278,19 @@ const DeliveryDetailScreen = ({ navigation, route }) => {
             )}
 
             {order.status === 'delivering' && (
-              <TouchableOpacity 
-                style={[styles.completeButton, { backgroundColor: '#E8F8F5', borderColor: COLORS.success }]}
-                onPress={() => handleUpdateStatus('completed')}
-              >
-                 <View style={[styles.sliderThumb, { backgroundColor: COLORS.success }]}>
+              <View style={[styles.completeButton, { backgroundColor: '#E8F8F5', borderColor: COLORS.success, overflow: 'hidden' }]}>
+                 <Animated.View 
+                    style={[
+                      styles.sliderThumb, 
+                      { backgroundColor: COLORS.success },
+                      { transform: [{ translateX: sliderAnimation }] }
+                    ]}
+                    {...panResponder.panHandlers}
+                 >
                     <Ionicons name="chevron-forward-outline" size={24} color={COLORS.white} />
-                 </View>
-                 <Text style={[styles.completeText, { color: COLORS.success }]}>TRƯỢT ĐỂ HOÀN THÀNH GIAO</Text>
-              </TouchableOpacity>
+                 </Animated.View>
+                 <Text style={[styles.completeText, { color: COLORS.success, zIndex: -1 }]}>TRƯỢT ĐỂ HOÀN THÀNH GIAO</Text>
+              </View>
             )}
 
             {order.status === 'completed' && (
@@ -207,7 +314,6 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   header: {
-    marginTop: 40,
     backgroundColor: 'rgba(253, 245, 242, 0.8)',
     marginHorizontal: SIZES.padding,
     borderRadius: 20,

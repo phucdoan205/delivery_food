@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity,  Modal, TextInput, Alert, ActivityIndicator, Platform } from 'react-native';
 import { ChevronLeft, Plus, Ticket, Users, Calendar, ChevronRight, Edit2, Trash2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { request } from '../../api/client';

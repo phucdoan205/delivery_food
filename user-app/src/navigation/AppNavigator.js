@@ -1,6 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Home, Search, MapPin as MapIcon, Search as ClipboardList, User } from 'lucide-react-native';
 import { COLORS } from '../constants/theme';
 
@@ -31,7 +32,9 @@ import ReviewScreen from '../screens/ReviewScreen';
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
 
-const MainTabs = () => (
+const MainTabs = () => {
+  const insets = useSafeAreaInsets();
+  return (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ focused, color, size }) => {
@@ -47,8 +50,8 @@ const MainTabs = () => (
       tabBarActiveTintColor: COLORS.primary,
       tabBarInactiveTintColor: COLORS.textLight,
       tabBarStyle: {
-        height: 65,
-        paddingBottom: 10,
+        height: 55 + insets.bottom,
+        paddingBottom: Math.max(insets.bottom, 10),
         paddingTop: 10,
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
@@ -63,7 +66,8 @@ const MainTabs = () => (
     <Tab.Screen name="Đơn hàng" component={OrderHistoryScreen} /> 
     <Tab.Screen name="Cá nhân" component={ProfileScreen} />
   </Tab.Navigator>
-);
+  );
+};
 
 const AppNavigator = () => {
   return (

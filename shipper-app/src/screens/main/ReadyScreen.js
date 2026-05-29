@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, Switch, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import StatCard from '../../components/StatCard';
@@ -168,7 +169,7 @@ const ReadyScreen = ({ navigation }) => {
   const availableOrders = orders.filter(o => o.status === 'ready' && !ignoredOrders.includes(o._id));
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
         {renderHeader()}
         
@@ -221,7 +222,7 @@ const ReadyScreen = ({ navigation }) => {
           </TouchableOpacity>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

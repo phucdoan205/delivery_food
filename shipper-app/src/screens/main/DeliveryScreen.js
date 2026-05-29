@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, ActivityIndicator, Alert, ScrollView, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import CustomButton from '../../components/CustomButton';
@@ -13,6 +14,7 @@ const DeliveryScreen = ({ navigation }) => {
   const [activeOrders, setActiveOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [routeData, setRouteData] = useState(null);
+  const insets = useSafeAreaInsets();
 
   // Deterministic pseudo-random based on string
   const getOffset = (str, index) => {
@@ -176,7 +178,7 @@ const DeliveryScreen = ({ navigation }) => {
       <Header 
         showBack={false}
         title="Đang giao hàng"
-        style={styles.header}
+        style={[styles.header, { marginTop: Math.max(insets.top, 40) }]}
         rightComponent={
           <View style={styles.incomeBadge}>
             <Text style={styles.incomeText}>GIAO</Text>
@@ -261,7 +263,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   header: {
-    marginTop: 40,
     backgroundColor: 'rgba(253, 245, 242, 0.9)',
     marginHorizontal: SIZES.padding,
     borderRadius: SIZES.radius * 2,

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
@@ -115,7 +116,7 @@ const HistoryScreen = ({ navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <Header 
         showBack={false} 
         title="Lịch sử giao hàng" 
@@ -160,7 +161,7 @@ const HistoryScreen = ({ navigation }) => {
           </View>
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

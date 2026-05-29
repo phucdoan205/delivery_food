@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   CreditCard,
   Users,
@@ -23,6 +24,7 @@ import { Colors } from "../../constants/colors";
 import { request, setToken } from "../../api/client";
 
 const ProfileScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -101,7 +103,7 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

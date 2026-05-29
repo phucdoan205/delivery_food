@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from "@react-navigation/native";
 import { request } from "../../api/client";
 import {
@@ -29,6 +30,7 @@ const PAYMENT_METHODS = [];
 const PAYOUT_HISTORY = [];
 
 const PaymentSettingsScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(route?.params?.restaurant || null);
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,7 +124,7 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}

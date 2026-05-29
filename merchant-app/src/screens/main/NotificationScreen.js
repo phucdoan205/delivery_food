@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity,  } from 'react-native';
 import { Bell, ShoppingBag, CreditCard, Settings, Star, ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 

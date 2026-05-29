@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Bell, Clock3, ChevronDown, Plus, X } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 import { request } from "../../api/client";
@@ -16,6 +17,7 @@ import { request } from "../../api/client";
 const ALL_DAYS = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
 
 const OperatingHoursScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route?.params || {};
   const [temporaryClosed, setTemporaryClosed] = useState(restaurant?.isTemporarilyClosed || false);
   const [operatingHours, setOperatingHours] = useState(restaurant?.operatingHours || []);
@@ -66,7 +68,7 @@ const OperatingHoursScreen = ({ route, navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

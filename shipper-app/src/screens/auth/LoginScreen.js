@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, KeyboardAvoidingView, Platform, ScrollView, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
@@ -11,6 +12,7 @@ const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const insets = useSafeAreaInsets();
 
   const handleLogin = async () => {
     setErrorMessage('');
@@ -48,7 +50,7 @@ const LoginScreen = ({ navigation }) => {
             source={{ uri: 'https://images.unsplash.com/photo-1526367790999-0150786486a2?q=80&w=800&auto=format&fit=crop' }} 
             style={styles.headerImage}
           />
-          <View style={styles.logoContainer}>
+          <View style={[styles.logoContainer, { top: Math.max(insets.top + 10, 50) }]}>
              <Text style={styles.logoText}>CRAVE & CO.</Text>
           </View>
         </View>

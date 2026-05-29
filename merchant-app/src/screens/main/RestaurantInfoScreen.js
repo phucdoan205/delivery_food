@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, ArrowLeft, Camera, Plus } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 import CustomButton from "../../components/CustomButton";
@@ -17,6 +18,7 @@ import { request } from "../../api/client";
 import * as ImagePicker from "expo-image-picker";
 
 const RestaurantInfoScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -131,7 +133,7 @@ const RestaurantInfoScreen = ({ navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

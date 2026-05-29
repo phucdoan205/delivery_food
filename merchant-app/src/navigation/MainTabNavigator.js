@@ -7,6 +7,7 @@ import {
   BarChart3,
   User,
 } from "lucide-react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../constants/colors";
 import {
   DashboardScreen,
@@ -19,6 +20,7 @@ import {
 const Tab = createBottomTabNavigator();
 
 const MainTabNavigator = () => {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -28,8 +30,8 @@ const MainTabNavigator = () => {
         tabBarStyle: {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
-          height: 70,
-          paddingBottom: 10,
+          height: 60 + insets.bottom,
+          paddingBottom: Math.max(insets.bottom, 10),
           paddingTop: 10,
         },
         tabBarLabelStyle: {

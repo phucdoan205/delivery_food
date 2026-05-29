@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet,  TouchableOpacity, Image, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { Search, MapPin } from 'lucide-react-native';

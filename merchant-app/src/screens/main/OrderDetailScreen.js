@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Dimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, MessageSquare, Phone, MapPin, Clock, CreditCard, ChevronRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import { request, API_URL } from '../../api/client';
@@ -8,6 +9,7 @@ import io from 'socket.io-client/dist/socket.io.js';
 const { width } = Dimensions.get('window');
 
 const OrderDetailScreen = ({ navigation, route }) => {
+  const insets = useSafeAreaInsets();
   const { orderId } = route.params || {};
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -95,7 +97,7 @@ const OrderDetailScreen = ({ navigation, route }) => {
   const orderTime = order.createdAt ? new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Vừa xong';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>

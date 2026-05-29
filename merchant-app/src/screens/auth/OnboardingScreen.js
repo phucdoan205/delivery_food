@@ -1,12 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, ImageBackground, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 
 const OnboardingScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <ImageBackground
         source={{ uri: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1000' }}
         style={styles.background}

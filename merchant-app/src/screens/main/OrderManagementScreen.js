@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Clock, Star } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import OrderCard from '../../components/OrderCard';
@@ -7,6 +8,7 @@ import { request, API_URL } from '../../api/client';
 import io from 'socket.io-client/dist/socket.io.js';
 
 const OrderManagementScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,7 @@ const OrderManagementScreen = ({ navigation }) => {
   ];
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>

@@ -12,6 +12,7 @@ import {
   Alert,
   Platform
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect } from "@react-navigation/native";
 import { request } from "../../api/client";
@@ -31,6 +32,7 @@ const STAFF = [];
 const STAFF_FILTERS = ["Tất cả"];
 
 const StaffManagementScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(route?.params?.restaurant || null);
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -161,7 +163,7 @@ const StaffManagementScreen = ({ route, navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

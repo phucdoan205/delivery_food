@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React from 'react';
-import { View, Text, StyleSheet, ImageBackground, Image, TouchableOpacity, SafeAreaView } from 'react-native';
+import { View, Text, StyleSheet, ImageBackground, Image, TouchableOpacity,  } from 'react-native';
 import { COLORS, SIZES } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import { Utensils } from 'lucide-react-native';

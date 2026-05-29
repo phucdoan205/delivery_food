@@ -2,6 +2,7 @@ import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '../constants/theme';
 
@@ -31,10 +32,12 @@ import SecurityScreen from '../screens/details/SecurityScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-const MainTab = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
+const MainTab = () => {
+  const insets = useSafeAreaInsets();
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
         let iconName;
         if (route.name === 'Ready') iconName = focused ? 'radio-button-on' : 'radio-button-off';
         else if (route.name === 'Delivery') iconName = focused ? 'bicycle' : 'bicycle-outline';
@@ -46,8 +49,8 @@ const MainTab = () => (
       tabBarActiveTintColor: COLORS.primary,
       tabBarInactiveTintColor: COLORS.textSecondary,
       tabBarStyle: {
-        height: 70,
-        paddingBottom: 10,
+        height: 60 + insets.bottom,
+        paddingBottom: Math.max(insets.bottom, 10),
         paddingTop: 10,
         backgroundColor: COLORS.white,
         borderTopWidth: 0,
@@ -66,7 +69,8 @@ const MainTab = () => (
     <Tab.Screen name="Earnings" component={EarningsScreen} options={{ title: 'Thu nhập' }} />
     <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Hồ sơ' }} />
   </Tab.Navigator>
-);
+  );
+};
 
 const AppNavigator = () => {
   return (

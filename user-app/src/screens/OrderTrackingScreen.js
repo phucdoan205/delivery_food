@@ -1,5 +1,6 @@
+import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet,  Image, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Bell, HelpCircle, Phone, MessageSquare, MapPin } from 'lucide-react-native';
 import { request, API_URL } from '../api/client';

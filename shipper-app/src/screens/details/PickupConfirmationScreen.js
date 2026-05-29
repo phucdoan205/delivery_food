@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import Header from '../../components/Header';
@@ -18,7 +19,7 @@ const PickupConfirmationScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <Header title="Xác nhận lấy hàng" />
       
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -108,7 +109,7 @@ const PickupConfirmationScreen = ({ navigation }) => {
           icon={<Ionicons name="checkmark-circle-outline" size={24} color={COLORS.white} style={{marginRight: 8}} />}
         />
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

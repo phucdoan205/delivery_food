@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, ArrowRight, Store, User, Mail, Phone, MapPin, ChefHat, Lock, Calendar, FileText } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
@@ -7,6 +8,7 @@ import CustomInput from '../../components/CustomInput';
 import { request, setToken } from '../../api/client';
 
 const RegisterMerchantScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [formData, setFormData] = useState({
     restaurantName: '',
     ownerName: '',

@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TextInput,
 } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Bell,
@@ -27,10 +28,11 @@ const ICONS = {
 };
 
 const SupportHelpScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route?.params || {};
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >

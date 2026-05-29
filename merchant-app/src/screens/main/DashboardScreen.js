@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, Alert } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Bell, ChevronRight, TrendingUp } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import StatCard from '../../components/StatCard';
@@ -10,6 +11,7 @@ import io from 'socket.io-client';
 const { width } = Dimensions.get('window');
 
 const DashboardScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [restaurant, setRestaurant] = useState(null);
   const [orders, setOrders] = useState([]);
   const [dishes, setDishes] = useState([]);
@@ -85,7 +87,7 @@ const DashboardScreen = ({ navigation }) => {
 
   return (
     <ScrollView 
-      style={styles.container} 
+      style={[styles.container, { paddingTop: insets.top }]} 
       contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
       showsVerticalScrollIndicator={false}
     >
