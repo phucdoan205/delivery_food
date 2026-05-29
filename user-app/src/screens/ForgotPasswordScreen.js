@@ -5,9 +5,38 @@ import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import CustomButton from '../components/CustomButton';
 import CustomInput from '../components/CustomInput';
 import { Mail, ArrowLeft } from 'lucide-react-native';
+import { request } from '../api/client';
+import { Alert, ActivityIndicator } from 'react-native';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleForgotPassword = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!email) {
+      setErrorMsg('Vui lòng nhập email');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await request('/auth/forgot-password', {
+        method: 'POST',
+        body: { email }
+      });
+      setSuccessMsg(res.message || 'Mã OTP đã được gửi');
+      setTimeout(() => {
+        navigation.navigate('OTPVerification', { email });
+      }, 1500);
+    } catch (error) {
+      setErrorMsg(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -36,14 +65,21 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <CustomInput
             placeholder="gourmet@example.com"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(text) => {
+              setEmail(text);
+              setErrorMsg('');
+            }}
             icon={Mail}
           />
 
+          {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+          {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
           <CustomButton 
-            title="Gửi liên kết khôi phục" 
-            showArrow
-            onPress={() => navigation.navigate('OTPVerification')} 
+            title={loading ? "Đang xử lý..." : "Nhận mã OTP"} 
+            showArrow={!loading}
+            onPress={handleForgotPassword} 
+            disabled={loading}
             style={styles.submitBtn}
           />
         </View>
@@ -119,8 +155,20 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   submitBtn: {
-    marginTop: 10,
+    marginTop: 20,
     backgroundColor: COLORS.primary,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  successText: {
+    color: '#2ECC71',
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
   },
   footer: {
     flexDirection: 'row',

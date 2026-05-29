@@ -6,8 +6,46 @@ import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
 import { Ionicons } from '@expo/vector-icons';
+import { request } from '../../api/client';
+import { Alert, useState } from 'react';
 
-const ResetPasswordScreen = ({ navigation }) => {
+const ResetPasswordScreen = ({ route, navigation }) => {
+  const { email, otp } = route.params || {};
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  const requirements = [
+    { label: 'Ít nhất 6 ký tự', met: password.length >= 6 },
+    { label: 'Bao gồm chữ và số', met: /[a-zA-Z]/.test(password) && /[0-9]/.test(password) },
+    { label: 'Hai mật khẩu khớp nhau', met: password.length > 0 && password === confirmPassword },
+  ];
+
+  const handleResetPassword = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!requirements.every(req => req.met)) {
+      setErrorMsg('Vui lòng đáp ứng tất cả yêu cầu mật khẩu');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await request('/auth/reset-password', {
+        method: 'POST',
+        body: { email, otp, newPassword: password }
+      });
+      setSuccessMsg(res.message || 'Mật khẩu đã được cập nhật');
+      setTimeout(() => {
+        navigation.navigate('Login', { email, password });
+      }, 1500);
+    } catch (error) {
+      setErrorMsg(error.message || 'Không thể cập nhật mật khẩu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <Header />
@@ -23,26 +61,52 @@ const ResetPasswordScreen = ({ navigation }) => {
 
         <View style={styles.form}>
           <Text style={styles.label}>Mật khẩu mới</Text>
-          <CustomInput placeholder="Nhập mật khẩu mới" icon="lock-closed-outline" secureTextEntry />
+          <CustomInput 
+            placeholder="Nhập mật khẩu mới" 
+            icon="lock-closed-outline" 
+            secureTextEntry 
+            value={password}
+            onChangeText={(val) => {
+              setPassword(val);
+              setErrorMsg('');
+            }}
+          />
 
           <Text style={styles.label}>Xác nhận mật khẩu</Text>
-          <CustomInput placeholder="Nhập lại mật khẩu mới" icon="refresh-outline" secureTextEntry />
+          <CustomInput 
+            placeholder="Nhập lại mật khẩu mới" 
+            icon="refresh-outline" 
+            secureTextEntry 
+            value={confirmPassword}
+            onChangeText={(val) => {
+              setConfirmPassword(val);
+              setErrorMsg('');
+            }}
+          />
 
           <View style={styles.requirements}>
             <Text style={styles.requirementTitle}>Yêu cầu mật khẩu:</Text>
-            <View style={styles.requirementRow}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.textLight} />
-              <Text style={styles.requirementText}>Ít nhất 8 ký tự</Text>
-            </View>
-            <View style={styles.requirementRow}>
-              <Ionicons name="checkmark-circle" size={16} color={COLORS.textLight} />
-              <Text style={styles.requirementText}>Chứa ít nhất 1 chữ cái và 1 số</Text>
-            </View>
+            {requirements.map((req, index) => (
+              <View key={index} style={styles.requirementRow}>
+                <Ionicons 
+                  name={req.met ? "checkmark-circle" : "ellipse-outline"} 
+                  size={16} 
+                  color={req.met ? "#2ECC71" : COLORS.textLight} 
+                />
+                <Text style={[styles.requirementText, req.met && { color: COLORS.text, fontWeight: '700' }]}>
+                  {req.label}
+                </Text>
+              </View>
+            ))}
           </View>
 
+          {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+          {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
           <CustomButton 
-            title="Cập nhật mật khẩu" 
-            onPress={() => navigation.navigate('Login')} 
+            title={loading ? "Đang cập nhật..." : "Cập nhật mật khẩu"} 
+            onPress={handleResetPassword} 
+            disabled={loading}
             style={styles.button}
           />
           
@@ -121,6 +185,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textSecondary,
     marginLeft: 8,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    marginTop: 15,
+    textAlign: 'center',
+  },
+  successText: {
+    color: COLORS.success,
+    fontSize: 13,
+    marginTop: 15,
+    textAlign: 'center',
   },
   button: {
     marginTop: SIZES.padding,

@@ -5,17 +5,47 @@ import { ChevronLeft, ArrowRight, Eye, CheckCircle2, Circle } from 'lucide-react
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import { request } from '../../api/client';
+import { Alert } from 'react-native';
 
-const ResetPasswordScreen = ({ navigation }) => {
+const ResetPasswordScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { email, otp } = route.params || {};
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
 
   const requirements = [
-    { label: 'Ít nhất 8 ký tự', met: true },
-    { label: 'Bao gồm chữ hoa và chữ thường', met: false },
-    { label: 'Bao gồm số hoặc ký tự đặc biệt', met: false },
+    { label: 'Ít nhất 6 ký tự', met: password.length >= 6 },
+    { label: 'Bao gồm chữ và số', met: /[a-zA-Z]/.test(password) && /[0-9]/.test(password) },
+    { label: 'Hai mật khẩu khớp nhau', met: password.length > 0 && password === confirmPassword },
   ];
+
+  const handleResetPassword = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!requirements.every(req => req.met)) {
+      setErrorMsg('Vui lòng đáp ứng tất cả yêu cầu mật khẩu');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await request('/auth/reset-password', {
+        method: 'POST',
+        body: { email, otp, newPassword: password }
+      });
+      setSuccessMsg(res.message || 'Mật khẩu đã được cập nhật');
+      setTimeout(() => {
+        navigation.navigate('Login', { email, password });
+      }, 1500);
+    } catch (error) {
+      setErrorMsg(error.message || 'Không thể cập nhật mật khẩu');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, Platform.OS === 'web' && { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }]} contentContainerStyle={styles.contentContainer}>
@@ -33,7 +63,10 @@ const ResetPasswordScreen = ({ navigation }) => {
           label="Mật khẩu mới"
           placeholder="Nhập mật khẩu mới"
           value={password}
-          onChangeText={setPassword}
+          onChangeText={(val) => {
+            setPassword(val);
+            setErrorMsg('');
+          }}
           secureTextEntry
           icon={Eye}
         />
@@ -42,7 +75,10 @@ const ResetPasswordScreen = ({ navigation }) => {
           label="Xác nhận mật khẩu mới"
           placeholder="Nhập lại mật khẩu mới"
           value={confirmPassword}
-          onChangeText={setConfirmPassword}
+          onChangeText={(val) => {
+            setConfirmPassword(val);
+            setErrorMsg('');
+          }}
           secureTextEntry
           icon={Eye}
         />
@@ -63,10 +99,14 @@ const ResetPasswordScreen = ({ navigation }) => {
           ))}
         </View>
 
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
         <CustomButton
-          title="Cập nhật mật khẩu"
-          onPress={() => navigation.navigate('Login')}
-          icon={ArrowRight}
+          title={loading ? "Đang cập nhật..." : "Cập nhật mật khẩu"}
+          onPress={handleResetPassword}
+          disabled={loading}
+          icon={!loading ? ArrowRight : undefined}
           style={styles.updateButton}
         />
 
@@ -150,7 +190,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   updateButton: {
+    marginTop: 10,
     marginBottom: 30,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  successText: {
+    color: '#2ECC71',
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   backToLogin: {
     flexDirection: 'row',

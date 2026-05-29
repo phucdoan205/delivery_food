@@ -7,7 +7,10 @@ const {
   updateUserProfile,
   getAllUsers,
   updateUserStatus,
-  getFavoriteRestaurants
+  getFavoriteRestaurants,
+  forgotPassword,
+  verifyResetOtp,
+  resetPassword
 } = require('../controllers/authController')
 const { protect } = require('../middlewares/authMiddleware')
 const { authorize } = require('../middlewares/roleMiddleware')
@@ -110,5 +113,10 @@ router.get('/favorites', protect, getFavoriteRestaurants)
  */
 router.get('/users', protect, authorize('admin'), getAllUsers)
 router.put('/users/:id/status', protect, authorize('admin'), updateUserStatus)
+
+// Password Reset Routes
+router.post('/forgot-password', forgotPassword)
+router.post('/verify-reset-otp', verifyResetOtp)
+router.post('/reset-password', resetPassword)
 
 module.exports = router

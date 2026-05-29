@@ -5,10 +5,39 @@ import { ChevronLeft, ArrowRight, Mail } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
 import CustomInput from '../../components/CustomInput';
+import { request } from '../../api/client';
+import { Alert } from 'react-native';
 
 const ForgotPasswordScreen = ({ navigation }) => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleForgotPassword = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!email) {
+      setErrorMsg('Vui lòng nhập email');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await request('/auth/forgot-password', {
+        method: 'POST',
+        body: { email }
+      });
+      setSuccessMsg(res.message || 'Mã OTP đã được gửi');
+      setTimeout(() => {
+        navigation.navigate('OTP', { email });
+      }, 1500);
+    } catch (error) {
+      setErrorMsg(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <ScrollView style={[styles.container, Platform.OS === 'web' && { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }]} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
@@ -30,20 +59,27 @@ const ForgotPasswordScreen = ({ navigation }) => {
       <View style={styles.formCard}>
         <Text style={styles.title}>Quên mật khẩu?</Text>
         <Text style={styles.subtitle}>
-          Nhập email hoặc số điện thoại đã đăng ký để nhận mã xác thực khôi phục tài khoản.
+          Nhập email đã đăng ký để nhận mã xác thực khôi phục tài khoản.
         </Text>
         
         <CustomInput
-          label="Email / Số điện thoại"
+          label="Email"
           placeholder="Ví dụ: email@example.com"
           value={email}
-          onChangeText={setEmail}
+          onChangeText={(text) => {
+            setEmail(text);
+            setErrorMsg('');
+          }}
           icon={Mail}
         />
 
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
         <CustomButton
-          title="Gửi yêu cầu khôi phục"
-          onPress={() => navigation.navigate('OTP')}
+          title={loading ? "Đang gửi..." : "Gửi yêu cầu khôi phục"}
+          onPress={handleForgotPassword}
+          disabled={loading}
           icon={ArrowRight}
           style={styles.resetButton}
         />
@@ -136,8 +172,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   resetButton: {
-    marginTop: 10,
+    marginTop: 20,
     marginBottom: 30,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 13,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  successText: {
+    color: '#2ECC71',
+    fontSize: 13,
+    marginTop: 5,
+    marginLeft: 5,
   },
   backToLogin: {
     alignItems: 'center',

@@ -1,19 +1,90 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react-native';
 import { Colors } from '../../constants/colors';
 import CustomButton from '../../components/CustomButton';
+import { request } from '../../api/client';
 
-const OTPScreen = ({ navigation }) => {
+const OTPScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
+  const { email } = route.params || {};
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [timer, setTimer] = useState(60);
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    let interval = null;
+    if (timer > 0) {
+      interval = setInterval(() => setTimer(t => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
 
   const handleChange = (text, index) => {
+    setErrorMsg('');
+    setSuccessMsg('');
     const newOtp = [...otp];
     newOtp[index] = text;
     setOtp(newOtp);
-    // Auto focus logic would go here in a real app
+
+    if (text && index < 5) {
+      inputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1].focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const otpString = otp.join('');
+    if (otpString.length < 6) {
+      setErrorMsg('Vui lòng nhập đủ 6 số OTP');
+      return;
+    }
+    try {
+      setLoading(true);
+      await request('/auth/verify-reset-otp', {
+        method: 'POST',
+        body: { email, otp: otpString }
+      });
+      setSuccessMsg('Xác nhận thành công');
+      setTimeout(() => {
+        navigation.navigate('ResetPassword', { email, otp: otpString });
+      }, 1000);
+    } catch (error) {
+      setErrorMsg(error.message || 'Mã OTP không đúng hoặc đã hết hạn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      setResending(true);
+      await request('/auth/forgot-password', {
+        method: 'POST',
+        body: { email }
+      });
+      setTimer(60);
+      setSuccessMsg('Mã OTP mới đã được gửi');
+    } catch (error) {
+      setErrorMsg(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -27,30 +98,50 @@ const OTPScreen = ({ navigation }) => {
       <View style={styles.content}>
         <Text style={styles.title}>Xác thực tài khoản</Text>
         <Text style={styles.subtitle}>
-          Vui lòng nhập mã OTP 6 chữ số đã được gửi đến số điện thoại/email của bạn.
+          Vui lòng nhập mã OTP 6 chữ số đã được gửi đến email: {email}
         </Text>
 
         <View style={styles.otpContainer}>
           {otp.map((digit, index) => (
-            <View key={index} style={styles.otpInputBox}>
-              <Text style={styles.otpDigit}>{digit || '•'}</Text>
-            </View>
+            <TextInput
+              key={index}
+              ref={el => inputRefs.current[index] = el}
+              style={[styles.otpInputBox, styles.otpDigit]}
+              value={digit}
+              onChangeText={(val) => handleChange(val, index)}
+              onKeyPress={(e) => handleKeyPress(e, index)}
+              keyboardType="number-pad"
+              maxLength={1}
+              textAlign="center"
+            />
           ))}
         </View>
 
-        <View style={styles.timerContainer}>
-          <Text style={styles.timerText}>Gửi lại mã sau <Text style={styles.timerBold}>59s</Text></Text>
-        </View>
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
+        <TouchableOpacity 
+          style={[styles.timerContainer, timer > 0 && { opacity: 0.5 }]}
+          onPress={handleResendOtp}
+          disabled={timer > 0 || resending}
+        >
+          {resending ? <ActivityIndicator size="small" color={Colors.primary} /> : (
+            <Text style={styles.timerText}>
+              Gửi lại mã {timer > 0 ? <Text style={styles.timerBold}>{timer}s</Text> : ''}
+            </Text>
+          )}
+        </TouchableOpacity>
 
         <CustomButton
-          title="Xác nhận"
-          onPress={() => navigation.navigate('ResetPassword')}
-          icon={CheckCircle2}
+          title={loading ? "Đang xác thực..." : "Xác nhận"}
+          onPress={handleVerifyOtp}
+          disabled={loading}
+          icon={!loading ? CheckCircle2 : undefined}
           style={styles.confirmButton}
         />
 
-        <TouchableOpacity style={styles.changeContact}>
-          <Text style={styles.changeContactText}>Thay đổi số điện thoại/email</Text>
+        <TouchableOpacity style={styles.changeContact} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.changeContactText}>Đổi email khác</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -119,6 +210,18 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '800',
     color: Colors.primary,
+  },
+  errorText: {
+    color: '#E74C3C',
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  successText: {
+    color: '#2ECC71',
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   timerContainer: {
     backgroundColor: '#FFF1EF',

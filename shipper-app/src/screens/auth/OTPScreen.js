@@ -1,12 +1,90 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, FONTS, SIZES } from '../../constants/theme';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
+import { request } from '../../api/client';
 
-const OTPScreen = ({ navigation }) => {
-  const [otp, setOtp] = useState(['7', '3', '', '', '', '']);
+const OTPScreen = ({ route, navigation }) => {
+  const { email } = route.params || {};
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [timer, setTimer] = useState(60);
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+  
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    let interval = null;
+    if (timer > 0) {
+      interval = setInterval(() => setTimer(t => t - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [timer]);
+
+  const handleChange = (text, index) => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const newOtp = [...otp];
+    newOtp[index] = text;
+    setOtp(newOtp);
+
+    if (text && index < 5) {
+      inputRefs.current[index + 1].focus();
+    }
+  };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+      inputRefs.current[index - 1].focus();
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    const otpString = otp.join('');
+    if (otpString.length < 6) {
+      setErrorMsg('Vui lòng nhập đủ 6 số OTP');
+      return;
+    }
+    try {
+      setLoading(true);
+      await request('/auth/verify-reset-otp', {
+        method: 'POST',
+        body: { email, otp: otpString }
+      });
+      setSuccessMsg('Xác nhận thành công');
+      setTimeout(() => {
+        navigation.navigate('ResetPassword', { email, otp: otpString });
+      }, 1000);
+    } catch (error) {
+      setErrorMsg(error.message || 'Mã OTP không đúng hoặc đã hết hạn');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    try {
+      setResending(true);
+      await request('/auth/forgot-password', {
+        method: 'POST',
+        body: { email }
+      });
+      setTimer(60);
+      setSuccessMsg('Mã OTP mới đã được gửi');
+    } catch (error) {
+      setErrorMsg(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -14,36 +92,52 @@ const OTPScreen = ({ navigation }) => {
       <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.title}>Xác thực tài khoản</Text>
         <Text style={styles.subtitle}>
-          Chúng tôi vừa gửi mã xác thực 6 số đến số điện thoại{"\n"}
-          <Text style={styles.phone}>+84 987 654 321</Text>
+          Chúng tôi vừa gửi mã xác thực 6 số đến email{"\n"}
+          <Text style={styles.phone}>{email}</Text>
         </Text>
 
         <View style={styles.otpContainer}>
           {otp.map((digit, index) => (
-            <View key={index} style={[styles.otpBox, digit !== '' && styles.activeOtpBox]}>
-              <Text style={styles.otpText}>{digit}</Text>
-            </View>
+            <TextInput
+              key={index}
+              ref={el => inputRefs.current[index] = el}
+              style={[styles.otpBox, digit !== '' && styles.activeOtpBox, styles.otpText]}
+              value={digit}
+              onChangeText={(val) => handleChange(val, index)}
+              onKeyPress={(e) => handleKeyPress(e, index)}
+              keyboardType="number-pad"
+              maxLength={1}
+              textAlign="center"
+            />
           ))}
         </View>
 
+        {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+        {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
+
         <View style={styles.resendContainer}>
           <Text style={styles.resendText}>Chưa nhận được mã? </Text>
-          <TouchableOpacity>
-            <Text style={styles.resendLink}>Gửi lại</Text>
+          <TouchableOpacity onPress={handleResendOtp} disabled={timer > 0 || resending}>
+            {resending ? <ActivityIndicator size="small" color={COLORS.primary} /> : (
+              <Text style={[styles.resendLink, timer > 0 && { color: COLORS.textSecondary }]}>Gửi lại</Text>
+            )}
           </TouchableOpacity>
-          <View style={styles.timerContainer}>
-            <Text style={styles.timerText}>00:59</Text>
-          </View>
+          {timer > 0 && (
+            <View style={styles.timerContainer}>
+              <Text style={styles.timerText}>00:{timer < 10 ? `0${timer}` : timer}</Text>
+            </View>
+          )}
         </View>
 
         <CustomButton 
-          title="Xác nhận" 
-          onPress={() => navigation.navigate('ResetPassword')} 
+          title={loading ? "Đang xác thực..." : "Xác nhận"} 
+          onPress={handleVerifyOtp} 
+          disabled={loading}
           style={styles.button}
         />
 
-        <TouchableOpacity style={styles.changeMethod}>
-          <Text style={styles.changeMethodText}>Thay đổi số điện thoại / Email</Text>
+        <TouchableOpacity style={styles.changeMethod} onPress={() => navigation.navigate('ForgotPassword')}>
+          <Text style={styles.changeMethodText}>Thay đổi Email</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
@@ -99,6 +193,18 @@ const styles = StyleSheet.create({
   otpText: {
     ...FONTS.h3,
     color: COLORS.text,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  successText: {
+    color: COLORS.success,
+    fontSize: 13,
+    marginBottom: 15,
+    textAlign: 'center',
   },
   resendContainer: {
     flexDirection: 'row',

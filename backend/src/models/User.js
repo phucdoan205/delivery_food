@@ -54,7 +54,13 @@ const userSchema = new mongoose.Schema({
   savedPromotions: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Promotion'
-  }]
+  }],
+  resetOtp: {
+    type: String
+  },
+  resetOtpExpiry: {
+    type: Date
+  }
 }, {
   timestamps: true
 })

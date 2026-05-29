@@ -6,8 +6,39 @@ import CustomInput from '../../components/CustomInput';
 import CustomButton from '../../components/CustomButton';
 import Header from '../../components/Header';
 import { Ionicons } from '@expo/vector-icons';
+import { request } from '../../api/client';
+import { Alert, useState } from 'react';
 
 const ForgotPasswordScreen = ({ navigation }) => {
+  const [email, setEmail] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleForgotPassword = async () => {
+    setErrorMsg('');
+    setSuccessMsg('');
+    if (!email) {
+      setErrorMsg('Vui lòng nhập email');
+      return;
+    }
+    try {
+      setLoading(true);
+      const res = await request('/auth/forgot-password', {
+        method: 'POST',
+        body: { email }
+      });
+      setSuccessMsg(res.message || 'Mã OTP đã được gửi');
+      setTimeout(() => {
+        navigation.navigate('OTP', { email });
+      }, 1500);
+    } catch (error) {
+      setErrorMsg(error.message || 'Có lỗi xảy ra');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
       <Header />
@@ -18,16 +49,28 @@ const ForgotPasswordScreen = ({ navigation }) => {
         
         <Text style={styles.title}>Quên mật khẩu?</Text>
         <Text style={styles.subtitle}>
-          Nhập email hoặc số điện thoại đã đăng ký để nhận mã xác thực khôi phục tài khoản.
+          Nhập email đã đăng ký để nhận mã xác thực khôi phục tài khoản.
         </Text>
 
         <View style={styles.form}>
           <Text style={styles.label}>THÔNG TIN LIÊN HỆ</Text>
-          <CustomInput placeholder="Email hoặc Số điện thoại" icon="mail-outline" />
+          <CustomInput 
+            placeholder="Email" 
+            icon="mail-outline" 
+            value={email}
+            onChangeText={(text) => {
+              setEmail(text);
+              setErrorMsg('');
+            }}
+          />
+
+          {errorMsg ? <Text style={styles.errorText}>{errorMsg}</Text> : null}
+          {successMsg ? <Text style={styles.successText}>{successMsg}</Text> : null}
 
           <CustomButton 
-            title="Gửi yêu cầu" 
-            onPress={() => navigation.navigate('OTP')} 
+            title={loading ? "Đang gửi..." : "Gửi yêu cầu"} 
+            onPress={handleForgotPassword} 
+            disabled={loading}
             style={styles.button}
           />
           
@@ -85,6 +128,18 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     fontSize: 12,
     letterSpacing: 1,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
+  },
+  successText: {
+    color: COLORS.success,
+    fontSize: 12,
+    marginTop: 5,
+    marginLeft: 5,
   },
   button: {
     marginTop: SIZES.padding,

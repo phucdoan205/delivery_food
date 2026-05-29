@@ -2,6 +2,7 @@ const User = require('../models/User')
 const bcrypt = require('bcryptjs')
 const generateToken = require('../utils/generateToken')
 const { sendNotification } = require('../utils/notify')
+const nodemailer = require('nodemailer')
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -217,6 +218,108 @@ const getFavoriteRestaurants = async (req, res) => {
   }
 }
 
+// @desc    Forgot Password - Send OTP via Email
+// @route   POST /api/auth/forgot-password
+// @access  Public
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Vui lòng cung cấp email' });
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy tài khoản với email này' });
+  }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  // Set expiry to 5 minutes from now
+  user.resetOtp = otp;
+  user.resetOtpExpiry = Date.now() + 5 * 60 * 1000;
+  await user.save();
+
+  try {
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Mã xác nhận khôi phục mật khẩu',
+      text: `Mã OTP của bạn là: ${otp}. Mã này sẽ hết hạn trong vòng 5 phút.`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'Mã OTP đã được gửi đến email của bạn' });
+  } catch (error) {
+    console.error('Email send error:', error);
+    user.resetOtp = undefined;
+    user.resetOtpExpiry = undefined;
+    await user.save();
+    return res.status(500).json({ message: 'Không thể gửi email OTP, vui lòng thử lại sau.' });
+  }
+};
+
+// @desc    Verify OTP
+// @route   POST /api/auth/verify-reset-otp
+// @access  Public
+const verifyResetOtp = async (req, res) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+  }
+
+  if (!user.resetOtp || user.resetOtp !== otp) {
+    return res.status(400).json({ message: 'Mã OTP không hợp lệ' });
+  }
+
+  if (Date.now() > user.resetOtpExpiry) {
+    return res.status(400).json({ message: 'Mã OTP đã hết hạn' });
+  }
+
+  res.status(200).json({ message: 'Xác nhận OTP thành công' });
+};
+
+// @desc    Reset Password
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(404).json({ message: 'Không tìm thấy tài khoản' });
+  }
+
+  if (!user.resetOtp || user.resetOtp !== otp) {
+    return res.status(400).json({ message: 'Mã OTP không hợp lệ' });
+  }
+
+  if (Date.now() > user.resetOtpExpiry) {
+    return res.status(400).json({ message: 'Mã OTP đã hết hạn' });
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  user.password = await bcrypt.hash(newPassword, salt);
+  
+  // Clear OTP fields
+  user.resetOtp = undefined;
+  user.resetOtpExpiry = undefined;
+  
+  await user.save();
+  res.status(200).json({ message: 'Mật khẩu đã được cập nhật thành công' });
+};
+
 module.exports = {
   registerUser,
   loginUser,
@@ -224,5 +327,8 @@ module.exports = {
   updateUserProfile,
   getAllUsers,
   updateUserStatus,
-  getFavoriteRestaurants
+  getFavoriteRestaurants,
+  forgotPassword,
+  verifyResetOtp,
+  resetPassword
 }
