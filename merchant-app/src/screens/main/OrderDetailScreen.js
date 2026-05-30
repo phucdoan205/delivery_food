@@ -183,12 +183,12 @@ const OrderDetailScreen = ({ navigation, route }) => {
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tạm tính ({items.length} món)</Text>
             <Text style={styles.summaryValue}>
-              {items.reduce((sum, item) => sum + (item.price || 0) * item.quantity, 0).toLocaleString()}đ
+              {items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 1), 0).toLocaleString()}đ
             </Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Phí giao hàng & Dịch vụ</Text>
-            <Text style={styles.summaryValue}>0đ</Text>
+            <Text style={styles.summaryValue}>{(order.shippingFee || 0).toLocaleString()}đ</Text>
           </View>
           {order.discountAmount > 0 && (
             <View style={styles.summaryRow}>

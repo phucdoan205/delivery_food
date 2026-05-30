@@ -196,8 +196,16 @@ const savePromotion = async (req, res) => {
       return res.status(400).json({ message: 'Promotion is no longer active' });
     }
 
-    if (promotion.usageLimit > 0 && promotion.usageCount >= promotion.usageLimit) {
-      return res.status(400).json({ message: 'Mã giảm giá này đã hết lượt sử dụng' });
+    if (promotion.usageLimit > 0) {
+      const Order = require('../models/Order');
+      const userUsedCount = await Order.countDocuments({
+        userId: req.user._id,
+        promoCode: promotion.code,
+        status: { $ne: 'cancelled' }
+      });
+      if (userUsedCount >= promotion.usageLimit) {
+        return res.status(400).json({ message: 'Bạn đã hết lượt sử dụng mã giảm giá này' });
+      }
     }
 
     const user = await User.findById(req.user._id);
@@ -216,8 +224,9 @@ const savePromotion = async (req, res) => {
     user.savedPromotions.push(promotion._id);
     await user.save();
 
-    promotion.usageCount += 1;
-    await promotion.save();
+    // Remove global usageCount increment on save
+    // promotion.usageCount += 1;
+    // await promotion.save();
 
     const io = req.app.get('io');
     if (io) {
@@ -260,7 +269,22 @@ const getSavedPromotions = async (req, res) => {
     // Filter out expired or deleted ones to only return active ones
     const activePromotions = promotions.filter(p => p && p.status === 'active');
 
-    res.json(activePromotions);
+    // Attach remaining usages for each promotion
+    const Order = require('../models/Order');
+    const promosWithUsage = await Promise.all(activePromotions.map(async (p) => {
+      let remainingUsages = null;
+      if (p.usageLimit > 0) {
+        const userUsedCount = await Order.countDocuments({
+          userId: req.user._id,
+          promoCode: p.code,
+          status: { $ne: 'cancelled' }
+        });
+        remainingUsages = Math.max(0, p.usageLimit - userUsedCount);
+      }
+      return { ...p.toObject(), remainingUsages };
+    }));
+
+    res.json(promosWithUsage);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

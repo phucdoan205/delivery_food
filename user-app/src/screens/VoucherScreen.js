@@ -41,6 +41,11 @@ const VoucherScreen = ({ navigation }) => {
           <Text style={styles.voucherDesc} numberOfLines={2}>
             Giảm {item.discountType === 'percentage' ? `${item.discountValue}%` : `${item.discountValue.toLocaleString()}đ`} tại {item.restaurantId?.name || 'nhà hàng'}
           </Text>
+          {item.remainingUsages !== null && item.remainingUsages !== undefined && (
+            <Text style={{ fontSize: 11, color: COLORS.primary, marginTop: 4, fontWeight: 'bold' }}>
+              Còn {item.remainingUsages} lượt dùng
+            </Text>
+          )}
           <View style={styles.voucherFooter}>
             <View style={styles.expiryRow}>
               <Text style={{ fontSize: 10 }}>🕒</Text>

@@ -144,7 +144,9 @@ const PromotionsScreen = ({ route, navigation }) => {
       <View style={styles.promoFooter}>
         <View style={styles.footerItem}>
           <Users size={14} color={Colors.textSecondary} />
-          <Text style={styles.footerText}>{item.usageCount || 0}{item.usageLimit ? `/${item.usageLimit}` : ''} lượt dùng</Text>
+          <Text style={styles.footerText}>
+            Đã dùng: {item.usageCount || 0}{item.usageLimit ? ` (${item.usageLimit}/người)` : ''}
+          </Text>
         </View>
         <View style={styles.footerItem}>
           <Calendar size={14} color={Colors.textSecondary} />

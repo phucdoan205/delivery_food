@@ -1,6 +1,6 @@
 import { SafeAreaView } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet,  TouchableOpacity, FlatList, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet,  TouchableOpacity, FlatList, Image, ActivityIndicator, Alert, Modal, TextInput } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
 import { ArrowLeft, Home, Search as Briefcase, User, MapPin, Search as Edit2, Trash2, Plus } from 'lucide-react-native';
 import { request } from '../api/client';
@@ -9,6 +9,12 @@ import MapTilerView from '../components/MapTilerView';
 const AddressScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  const [modalVisible, setModalVisible] = useState(false);
+  const [modalMode, setModalMode] = useState('add');
+  const [editingItem, setEditingItem] = useState(null);
+  const [inputText, setInputText] = useState('');
+  const [inputType, setInputType] = useState('Nhà riêng');
 
   const fetchProfile = async () => {
     try {
@@ -25,39 +31,118 @@ const AddressScreen = ({ navigation }) => {
     fetchProfile();
   }, []);
 
-  const handleUpdateAddress = async () => {
-    // Custom update prompt fallback or simple placeholder for simplicity
-    Alert.prompt(
-      'Cập nhật địa chỉ',
-      'Nhập địa chỉ giao hàng mới của bạn:',
-      [
-        {
-          text: 'Hủy',
-          style: 'cancel',
-        },
-        {
-          text: 'Cập nhật',
-          onPress: async (newAddress) => {
-            if (!newAddress || !newAddress.trim()) return;
-            setLoading(true);
-            try {
-              const updated = await request('/auth/profile', {
-                method: 'PUT',
-                body: { address: newAddress }
-              });
-              setProfile(updated);
-              Alert.alert('Thành công', 'Đã cập nhật địa chỉ mặc định');
-            } catch (err) {
-              Alert.alert('Lỗi', err.message || 'Không thể cập nhật địa chỉ');
-            } finally {
-              setLoading(false);
+  const handleAddAddress = () => {
+    setModalMode('add');
+    setInputText('');
+    setInputType('Nhà riêng');
+    setEditingItem(null);
+    setModalVisible(true);
+  };
+
+  const handleEditAddress = (item) => {
+    setModalMode('edit');
+    setInputText(item.address);
+    setInputType(item.type || 'Nhà riêng');
+    setEditingItem(item);
+    setModalVisible(true);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!inputText || !inputText.trim()) {
+      Alert.alert('Lỗi', 'Vui lòng nhập địa chỉ');
+      return;
+    }
+    
+    setModalVisible(false);
+    setLoading(true);
+    try {
+      const currentAddresses = profile?.addresses || [];
+      let updatedAddresses = [];
+      
+      if (modalMode === 'add') {
+        let baseAddresses = currentAddresses;
+        if (baseAddresses.length === 0 && profile?.address) {
+          baseAddresses = [{ type: 'Nhà riêng', address: profile.address, isDefault: true }];
+        }
+        const newAddrObj = {
+          type: inputType,
+          address: inputText,
+          isDefault: baseAddresses.length === 0
+        };
+        updatedAddresses = [...baseAddresses, newAddrObj];
+      } else {
+        if (editingItem._id === 'old') {
+          updatedAddresses = [{ type: inputType, address: inputText, isDefault: true }];
+        } else {
+          updatedAddresses = currentAddresses.map(addr => 
+            (addr._id === editingItem._id)
+              ? { ...addr, address: inputText, type: inputType }
+              : addr
+          );
+        }
+      }
+      
+      const updated = await request('/auth/profile', {
+        method: 'PUT',
+        body: { addresses: updatedAddresses }
+      });
+      setProfile(updated);
+    } catch (err) {
+      Alert.alert('Lỗi', 'Không thể lưu địa chỉ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSetDefault = async (itemToSet) => {
+    setLoading(true);
+    try {
+      const currentAddresses = profile?.addresses || [];
+      const updatedAddresses = currentAddresses.map(addr => ({
+        ...addr,
+        isDefault: addr._id === itemToSet._id
+      }));
+      const updated = await request('/auth/profile', {
+        method: 'PUT',
+        body: { addresses: updatedAddresses }
+      });
+      setProfile(updated);
+      Alert.alert('Thành công', 'Đã đặt làm địa chỉ mặc định');
+    } catch (err) {
+      Alert.alert('Lỗi', 'Không thể thiết lập mặc định');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteAddress = (itemToDelete) => {
+    Alert.alert('Xác nhận', 'Bạn muốn xóa địa chỉ này?', [
+      { text: 'Hủy', style: 'cancel' },
+      { 
+        text: 'Xóa', 
+        style: 'destructive',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            const currentAddresses = profile?.addresses || [];
+            const updatedAddresses = currentAddresses.filter(addr => addr._id !== itemToDelete._id);
+            // Nếu xóa cái mặc định, phải set 1 cái khác làm mặc định (Backend đã xử lý phần nào, nma frontend xử lý cho an toàn)
+            if (itemToDelete.isDefault && updatedAddresses.length > 0) {
+                updatedAddresses[0].isDefault = true;
             }
-          },
-        },
-      ],
-      'plain-text',
-      profile?.address || ''
-    );
+            const updated = await request('/auth/profile', {
+              method: 'PUT',
+              body: { addresses: updatedAddresses }
+            });
+            setProfile(updated);
+          } catch (err) {
+            Alert.alert('Lỗi', 'Không thể xóa địa chỉ');
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+    ]);
   };
 
   if (loading) {
@@ -68,14 +153,9 @@ const AddressScreen = ({ navigation }) => {
     );
   }
 
-  const addressesData = [
-    {
-      id: 'default_1',
-      type: 'Nhà riêng',
-      address: profile?.address || 'Chưa thiết lập địa chỉ',
-      isDefault: true
-    }
-  ];
+  const displayAddresses = profile?.addresses?.length > 0 
+    ? profile.addresses 
+    : (profile?.address ? [{ _id: 'old', type: 'Nhà riêng', address: profile.address, isDefault: true }] : []);
 
   const renderAddressItem = ({ item }) => {
     return (
@@ -94,10 +174,22 @@ const AddressScreen = ({ navigation }) => {
           </View>
           <Text style={styles.addressText} numberOfLines={2}>{item.address}</Text>
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.actionBtn} onPress={handleUpdateAddress}>
+            <TouchableOpacity style={styles.actionBtn} onPress={() => handleEditAddress(item)}>
               <Edit2 size={14} color={COLORS.textLight} />
-              <Text style={styles.actionText}>Chỉnh sửa</Text>
+              <Text style={styles.actionText}>Sửa</Text>
             </TouchableOpacity>
+            {!item.isDefault && (
+              <TouchableOpacity style={styles.actionBtn} onPress={() => handleSetDefault(item)}>
+                <MapPin size={14} color={COLORS.primary} />
+                <Text style={[styles.actionText, { color: COLORS.primary }]}>Đặt mặc định</Text>
+              </TouchableOpacity>
+            )}
+            {!item.isDefault && (
+              <TouchableOpacity style={styles.actionBtn} onPress={() => handleDeleteAddress(item)}>
+                <Trash2 size={14} color="#E53935" />
+                <Text style={[styles.actionText, { color: "#E53935" }]}>Xóa</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </View>
       </View>
@@ -128,17 +220,17 @@ const AddressScreen = ({ navigation }) => {
         </View>
 
         <FlatList
-          data={addressesData}
+          data={displayAddresses}
           renderItem={renderAddressItem}
-          keyExtractor={item => item.id}
+          keyExtractor={item => item._id || item.address}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.listContent}
           ListFooterComponent={() => (
-            <TouchableOpacity style={styles.addBtn} onPress={handleUpdateAddress}>
+            <TouchableOpacity style={styles.addBtn} onPress={handleAddAddress}>
               <View style={styles.addIconCircle}>
                 <Plus size={20} color={COLORS.primary} />
               </View>
-              <Text style={styles.addText}>Thay đổi địa chỉ mặc định</Text>
+              <Text style={styles.addText}>Thêm địa chỉ mới</Text>
             </TouchableOpacity>
           )}
         />
@@ -150,6 +242,47 @@ const AddressScreen = ({ navigation }) => {
           </View>
         </View>
       </View>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>{modalMode === 'add' ? 'Thêm địa chỉ mới' : 'Sửa địa chỉ'}</Text>
+            
+            <View style={styles.typeSelector}>
+              {['Nhà riêng', 'Công ty', 'Khác'].map((type) => (
+                <TouchableOpacity 
+                  key={type}
+                  style={[styles.typeBtn, inputType === type && styles.typeBtnActive]}
+                  onPress={() => setInputType(type)}
+                >
+                  <Text style={[styles.typeBtnText, inputType === type && styles.typeBtnTextActive]}>{type}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập địa chỉ của bạn..."
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalBtnCancel} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalBtnTextCancel}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalBtnSave} onPress={handleSaveAddress}>
+                <Text style={styles.modalBtnTextSave}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -321,6 +454,86 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.75)',
     textShadowOffset: { width: -1, height: 1 },
     textShadowRadius: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 20,
+    width: '100%',
+    ...SHADOWS.medium,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    marginBottom: 15,
+  },
+  typeSelector: {
+    flexDirection: 'row',
+    marginBottom: 15,
+    gap: 10,
+  },
+  typeBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  typeBtnActive: {
+    backgroundColor: '#FFF1E8',
+    borderColor: COLORS.primary,
+  },
+  typeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.textLight,
+  },
+  typeBtnTextActive: {
+    color: COLORS.primary,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    padding: 15,
+    minHeight: 80,
+    textAlignVertical: 'top',
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
+  modalBtnCancel: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginRight: 10,
+  },
+  modalBtnTextCancel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.textLight,
+  },
+  modalBtnSave: {
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+  },
+  modalBtnTextSave: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.white,
   }
 });
 

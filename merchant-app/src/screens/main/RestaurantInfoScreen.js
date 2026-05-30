@@ -33,6 +33,7 @@ const RestaurantInfoScreen = ({ navigation }) => {
   const [phone, setPhone] = useState("");
   const [ownerName, setOwnerName] = useState("");
   const [dob, setDob] = useState("");
+  const [newPassword, setNewPassword] = useState("");
 
   useEffect(() => {
     const fetchRestaurant = async () => {
@@ -49,6 +50,7 @@ const RestaurantInfoScreen = ({ navigation }) => {
         setPhone(data.ownerId?.phone || "");
         setOwnerName(data.ownerId?.fullName || "");
         setDob(data.ownerId?.dob || "");
+        setNewPassword("");
       } catch (error) {
         Alert.alert("Lỗi", "Không thể tải thông tin cửa hàng");
         console.log("Error fetching restaurant mine:", error);
@@ -104,14 +106,20 @@ const RestaurantInfoScreen = ({ navigation }) => {
         },
       });
       
+      const profileBody = {
+        fullName: ownerName,
+        cccd,
+        phone,
+        dob,
+      };
+      
+      if (newPassword.trim()) {
+        profileBody.password = newPassword;
+      }
+      
       await request(`/auth/profile`, {
         method: "PUT",
-        body: {
-          fullName: ownerName,
-          cccd,
-          phone,
-          dob,
-        },
+        body: profileBody,
       });
       
       Alert.alert("Thành công", "Đã cập nhật thông tin nhà hàng và chủ sở hữu");
@@ -212,6 +220,10 @@ const RestaurantInfoScreen = ({ navigation }) => {
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Ngày thành lập</Text>
             <TextInput style={styles.input} value={dob} onChangeText={setDob} placeholder="VD: 12/03/2022" />
+          </View>
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Mật khẩu mới (Để trống nếu không đổi)</Text>
+            <TextInput style={styles.input} value={newPassword} onChangeText={setNewPassword} placeholder="Nhập mật khẩu mới" secureTextEntry />
           </View>
 
           <Text style={styles.subSectionTitle}>Liên hệ & Địa điểm</Text>

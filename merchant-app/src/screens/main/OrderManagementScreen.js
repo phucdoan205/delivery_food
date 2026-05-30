@@ -91,20 +91,23 @@ const OrderManagementScreen = ({ navigation }) => {
     if (activeTab === 'new') return ['pending', 'confirmed'].includes(o.status);
     if (activeTab === 'preparing') return o.status === 'preparing';
     if (activeTab === 'ready') return ['ready', 'delivering'].includes(o.status);
-    if (activeTab === 'completed') return ['completed', 'cancelled'].includes(o.status);
+    if (activeTab === 'completed') return o.status === 'completed';
+    if (activeTab === 'cancelled') return o.status === 'cancelled';
     return false;
   });
 
   const newCount = orders.filter(o => ['pending', 'confirmed'].includes(o.status)).length;
   const preparingCount = orders.filter(o => o.status === 'preparing').length;
   const readyCount = orders.filter(o => ['ready', 'delivering'].includes(o.status)).length;
-  const completedCount = orders.filter(o => ['completed', 'cancelled'].includes(o.status)).length;
+  const completedCount = orders.filter(o => o.status === 'completed').length;
+  const cancelledCount = orders.filter(o => o.status === 'cancelled').length;
 
   const tabs = [
     { id: 'new', label: `MỚI (${newCount})` },
     { id: 'preparing', label: `ĐANG CHUẨN BỊ (${preparingCount})` },
     { id: 'ready', label: `SẴN SÀNG (${readyCount})` },
     { id: 'completed', label: `HOÀN THÀNH (${completedCount})` },
+    { id: 'cancelled', label: `ĐÃ HỦY (${cancelledCount})` },
   ];
 
   return (

@@ -24,6 +24,7 @@ import {
 } from "recharts";
 import { request } from "../api/client";
 import toast from "react-hot-toast";
+import { io } from "socket.io-client";
 
 const iconMap = {
   Wallet,
@@ -57,6 +58,17 @@ const DashboardPage = () => {
 
   useEffect(() => {
     fetchDashboardData();
+
+    const socket = io("http://localhost:5000");
+    
+    socket.on("new_order", () => fetchDashboardData());
+    socket.on("order_status_updated", () => fetchDashboardData());
+    socket.on("new_user_registered", () => fetchDashboardData());
+    socket.on("restaurant_updated", () => fetchDashboardData());
+
+    return () => {
+      socket.disconnect();
+    };
   }, []);
 
   const totalRevenue = orders
@@ -81,6 +93,59 @@ const DashboardPage = () => {
     return Object.keys(buckets).map(time => ({ time, revenue: buckets[time], forecast: Math.round(buckets[time] * 1.2) }));
   }, [orders]);
 
+  const orderTrends = useMemo(() => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfYesterday = new Date(startOfToday);
+    startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    
+    let todayCount = 0;
+    let yesterdayCount = 0;
+    let weekCount = 0;
+    
+    const startOfWeek = new Date(startOfToday);
+    startOfWeek.setDate(startOfWeek.getDate() - 7);
+
+    const hourCounts = new Array(24).fill(0);
+
+    orders.forEach(o => {
+      const oDate = new Date(o.createdAt);
+      if (oDate >= startOfToday) {
+        todayCount++;
+        hourCounts[oDate.getHours()]++;
+      } else if (oDate >= startOfYesterday && oDate < startOfToday) {
+        yesterdayCount++;
+      }
+      
+      if (oDate >= startOfWeek) {
+        weekCount++;
+      }
+    });
+
+    let peakHour = 12;
+    let maxOrders = 0;
+    hourCounts.forEach((count, idx) => {
+      if (count > maxOrders) {
+        maxOrders = count;
+        peakHour = idx;
+      }
+    });
+    
+    const peakHourStr = `${peakHour.toString().padStart(2, '0')}:00 - ${(peakHour+1).toString().padStart(2, '0')}:00`;
+    const peakPercentage = todayCount > 0 ? Math.round((maxOrders / todayCount) * 100) : 0;
+    const avgWeek = Math.round(weekCount / 7);
+    const maxVal = Math.max(todayCount, yesterdayCount, avgWeek) || 1;
+
+    return {
+      peakHourStr,
+      peakPercentage,
+      todayCount,
+      yesterdayCount,
+      avgWeek,
+      maxVal
+    };
+  }, [orders]);
+
   const dynamicTopRestaurants = useMemo(() => {
     const resStats = {};
     orders.filter(o => o.status === "completed").forEach(o => {
@@ -96,16 +161,19 @@ const DashboardPage = () => {
     return Object.values(resStats)
       .sort((a, b) => b.revenue - a.revenue)
       .slice(0, 3)
-      .map((stat, i) => ({
-        id: stat.res._id,
-        name: stat.res.name,
-        category: "Nhà hàng",
-        rating: stat.res.rating || 5.0,
-        reviews: stat.count,
-        revenue: stat.revenue > 1000000 ? (stat.revenue/1000000).toFixed(1) + 'M' : (stat.revenue/1000).toFixed(0) + 'k',
-        image: stat.res.image || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=100&h=100&fit=crop",
-        trending: i === 0 && stat.revenue > 0
-      }));
+      .map((stat, i) => {
+        const realRes = restaurants.find(r => r._id === stat.res._id) || stat.res;
+        return {
+          id: realRes._id,
+          name: realRes.name,
+          category: "Nhà hàng",
+          rating: realRes.rating || 5.0,
+          reviews: stat.count,
+          revenue: stat.revenue > 1000000 ? (stat.revenue/1000000).toFixed(1) + 'M' : (stat.revenue/1000).toFixed(0) + 'k',
+          image: realRes.image,
+          trending: i === 0 && stat.revenue > 0
+        };
+      });
   }, [orders, restaurants]);
 
   const dynamicTopDishes = useMemo(() => {
@@ -126,10 +194,10 @@ const DashboardPage = () => {
       .map((stat, i) => ({
         id: stat.food._id,
         name: stat.food.name,
-        description: stat.food.description || "Món ăn ngon",
+        description: stat.food.description || "Món ăn",
         price: (stat.food.price || 0).toLocaleString('vi-VN') + 'đ',
         orders: stat.count + " Lượt mua",
-        image: stat.food.image || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=100&h=100&fit=crop"
+        image: stat.food.image
       }));
   }, [orders]);
 
@@ -214,8 +282,10 @@ const DashboardPage = () => {
                   />
                   <Tooltip 
                     contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                    formatter={(value, name) => [`${value}k`, name]}
                   />
                   <Area 
+                    name="Thực tế"
                     type="monotone" 
                     dataKey="revenue" 
                     stroke="#E65100" 
@@ -224,6 +294,7 @@ const DashboardPage = () => {
                     fill="url(#colorRevenue)" 
                   />
                   <Area 
+                    name="Dự báo"
                     type="monotone" 
                     dataKey="forecast" 
                     stroke="#FFCCBC" 
@@ -240,14 +311,14 @@ const DashboardPage = () => {
           <div className="bg-brand-primary p-8 rounded-[32px] text-white shadow-premium relative overflow-hidden flex flex-col justify-between">
             <div className="relative z-10">
               <h3 className="text-xl font-bold mb-2">Xu hướng đơn hàng</h3>
-              <p className="text-orange-100 text-sm leading-relaxed">Đỉnh điểm đơn hàng diễn ra lúc 11:30 - 13:00 hàng ngày, chiếm 42% tổng lượng đơn.</p>
+              <p className="text-orange-100 text-sm leading-relaxed">Đỉnh điểm đơn hàng diễn ra lúc {orderTrends.peakHourStr} hàng ngày, chiếm {orderTrends.peakPercentage}% tổng lượng đơn.</p>
             </div>
             
             <div className="mt-8 space-y-6 relative z-10">
               {[
-                { label: "HÔM NAY", value: "1.840 ĐƠN", color: "bg-green-400" },
-                { label: "HÔM QUA", value: "1.620 ĐƠN", color: "bg-orange-300" },
-                { label: "TRUNG BÌNH TUẦN", value: "1.450 ĐƠN", color: "bg-orange-400" },
+                { label: "HÔM NAY", value: `${orderTrends.todayCount} ĐƠN`, color: "bg-green-400", pct: (orderTrends.todayCount / orderTrends.maxVal) * 100 },
+                { label: "HÔM QUA", value: `${orderTrends.yesterdayCount} ĐƠN`, color: "bg-orange-300", pct: (orderTrends.yesterdayCount / orderTrends.maxVal) * 100 },
+                { label: "TRUNG BÌNH TUẦN", value: `${orderTrends.avgWeek} ĐƠN`, color: "bg-orange-400", pct: (orderTrends.avgWeek / orderTrends.maxVal) * 100 },
               ].map((item) => (
                 <div key={item.label} className="space-y-2">
                   <div className="flex justify-between text-[10px] font-black tracking-widest opacity-80 uppercase">
@@ -255,7 +326,7 @@ const DashboardPage = () => {
                     <span>{item.value}</span>
                   </div>
                   <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
-                    <div className={`h-full ${item.color} rounded-full`} style={{ width: '70%' }}></div>
+                    <div className={`h-full ${item.color} rounded-full transition-all duration-1000`} style={{ width: `${item.pct}%` }}></div>
                   </div>
                 </div>
               ))}

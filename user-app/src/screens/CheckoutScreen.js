@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, ChevronRight, CreditCard, DollarSign } from 'lucide-
 import { request } from '../api/client';
 
 const CheckoutScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { cart, appliedPromos = {}, total: cartTotal = 0, totalPromoDiscount = 0 } = route.params || {};
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [loading, setLoading] = useState(false);
@@ -119,7 +120,7 @@ const CheckoutScreen = ({ route, navigation }) => {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.content}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 130 + insets.bottom }]}>
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.iconCircle}><MapPin size={18} color={COLORS.primary} /></View>
@@ -251,7 +252,7 @@ const CheckoutScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View>
           <Text style={styles.footerTotalLabel}>Tổng cộng</Text>
           <Text style={styles.footerTotalValue}>{total.toLocaleString()}đ</Text>
@@ -320,9 +321,15 @@ const styles = StyleSheet.create({
   addressCard: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radiusLarge,
-    padding: 15,
-    ...SHADOWS.light,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   addressInfo: {
     flex: 1,
@@ -349,15 +356,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: COLORS.white,
-    padding: 15,
-    borderRadius: SIZES.radius,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 12,
+    borderWidth: 1.5,
+    borderColor: '#F0F0F0',
   },
   selectedPayment: {
     borderColor: COLORS.primary,
     backgroundColor: '#FFF8F5',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
   },
   paymentLeft: {
     flexDirection: 'row',
@@ -439,8 +451,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingBottom: 30,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 10,
   },
   footerTotalLabel: {
     fontSize: 10,

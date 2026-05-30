@@ -64,6 +64,34 @@ const OrderHistoryScreen = ({ navigation }) => {
     }
   };
 
+  const handleCancelOrder = (orderId) => {
+    Alert.alert(
+      "Xác nhận hủy",
+      "Bạn có chắc chắn muốn hủy đơn hàng này không?",
+      [
+        { text: "Không", style: "cancel" },
+        { 
+          text: "Hủy đơn", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await request(`/orders/${orderId}/status`, {
+                method: 'PUT',
+                body: { status: 'cancelled' }
+              });
+              Alert.alert('Thành công', 'Đơn hàng đã được hủy!');
+              fetchData();
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể hủy đơn hàng');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const renderOrderItem = ({ item }) => {
     const isCurrent = ['pending', 'confirmed', 'preparing', 'delivering'].includes(item.status);
     const restaurantName = item.restaurantId?.name || "Nhà hàng đối tác";
@@ -116,6 +144,14 @@ const OrderHistoryScreen = ({ navigation }) => {
                     >
                       <CheckCircle size={16} color={COLORS.white} />
                       <Text style={styles.trackBtnText}>Đã nhận</Text>
+                    </TouchableOpacity>
+                  )}
+                  {item.status === 'pending' && (
+                    <TouchableOpacity 
+                      style={[styles.trackBtn, { backgroundColor: '#E53935' }]} 
+                      onPress={() => handleCancelOrder(item._id)}
+                    >
+                      <Text style={styles.trackBtnText}>Hủy đơn</Text>
                     </TouchableOpacity>
                   )}
                   <TouchableOpacity 

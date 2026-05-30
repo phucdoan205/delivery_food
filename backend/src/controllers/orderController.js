@@ -14,6 +14,23 @@ const createOrder = async (req, res) => {
     return
   }
 
+  let promo = null;
+  const Promotion = require('../models/Promotion');
+  if (promoCode) {
+    promo = await Promotion.findOne({ code: promoCode, restaurantId });
+    if (promo && promo.usageLimit > 0) {
+      const Order = require('../models/Order');
+      const userUsedCount = await Order.countDocuments({
+        userId: req.user._id,
+        promoCode: promoCode,
+        status: { $ne: 'cancelled' }
+      });
+      if (userUsedCount >= promo.usageLimit) {
+        return res.status(400).json({ message: `Mã giảm giá ${promoCode} đã hết lượt sử dụng` });
+      }
+    }
+  }
+
   const order = new Order({
     userId: req.user._id,
     restaurantId,
@@ -43,6 +60,26 @@ const createOrder = async (req, res) => {
     
     // Notify Admin
     await sendNotification(io, 'admin', 'Đơn hàng mới', 'Một đơn hàng mới vừa được tạo trên hệ thống')
+  }
+
+  if (promo) {
+    promo.usageCount += 1;
+    await promo.save();
+
+    if (promo.usageLimit > 0) {
+      const Order = require('../models/Order');
+      const userUsedCount = await Order.countDocuments({
+        userId: req.user._id,
+        promoCode: promoCode,
+        status: { $ne: 'cancelled' }
+      });
+      if (userUsedCount >= promo.usageLimit) {
+        const User = require('../models/User');
+        await User.findByIdAndUpdate(req.user._id, {
+          $pull: { savedPromotions: promo._id }
+        });
+      }
+    }
   }
 
   res.status(201).json(createdOrder)
@@ -104,11 +141,24 @@ const updateOrderStatus = async (req, res) => {
       } else if (status === 'delivering' && req.user.role === 'shipper') {
         await sendNotification(io, req.user._id, 'Nhận đơn thành công', 'Bạn đã nhận giao đơn hàng này.')
         await sendNotification(io, order.userId, 'Đang giao hàng', 'Tài xế đang giao đơn hàng cho bạn.')
-      } else if (status === 'completed' && req.user.role === 'shipper') {
-        await sendNotification(io, req.user._id, 'Hoàn thành đơn', 'Bạn đã giao đơn hàng thành công.')
-        await sendNotification(io, order.userId, 'Hoàn thành đơn', 'Đơn hàng của bạn đã được giao thành công.')
+      } else if (status === 'completed') {
+        if (req.user.role === 'shipper') {
+          await sendNotification(io, req.user._id, 'Hoàn thành đơn', 'Bạn đã giao đơn hàng thành công.')
+          await sendNotification(io, order.userId, 'Hoàn thành đơn', 'Đơn hàng của bạn đã được giao thành công.')
+        } else if (req.user.role === 'user') {
+          await sendNotification(io, order.userId, 'Hoàn thành đơn', 'Bạn đã xác nhận nhận đơn hàng thành công.')
+          if (order.shipperId) {
+            await sendNotification(io, order.shipperId, 'Hoàn thành đơn', 'Khách hàng đã xác nhận nhận hàng thành công.')
+          }
+        }
       } else if (status === 'cancelled') {
         await sendNotification(io, order.userId, 'Đơn hàng đã hủy', 'Đơn hàng của bạn đã bị hủy.')
+        if (req.user.role === 'user') {
+          const restaurant = await Restaurant.findById(order.restaurantId)
+          if (restaurant && restaurant.ownerId) {
+            await sendNotification(io, restaurant.ownerId, 'Khách đã hủy đơn', `Khách hàng vừa hủy đơn hàng #${order._id.toString().slice(-6).toUpperCase()}`)
+          }
+        }
       }
     }
 

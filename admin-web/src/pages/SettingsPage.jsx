@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import AdminLayout from "../layouts/AdminLayout";
+import { request } from "../api/client";
+import toast from "react-hot-toast";
 import {
   Bell,
   Box,
@@ -28,6 +30,47 @@ const SettingsPage = () => {
   const [notifRevenue, setNotifRevenue] = useState(true);
   const [notifSecurity, setNotifSecurity] = useState(false);
 
+  // Password state
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSavePassword = async () => {
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error("Xác nhận mật khẩu không khớp");
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error("Mật khẩu mới phải có ít nhất 8 ký tự");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      await request("/auth/profile", {
+        method: "PUT",
+        body: {
+          oldPassword,
+          password: newPassword,
+        },
+      });
+      toast.success("Đổi mật khẩu thành công!");
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setActiveView("main");
+    } catch (error) {
+      toast.error(error.message || "Đổi mật khẩu thất bại");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (activeView === "change-password") {
     return (
       <AdminLayout title="Đổi mật khẩu">
@@ -49,6 +92,18 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          <div className="bg-[#FFF5F2] border-l-4 border-[#A04F2D] p-5 rounded-r-2xl mb-6">
+            <h4 className="text-sm font-bold text-[#5C3D2E] mb-2 flex items-center gap-2">
+              <ShieldCheck size={18} />
+              Lưu ý bảo mật
+            </h4>
+            <ul className="text-xs text-[#8C6B5D] space-y-1.5 list-disc list-inside ml-1">
+              <li>Mật khẩu mới phải có **ít nhất 8 ký tự**.</li>
+              <li>Nên kết hợp chữ hoa, chữ thường và số để đảm bảo an toàn.</li>
+              <li>Bạn sẽ không bị đăng xuất sau khi đổi mật khẩu thành công.</li>
+            </ul>
+          </div>
+
           <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 p-8 space-y-6">
             <div className="space-y-2">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
@@ -57,6 +112,8 @@ const SettingsPage = () => {
               <input
                 type="password"
                 placeholder="Nhập mật khẩu hiện tại"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-brand-bg border-transparent rounded-2xl text-sm font-medium focus:ring-brand-primary/20 transition-all"
               />
             </div>
@@ -68,6 +125,8 @@ const SettingsPage = () => {
               <input
                 type="password"
                 placeholder="Nhập mật khẩu mới"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-brand-bg border-transparent rounded-2xl text-sm font-medium focus:ring-brand-primary/20 transition-all"
               />
               <p className="text-[10px] text-slate-400 ml-1">
@@ -83,6 +142,8 @@ const SettingsPage = () => {
               <input
                 type="password"
                 placeholder="Nhập lại mật khẩu mới"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-brand-bg border-transparent rounded-2xl text-sm font-medium focus:ring-brand-primary/20 transition-all"
               />
             </div>
@@ -94,8 +155,12 @@ const SettingsPage = () => {
               >
                 Hủy bỏ
               </button>
-              <button className="px-8 py-3 bg-brand-primary text-white rounded-2xl text-sm font-bold shadow-premium hover:scale-[1.02] active:scale-[0.98] transition-all">
-                Lưu mật khẩu
+              <button 
+                onClick={handleSavePassword}
+                disabled={loading}
+                className="px-8 py-3 bg-brand-primary text-white rounded-2xl text-sm font-bold shadow-premium hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:scale-100"
+              >
+                {loading ? "Đang xử lý..." : "Lưu mật khẩu"}
               </button>
             </div>
           </div>

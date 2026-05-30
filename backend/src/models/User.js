@@ -23,6 +23,17 @@ const userSchema = new mongoose.Schema({
   address: {
     type: String
   },
+  addresses: [{
+    type: { type: String, default: 'Nhà riêng' },
+    address: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }],
+  bankAccounts: [{
+    bank: { type: String, required: true },
+    accountNumber: { type: String, required: true },
+    accountName: { type: String, required: true },
+    isDefault: { type: Boolean, default: false }
+  }],
   cccd: {
     type: String
   },

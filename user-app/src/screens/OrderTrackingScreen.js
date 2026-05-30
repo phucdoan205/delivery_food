@@ -58,6 +58,49 @@ const OrderTrackingScreen = ({ route, navigation }) => {
     };
   }, [orderId]);
 
+  const handleCompleteOrder = async () => {
+    try {
+      setLoading(true);
+      await request(`/orders/${order._id}/status`, {
+        method: 'PUT',
+        body: { status: 'completed' }
+      });
+      Alert.alert('Thành công', 'Cảm ơn bạn đã xác nhận nhận hàng!');
+      fetchOrderDetails(true);
+    } catch (error) {
+      Alert.alert('Lỗi', 'Không thể cập nhật trạng thái đơn hàng');
+      setLoading(false);
+    }
+  };
+
+  const handleCancelOrder = () => {
+    Alert.alert(
+      "Xác nhận hủy",
+      "Bạn có chắc chắn muốn hủy đơn hàng này không?",
+      [
+        { text: "Không", style: "cancel" },
+        { 
+          text: "Hủy đơn", 
+          style: "destructive",
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await request(`/orders/${order._id}/status`, {
+                method: 'PUT',
+                body: { status: 'cancelled' }
+              });
+              Alert.alert('Thành công', 'Đơn hàng đã được hủy!');
+              navigation.goBack();
+            } catch (error) {
+              Alert.alert('Lỗi', 'Không thể hủy đơn hàng');
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   if (loading) {
     return (
       <SafeAreaView edges={['top']} style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
@@ -270,6 +313,36 @@ const OrderTrackingScreen = ({ route, navigation }) => {
             <Text style={styles.addrText}>{order.restaurantId?.address || 'Địa chỉ cửa hàng'}</Text>
           </View>
         </View>
+
+        {order.status === 'delivering' && (
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: COLORS.green, 
+              paddingVertical: 15, 
+              borderRadius: SIZES.radius, 
+              alignItems: 'center',
+              marginBottom: 50
+            }}
+            onPress={handleCompleteOrder}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: 'bold', fontSize: 16 }}>Đã nhận được hàng</Text>
+          </TouchableOpacity>
+        )}
+        
+        {order.status === 'pending' && (
+          <TouchableOpacity 
+            style={{ 
+              backgroundColor: '#E53935', 
+              paddingVertical: 15, 
+              borderRadius: SIZES.radius, 
+              alignItems: 'center',
+              marginBottom: 50
+            }}
+            onPress={handleCancelOrder}
+          >
+            <Text style={{ color: COLORS.white, fontWeight: 'bold', fontSize: 16 }}>Hủy đơn hàng</Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

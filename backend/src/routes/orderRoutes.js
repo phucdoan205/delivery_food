@@ -184,6 +184,6 @@ router.route('/:id')
  *       200:
  *         description: Order status updated
  */
-router.put('/:id/status', authorize('merchant', 'admin', 'shipper', 'staff'), updateOrderStatus)
+router.put('/:id/status', authorize('merchant', 'admin', 'shipper', 'staff', 'user'), updateOrderStatus)
 
 module.exports = router

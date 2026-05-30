@@ -33,6 +33,8 @@ const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -104,6 +106,9 @@ const OrdersPage = () => {
     }
   });
 
+  const totalPages = Math.ceil(groupedFilteredOrders.length / itemsPerPage);
+  const paginatedOrders = groupedFilteredOrders.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   return (
     <AdminLayout title="Quản lý Đơn hàng">
       <div className="space-y-8">
@@ -116,7 +121,7 @@ const OrdersPage = () => {
             {tabs.map((tab, i) => (
               <button 
                 key={tab} 
-                onClick={() => setActiveTab(i)}
+                onClick={() => { setActiveTab(i); setCurrentPage(1); }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
                   activeTab === i ? "bg-brand-primary text-white shadow-premium" : "text-slate-500 hover:text-brand-primary"
                 }`}
@@ -130,10 +135,10 @@ const OrdersPage = () => {
         <div className="space-y-4">
           {loading ? (
             <div className="text-center py-16 text-slate-400 text-sm font-medium">Đang tải danh sách đơn hàng...</div>
-          ) : groupedFilteredOrders.length === 0 ? (
+          ) : paginatedOrders.length === 0 ? (
             <div className="text-center py-16 text-slate-400 text-sm font-medium">Không tìm thấy đơn hàng nào.</div>
           ) : (
-            groupedFilteredOrders.map((group) => {
+            paginatedOrders.map((group) => {
               return (
                 <div key={group._id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 group">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -188,6 +193,30 @@ const OrdersPage = () => {
             })
           )}
         </div>
+
+        {!loading && groupedFilteredOrders.length > itemsPerPage && (
+          <div className="flex justify-center items-center gap-2 mt-8">
+            <button
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-brand-primary border border-slate-200 hover:bg-orange-50'}`}
+            >
+              Trước
+            </button>
+            
+            <div className="flex items-center justify-center min-w-[100px] text-sm font-bold text-slate-600">
+              Trang {currentPage} / {totalPages}
+            </div>
+
+            <button
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === totalPages ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-brand-primary border border-slate-200 hover:bg-orange-50'}`}
+            >
+              Sau
+            </button>
+          </div>
+        )}
       </div>
 
       {isModalOpen && selectedOrder && (

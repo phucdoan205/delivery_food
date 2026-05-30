@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  ScrollView, TouchableOpacity, Image, TextInput, Alert, ActivityIndicator, Modal, FlatList } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
@@ -7,6 +7,7 @@ import { request } from '../api/client';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CartScreen = ({ navigation }) => {
+  const insets = useSafeAreaInsets();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
   
@@ -197,7 +198,7 @@ const CartScreen = ({ navigation }) => {
         <TouchableOpacity onPress={handleClearCart}><Text style={styles.clearAll}>Xoá tất cả</Text></TouchableOpacity>
       </View>
 
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 130 }]}>
+      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={[styles.content, { paddingBottom: 130 + insets.bottom }]}>
         
         {Object.values(groupedItems).map(group => {
           const rId = group.restaurant._id || group.restaurant.id;
@@ -332,7 +333,7 @@ const CartScreen = ({ navigation }) => {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View>
           <Text style={styles.totalFooterLabel}>Tổng thanh toán</Text>
           <Text style={styles.totalFooterValue}>{total.toLocaleString()}đ</Text>
@@ -351,8 +352,8 @@ const CartScreen = ({ navigation }) => {
         transparent={true}
         onRequestClose={() => setPromoModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+        <View style={[styles.modalOverlay, { paddingBottom: insets.bottom }]}>
+          <View style={[styles.modalContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn mã giảm giá</Text>
               <TouchableOpacity onPress={() => setPromoModalVisible(false)}>
@@ -468,10 +469,16 @@ const styles = StyleSheet.create({
   cartItem: {
     flexDirection: 'row',
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radius,
+    borderRadius: 16,
     padding: 12,
     marginBottom: 15,
-    ...SHADOWS.light,
+    borderWidth: 1,
+    borderColor: '#F5F5F5',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
   },
   itemImage: {
     width: 80,
@@ -505,22 +512,30 @@ const styles = StyleSheet.create({
   quantityControls: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 15,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 20,
     padding: 4,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   qBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: COLORS.white,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   qText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
-    paddingHorizontal: 10,
+    paddingHorizontal: 12,
+    color: COLORS.text,
   },
   voucherSection: {
     marginTop: 10,
@@ -551,12 +566,14 @@ const styles = StyleSheet.create({
   },
   voucherInput: {
     flex: 1,
-    height: 44,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 12,
+    height: 48,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    fontSize: 13,
+    backgroundColor: '#FAFAFA',
   },
   applyBtn: {
     backgroundColor: COLORS.primary,
@@ -652,8 +669,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingBottom: 30,
+    borderTopColor: '#F0F0F0',
+    paddingTop: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.05,
+    shadowRadius: 20,
+    elevation: 10,
   },
   totalFooterLabel: {
     fontSize: 10,

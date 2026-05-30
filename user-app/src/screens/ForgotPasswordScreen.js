@@ -45,13 +45,9 @@ const ForgotPasswordScreen = ({ navigation }) => {
           <ArrowLeft size={24} color={COLORS.text} />
         </TouchableOpacity>
 
-        <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=300&auto=format&fit=crop' }} 
-            style={styles.image} 
-          />
+        <View style={styles.headerDecoration}>
           <View style={styles.iconCircle}>
-            <Text style={{ fontSize: 24 }}>🔄</Text>
+            <Mail size={40} color={COLORS.primary} />
           </View>
         </View>
 
@@ -106,32 +102,28 @@ const styles = StyleSheet.create({
   backBtn: {
     marginTop: SIZES.base,
   },
-  imageContainer: {
+  headerDecoration: {
     alignItems: 'center',
     marginVertical: 40,
-  },
-  image: {
-    width: 200,
-    height: 200,
-    borderRadius: 30,
-    transform: [{ rotate: '5deg' }],
+    justifyContent: 'center',
   },
   iconCircle: {
-    position: 'absolute',
-    bottom: -10,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#FFF1E8',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 8,
+    borderColor: 'rgba(255, 241, 232, 0.5)',
     ...SHADOWS.medium,
   },
   title: {
     fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '800',
     color: COLORS.text,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   subtitle: {
     fontSize: 14,
@@ -142,11 +134,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   form: {
-    marginTop: 40,
+    marginTop: 35,
     backgroundColor: COLORS.white,
-    padding: 25,
-    borderRadius: SIZES.radiusLarge,
-    ...SHADOWS.light,
+    padding: 24,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 15,
+    elevation: 4,
   },
   label: {
     fontSize: 12,
@@ -155,8 +153,15 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   submitBtn: {
-    marginTop: 20,
+    marginTop: 25,
     backgroundColor: COLORS.primary,
+    height: 54,
+    borderRadius: 27,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
   },
   errorText: {
     color: '#E74C3C',

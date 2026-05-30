@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  Image, ScrollView, TouchableOpacity, Alert, ActivityIndicator, FlatList } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
@@ -9,6 +9,7 @@ import io from 'socket.io-client/dist/socket.io.js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RestaurantDetailScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { restaurant } = route.params;
   const [foods, setFoods] = useState([]);
   const [cart, setCart] = useState(null);
@@ -116,11 +117,10 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
   };
 
   const renderPromoItem = ({ item }) => {
-    const isExhausted = item.usageLimit > 0 && item.usageCount >= item.usageLimit;
     const isApplied = appliedPromos[item._id];
     
     return (
-      <View style={[styles.promoCard, isExhausted && { opacity: 0.5 }]}>
+      <View style={[styles.promoCard, isApplied && { opacity: 0.7 }]}>
         <View style={styles.promoIconBg}>
           <Ticket size={20} color={COLORS.primary} />
         </View>
@@ -133,16 +133,16 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
         <TouchableOpacity 
           style={[
             styles.applyBtn, 
-            (isApplied || isExhausted) && { backgroundColor: '#F0F0F0' }
+            isApplied && { backgroundColor: '#F0F0F0' }
           ]} 
           onPress={() => handleApplyPromo(item)}
-          disabled={isApplied || isExhausted}
+          disabled={isApplied}
         >
           <Text style={[
             styles.applyBtnText, 
-            (isApplied || isExhausted) && { color: COLORS.textSecondary }
+            isApplied && { color: COLORS.textSecondary }
           ]}>
-            {isApplied ? 'Đã nhận' : (isExhausted ? 'Đã hết lượt' : 'Nhận')}
+            {isApplied ? 'Đã nhận' : 'Nhận'}
           </Text>
         </TouchableOpacity>
       </View>
@@ -278,7 +278,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
         </ScrollView>
       </View>
 
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.menuContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={[styles.menuContent, { paddingBottom: 100 + insets.bottom }]} showsVerticalScrollIndicator={false}>
         <Text style={styles.menuTitle}>
           {activeCategory ? uniqueCategories.find(c => c.id === activeCategory)?.name : 'Món ngon của quán'}
         </Text>
@@ -300,7 +300,7 @@ const RestaurantDetailScreen = ({ route, navigation }) => {
       </ScrollView>
 
       {cartQuantity > 0 && (
-        <View style={styles.cartBar}>
+        <View style={[styles.cartBar, { bottom: Math.max(insets.bottom, 20) }]}>
           <View style={styles.cartInfo}>
             <View style={styles.cartBadge}>
               <Text style={styles.cartBadgeText}>{cartQuantity}</Text>
@@ -407,9 +407,13 @@ const styles = StyleSheet.create({
     marginTop: -40,
     marginHorizontal: SIZES.padding,
     backgroundColor: COLORS.white,
-    borderRadius: SIZES.radiusLarge,
+    borderRadius: 24,
     padding: SIZES.padding,
-    ...SHADOWS.medium,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 20,
+    elevation: 6,
     zIndex: 2,
   },
   infoTop: {
@@ -457,29 +461,30 @@ const styles = StyleSheet.create({
     marginLeft: 6,
   },
   categoryTabs: {
-    marginTop: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
+    marginTop: 25,
+    marginBottom: 5,
   },
   tabsScroll: {
     paddingHorizontal: SIZES.padding,
-    paddingBottom: 10,
+    paddingBottom: 5,
   },
   tab: {
-    marginRight: 25,
-    paddingBottom: 10,
+    marginRight: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
   },
   activeTab: {
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
   },
   tabText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: COLORS.textLight,
   },
   activeTabText: {
-    color: COLORS.primary,
+    color: COLORS.white,
   },
   menuContent: {
     padding: SIZES.padding,
@@ -493,19 +498,21 @@ const styles = StyleSheet.create({
   },
   cartBar: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 30,
     left: SIZES.padding,
     right: SIZES.padding,
     height: 70,
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    borderRadius: SIZES.radiusLarge,
+    backgroundColor: COLORS.white,
+    borderRadius: 35,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 15,
-    ...SHADOWS.medium,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
   },
   cartInfo: {
     flexDirection: 'row',
@@ -562,10 +569,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFF9F8',
     padding: 12,
-    borderRadius: 12,
+    borderRadius: 16,
     marginRight: 15,
-    borderWidth: 1,
-    borderColor: '#FFEBE6',
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: '#FFC8B8',
     width: 280,
   },
   promoIconBg: {

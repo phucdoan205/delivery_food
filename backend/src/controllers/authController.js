@@ -112,6 +112,8 @@ const getUserProfile = async (req, res) => {
       role: user.role,
       avatar: user.avatar,
       address: user.address,
+      addresses: user.addresses,
+      bankAccounts: user.bankAccounts,
       cccd: user.cccd,
       dob: user.dob,
       status: user.status,
@@ -169,11 +171,43 @@ const updateUserProfile = async (req, res) => {
     user.fullName = req.body.fullName || user.fullName
     user.phone = req.body.phone || user.phone
     user.avatar = req.body.avatar || user.avatar
-    user.address = req.body.address || user.address
     user.cccd = req.body.cccd || user.cccd
     user.dob = req.body.dob || user.dob
 
+    if (req.body.addresses !== undefined) {
+      user.addresses = req.body.addresses;
+      const defaultAddr = user.addresses.find(a => a.isDefault);
+      if (defaultAddr) {
+        user.address = defaultAddr.address;
+      } else if (user.addresses.length > 0) {
+        // Nếu ko có default nào mà có địa chỉ, lấy cái đầu tiên làm default
+        user.addresses[0].isDefault = true;
+        user.address = user.addresses[0].address;
+      }
+    } else {
+      user.address = req.body.address || user.address;
+    }
+
+    if (req.body.bankAccounts !== undefined) {
+      user.bankAccounts = req.body.bankAccounts;
+    }
+
     if (req.body.password) {
+      if (user.role === 'admin') {
+        if (!req.body.oldPassword) {
+          return res.status(400).json({ message: 'Vui lòng cung cấp mật khẩu hiện tại' });
+        }
+        const isMatch = await bcrypt.compare(req.body.oldPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
+        }
+      } else if (req.body.oldPassword) {
+        const isMatch = await bcrypt.compare(req.body.oldPassword, user.password);
+        if (!isMatch) {
+          return res.status(400).json({ message: 'Mật khẩu hiện tại không chính xác' });
+        }
+      }
+
       const salt = await bcrypt.genSalt(10)
       user.password = await bcrypt.hash(req.body.password, salt)
     }
@@ -197,6 +231,8 @@ const updateUserProfile = async (req, res) => {
       role: updatedUser.role,
       avatar: updatedUser.avatar,
       address: updatedUser.address,
+      addresses: updatedUser.addresses,
+      bankAccounts: updatedUser.bankAccounts,
       cccd: updatedUser.cccd,
       dob: updatedUser.dob,
       status: updatedUser.status

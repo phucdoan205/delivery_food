@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState } from 'react';
 import { View, Text, StyleSheet,  Image, ScrollView, TouchableOpacity, TextInput, Alert } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
@@ -7,6 +7,7 @@ import { request } from '../api/client';
 
 const FoodDetailScreen = ({ route, navigation }) => {
   const { item, restaurant } = route.params;
+  const insets = useSafeAreaInsets();
   const [quantity, setQuantity] = useState(1);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
@@ -156,7 +157,7 @@ const FoodDetailScreen = ({ route, navigation }) => {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
             style={styles.quantityBtn}
@@ -178,8 +179,14 @@ const FoodDetailScreen = ({ route, navigation }) => {
           onPress={handleAddToCart}
           disabled={loading}
         >
-          <Text style={styles.addToCartText}>Thêm vào giỏ</Text>
-          <Text style={styles.footerPrice}>{(item.price * quantity).toLocaleString()}đ</Text>
+          <Text 
+            style={styles.addToCartText}
+            numberOfLines={1}
+            adjustsFontSizeToFit={true}
+            minimumFontScale={0.7}
+          >
+            Thêm vào giỏ {(item.price * quantity).toLocaleString()}đ
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -394,10 +401,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: 'row',
-    padding: SIZES.padding,
+    paddingHorizontal: SIZES.padding,
+    paddingTop: SIZES.padding,
     backgroundColor: COLORS.white,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
     alignItems: 'center',
     gap: 15,
   },
@@ -424,20 +430,15 @@ const styles = StyleSheet.create({
   addToCartBtn: {
     flex: 1,
     backgroundColor: COLORS.primary,
-    height: 60,
-    borderRadius: 30,
+    height: 54,
+    borderRadius: 27,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 25,
+    justifyContent: 'center',
+    paddingHorizontal: 15,
     ...SHADOWS.medium,
   },
   addToCartText: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  footerPrice: {
     color: COLORS.white,
     fontSize: 16,
     fontWeight: 'bold',

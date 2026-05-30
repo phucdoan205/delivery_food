@@ -10,18 +10,9 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { COLORS, SIZES, SHADOWS } from "../constants/theme";
-import {
-  MapPin,
-  ChevronRight,
-  User,
-  MapPin as MapPinIcon,
-  Heart,
-  Bell,
-  Tag,
-  LogOut,
-  ArrowLeft,
-} from "lucide-react-native";
+import { LogOut, ArrowLeft, Heart, Bell, Tag, MapPin as MapPinIcon, User, ChevronRight, MapPin } from "lucide-react-native";
 import { request, setToken } from "../api/client";
+import io from 'socket.io-client';
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
@@ -50,6 +41,14 @@ const ProfileScreen = ({ navigation }) => {
     });
     return unsubscribe;
   }, [navigation]);
+
+  useEffect(() => {
+    const socket = io("http://192.168.1.102:5000");
+    socket.on("user_profile_updated", () => {
+      fetchProfileData();
+    });
+    return () => socket.disconnect();
+  }, []);
 
   const handleLogout = () => {
     setToken("");

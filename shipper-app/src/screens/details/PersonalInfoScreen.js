@@ -23,7 +23,7 @@ const PersonalInfoScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ fullName: '', phone: '', address: '', avatar: '', cccd: '', dob: '' });
+  const [formData, setFormData] = useState({ fullName: '', phone: '', address: '', avatar: '', cccd: '', dob: '', newPassword: '' });
 
   const fetchProfile = async () => {
     try {
@@ -48,7 +48,8 @@ const PersonalInfoScreen = ({ navigation }) => {
       address: profile?.address || '',
       avatar: profile?.avatar || '',
       cccd: profile?.cccd || '',
-      dob: profile?.dob || ''
+      dob: profile?.dob || '',
+      newPassword: ''
     });
     setIsEditing(true);
   };
@@ -60,7 +61,13 @@ const PersonalInfoScreen = ({ navigation }) => {
     }
     try {
       setLoading(true);
-      await request('/auth/profile', { method: 'PUT', body: formData });
+      const updateData = { ...formData };
+      if (updateData.newPassword && updateData.newPassword.trim()) {
+        updateData.password = updateData.newPassword;
+      }
+      delete updateData.newPassword;
+
+      await request('/auth/profile', { method: 'PUT', body: updateData });
       setIsEditing(false);
       fetchProfile();
     } catch (err) {
@@ -119,6 +126,7 @@ const PersonalInfoScreen = ({ navigation }) => {
               <InfoItem icon="mail-outline" label="Email" value={profile?.email || 'Chưa cập nhật'} />
               <InfoItem icon="card-outline" label="Số CCCD" value={profile?.cccd || 'Chưa cập nhật'} />
               <InfoItem icon="calendar-outline" label="Ngày sinh" value={profile?.dob || 'Chưa cập nhật'} />
+              <InfoItem icon="lock-closed-outline" label="Mật khẩu" value="********" />
            </View>
         </View>
 
@@ -193,6 +201,15 @@ const PersonalInfoScreen = ({ navigation }) => {
                 value={formData.dob}
                 onChangeText={(t) => setFormData({...formData, dob: t})}
                 placeholder="VD: 15/05/1992"
+              />
+
+              <Text style={styles.inputLabel}>Mật khẩu mới (Để trống nếu không đổi)</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.newPassword}
+                onChangeText={(t) => setFormData({...formData, newPassword: t})}
+                placeholder="Nhập mật khẩu mới"
+                secureTextEntry
               />
 
               <Text style={styles.inputLabel}>Địa chỉ</Text>
