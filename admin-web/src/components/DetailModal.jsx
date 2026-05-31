@@ -2,12 +2,12 @@ import React from "react";
 import { X, User, Mail, Phone, MapPin, Calendar, CreditCard, Shield, Clock, Truck, Star, Store } from "lucide-react";
 
 const DetailRow = ({ icon: Icon, label, value, color = "text-brand-primary" }) => (
-  <div className="flex items-start gap-3 py-3 border-b border-slate-50 last:border-0">
-    <div className={`p-2 rounded-xl bg-slate-50 ${color}`}>
+  <div className="flex items-start gap-3 py-3 border-b border-brand-border last:border-0">
+    <div className={`p-2 rounded-xl bg-brand-bg ${color}`}>
       <Icon size={16} />
     </div>
     <div className="flex-1 min-w-0">
-      <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{label}</div>
+      <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-wider">{label}</div>
       <div className="text-sm font-semibold text-brand-text mt-0.5 break-words">{value || "Chưa cập nhật"}</div>
     </div>
   </div>
@@ -43,14 +43,14 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
       <div
-        className="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative bg-brand-surface rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="relative p-6 pb-4 border-b border-slate-100">
+        <div className="relative p-6 pb-4 border-b border-brand-border">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+            className="absolute top-4 right-4 p-2 rounded-xl hover:bg-brand-bg transition-colors text-brand-text-muted hover:text-brand-primary"
           >
             <X size={20} />
           </button>
@@ -64,18 +64,18 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
                   : data.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${data.fullName}`
               }
               alt={type === "restaurant" ? data.name : type === "user" && data.role === "merchant" && data.restaurantName ? data.restaurantName : data.fullName}
-              className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-white"
+              className="w-16 h-16 rounded-2xl object-cover shadow-md border-2 border-brand-surface"
             />
             <div>
               <h3 className="text-lg font-black text-brand-text">
                 {type === "restaurant" ? data.name : type === "user" && data.role === "merchant" && data.restaurantName ? data.restaurantName : data.fullName}
               </h3>
               <div className="flex items-center gap-2 mt-1">
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase ${statusColor[data.status] || "bg-slate-100 text-slate-500"}`}>
+                <span className={`text-[10px] font-black px-2 py-0.5 rounded-lg uppercase ${statusColor[data.status] || "bg-brand-border text-brand-text-muted"}`}>
                   {statusLabel[data.status] || data.status}
                 </span>
                 {type !== "restaurant" && (
-                  <span className="text-[10px] font-bold text-slate-400 bg-slate-50 px-2 py-0.5 rounded-lg uppercase">
+                  <span className="text-[10px] font-bold text-brand-text-muted bg-brand-bg px-2 py-0.5 rounded-lg uppercase">
                     {roleLabel[data.role] || data.role}
                   </span>
                 )}

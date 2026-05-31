@@ -122,7 +122,7 @@ const UsersPage = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-black text-brand-text">Quản lý Người dùng</h2>
-            <p className="text-sm text-slate-400">Quản lý tất cả tài khoản khách hàng, đối tác nhà hàng và tài xế trong hệ thống.</p>
+            <p className="text-sm text-brand-text-muted">Quản lý tất cả tài khoản khách hàng, đối tác nhà hàng và tài xế trong hệ thống.</p>
           </div>
         </div>
 
@@ -134,12 +134,12 @@ const UsersPage = () => {
             { label: "TÀI KHOẢN BỊ CHẶN", value: bannedUsers, icon: UserX, color: "text-red-600 bg-red-100" },
             { label: "CHỜ DUYỆT", value: pendingUsers, icon: UserPlus, color: "text-blue-600 bg-blue-100" },
           ].map((item) => (
-            <div key={item.label} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4">
+            <div key={item.label} className="bg-brand-surface p-6 rounded-3xl shadow-sm border border-brand-border flex items-center gap-4">
               <div className={`p-3 rounded-2xl ${item.color}`}>
                 <item.icon size={24} />
               </div>
               <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{item.label}</div>
+                <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">{item.label}</div>
                 <div className="text-xl font-black text-brand-text">{item.value}</div>
               </div>
             </div>
@@ -147,10 +147,10 @@ const UsersPage = () => {
         </div>
 
         {/* Filters & Table */}
-        <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
-          <div className="p-6 border-b border-slate-50 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-brand-surface rounded-[32px] shadow-sm border border-brand-border overflow-hidden">
+          <div className="p-6 border-b border-brand-border flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="relative group w-full md:w-96">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
                 <Search size={18} />
               </div>
               <input 
@@ -165,7 +165,7 @@ const UsersPage = () => {
               <select 
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
-                className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-slate-500 focus:ring-0 px-4 py-3 cursor-pointer"
+                className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-brand-text-muted focus:ring-0 px-4 py-3 cursor-pointer"
               >
                 <option value="all">Tất cả vai trò</option>
                 <option value="user">Khách hàng</option>
@@ -176,7 +176,7 @@ const UsersPage = () => {
               <select 
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-slate-500 focus:ring-0 px-4 py-3 cursor-pointer"
+                className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-brand-text-muted focus:ring-0 px-4 py-3 cursor-pointer"
               >
                 <option value="all">Tất cả trạng thái</option>
                 <option value="active">Hoạt động</option>
@@ -188,15 +188,15 @@ const UsersPage = () => {
 
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="p-12 text-center text-slate-400 text-sm font-medium">Đang tải dữ liệu người dùng...</div>
+              <div className="p-12 text-center text-brand-text-muted text-sm font-medium">Đang tải dữ liệu người dùng...</div>
             ) : (
               <table className="w-full text-left">
                 <thead>
                   <tr className="bg-brand-bg/50">
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">NGƯỜI DÙNG</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">VAI TRÒ</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">TRẠNG THÁI</th>
-                    <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">THAO TÁC</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest">NGƯỜI DÙNG</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">VAI TRÒ</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">TRẠNG THÁI</th>
+                    <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-right">THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
@@ -217,7 +217,7 @@ const UsersPage = () => {
                             <div className="text-sm font-bold text-brand-text">
                               {user.role === 'merchant' && user.restaurantName ? user.restaurantName : user.fullName}
                             </div>
-                            <div className="text-[10px] text-slate-400 font-medium">{user.email} • {user.phone}</div>
+                            <div className="text-[10px] text-brand-text-muted font-medium">{user.email} • {user.phone}</div>
                           </div>
                         </div>
                       </td>
@@ -271,15 +271,15 @@ const UsersPage = () => {
 
           {/* Pagination */}
           {!loading && totalPages > 1 && (
-            <div className="p-4 border-t border-slate-50 flex items-center justify-between bg-white">
-              <div className="text-xs text-slate-500 font-medium">
+            <div className="p-4 border-t border-brand-border flex items-center justify-between bg-brand-surface">
+              <div className="text-xs text-brand-text-muted font-medium">
                 Hiển thị {((currentPage - 1) * itemsPerPage) + 1} đến {Math.min(currentPage * itemsPerPage, filteredUsers.length)} trong số {filteredUsers.length}
               </div>
               <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                  className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -289,7 +289,7 @@ const UsersPage = () => {
                 <button 
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                  className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                 >
                   <ChevronRight size={16} />
                 </button>

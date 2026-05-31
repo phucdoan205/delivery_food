@@ -203,22 +203,22 @@ const AnalyticsPage = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-black text-[#5C3D2E] mb-1">Phân tích chuyên sâu</h2>
-            <p className="text-sm text-[#8C6B5D]">Tổng quan hiệu suất và dữ liệu vận hành {timeFilter.toLowerCase()}</p>
+            <h2 className="text-3xl font-black text-brand-text mb-1">Phân tích chuyên sâu</h2>
+            <p className="text-sm text-brand-text-muted">Tổng quan hiệu suất và dữ liệu vận hành {timeFilter.toLowerCase()}</p>
           </div>
         </div>
 
         {/* 4 Stats Blocks */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {stats.map((stat, i) => (
-            <div key={i} className="bg-white p-6 rounded-[24px] shadow-sm border border-slate-100 flex flex-col justify-between">
+            <div key={i} className="bg-brand-surface p-6 rounded-[24px] shadow-sm border border-brand-border flex flex-col justify-between">
               <div>
-                <div className="text-[10px] font-black text-[#8C6B5D] uppercase tracking-widest mb-2 flex justify-between items-center">
+                <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mb-2 flex justify-between items-center">
                   {stat.label}
-                  {!stat.custom && <div className="w-6 h-6 rounded-full bg-[#FFF5F2] text-[#A04F2D] flex items-center justify-center">❖</div>}
+                  {!stat.custom && <div className="w-6 h-6 rounded-full bg-brand-bg text-[#A04F2D] flex items-center justify-center">❖</div>}
                   {stat.custom && <div className="w-6 h-6 rounded-full bg-[#E8F5E9] text-[#2E7D32] flex items-center justify-center">✓</div>}
                 </div>
-                <div className="text-2xl font-black text-[#5C3D2E]">{stat.value}</div>
+                <div className="text-2xl font-black text-brand-text">{stat.value}</div>
               </div>
               
               {!stat.custom ? (
@@ -227,11 +227,11 @@ const AnalyticsPage = () => {
                     {stat.up ? <TrendingUp size={12}/> : <TrendingDown size={12}/>}
                     {stat.trend}
                   </span>
-                  <span className="text-slate-400">{stat.time}</span>
+                  <span className="text-brand-text-muted">{stat.time}</span>
                 </div>
               ) : (
                 <div className="mt-4">
-                  <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                  <div className="h-1.5 w-full bg-brand-border rounded-full overflow-hidden">
                     <div className="h-full bg-green-500 rounded-full transition-all duration-1000" style={{ width: `${completionRate}%` }}></div>
                   </div>
                 </div>
@@ -244,16 +244,16 @@ const AnalyticsPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
           {/* Main Chart */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="lg:col-span-2 bg-brand-surface p-8 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-8">
-              <h3 className="text-lg font-bold text-[#5C3D2E]">Biểu đồ doanh thu</h3>
-              <div className="flex bg-[#FFF5F2] p-1 rounded-full">
+              <h3 className="text-lg font-bold text-brand-text">Biểu đồ doanh thu</h3>
+              <div className="flex bg-brand-bg p-1 rounded-full">
                 {["Hôm nay", "Hôm qua"].map((tab) => (
                   <button 
                     key={tab}
                     onClick={() => setTimeFilter(tab)}
                     className={`px-4 py-1.5 text-xs font-bold rounded-full transition-all ${
-                      timeFilter === tab ? "bg-[#FFEBE5] text-[#A04F2D] shadow-sm" : "text-[#8C6B5D] hover:text-[#5C3D2E]"
+                      timeFilter === tab ? "bg-[#FFEBE5] text-[#A04F2D] shadow-sm" : "text-brand-text-muted hover:text-brand-text"
                     }`}
                   >
                     {tab}
@@ -262,7 +262,7 @@ const AnalyticsPage = () => {
               </div>
             </div>
             
-            <div className="h-[250px] w-full bg-[#FFF5F2] rounded-2xl relative flex items-center justify-center border border-[#FFEBE5]">
+            <div className="h-[250px] w-full bg-brand-bg rounded-2xl relative flex items-center justify-center border border-[#FFEBE5]">
               <div className="absolute inset-0 p-4">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueData}>
@@ -285,31 +285,31 @@ const AnalyticsPage = () => {
                 </ResponsiveContainer>
               </div>
               {revenueData.every(d => d.revenue === 0) && (
-                <span className="text-[#8C6B5D] text-sm font-bold z-10 pointer-events-none opacity-50 bg-[#FFF5F2]/80 px-4 py-2 rounded-xl backdrop-blur-sm">Chưa có doanh thu</span>
+                <span className="text-brand-text-muted text-sm font-bold z-10 pointer-events-none opacity-50 bg-brand-bg/80 px-4 py-2 rounded-xl backdrop-blur-sm">Chưa có doanh thu</span>
               )}
             </div>
           </div>
 
           {/* Side Trends */}
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100 flex flex-col">
-            <h3 className="text-lg font-bold text-[#5C3D2E] mb-6">Xu hướng đơn hàng</h3>
+          <div className="bg-brand-surface p-8 rounded-[32px] shadow-sm border border-brand-border flex flex-col">
+            <h3 className="text-lg font-bold text-brand-text mb-6">Xu hướng đơn hàng</h3>
             <div className="flex-1 flex flex-col gap-4">
-              <div className="bg-[#FFF5F2] p-5 rounded-2xl">
-                <div className="text-[10px] font-black text-[#8C6B5D] uppercase tracking-widest mb-2">KHUNG GIỜ CAO ĐIỂM THỰC TẾ</div>
+              <div className="bg-brand-bg p-5 rounded-2xl">
+                <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mb-2">KHUNG GIỜ CAO ĐIỂM THỰC TẾ</div>
                 <div className="flex items-center gap-2 text-2xl font-black text-[#A04F2D] mb-1">
                   <Clock size={20} />
                   {peakHourStr}
                 </div>
-                <div className="text-xs text-[#8C6B5D]">Ghi nhận: <span className="font-bold text-[#5C3D2E]">{peakOrders} đơn / giờ</span></div>
+                <div className="text-xs text-brand-text-muted">Ghi nhận: <span className="font-bold text-brand-text">{peakOrders} đơn / giờ</span></div>
               </div>
 
-              <div className="bg-[#FFF5F2] p-5 rounded-2xl">
-                <div className="text-[10px] font-black text-[#8C6B5D] uppercase tracking-widest mb-2">ĐƠN HÀNG BUỔI TỐI (18:00-21:00)</div>
-                <div className="flex items-center gap-2 text-2xl font-black text-[#5C3D2E] mb-1">
+              <div className="bg-brand-bg p-5 rounded-2xl">
+                <div className="text-[10px] font-black text-brand-text-muted uppercase tracking-widest mb-2">ĐƠN HÀNG BUỔI TỐI (18:00-21:00)</div>
+                <div className="flex items-center gap-2 text-2xl font-black text-brand-text mb-1">
                   <Clock size={20} />
                   18:00 - 21:00
                 </div>
-                <div className="text-xs text-[#8C6B5D]">Tổng số: <span className="font-bold text-[#5C3D2E]">{eveningOrders} đơn</span></div>
+                <div className="text-xs text-brand-text-muted">Tổng số: <span className="font-bold text-brand-text">{eveningOrders} đơn</span></div>
               </div>
             </div>
           </div>
@@ -317,56 +317,56 @@ const AnalyticsPage = () => {
 
         {/* Bottom Top Lists Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="bg-brand-surface p-6 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-[#5C3D2E]">Top Nhà hàng {timeFilter.toLowerCase()}</h3>
+              <h3 className="text-sm font-bold text-brand-text">Top Nhà hàng {timeFilter.toLowerCase()}</h3>
             </div>
             <div className="space-y-4">
               {topRestaurants.length > 0 ? topRestaurants.map((res, i) => (
                 <div key={res.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden text-lg font-black text-[#8C6B5D] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-brand-border overflow-hidden text-lg font-black text-brand-text-muted flex items-center justify-center">
                       {i + 1}
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-brand-border overflow-hidden">
                       <img src={res.image} alt="Res" className="w-full h-full object-cover"/>
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-[#5C3D2E]">{res.name}</div>
-                      <div className="text-[10px] text-[#8C6B5D] font-bold">★ {res.rating.toFixed(1)} ({res.reviewCount} đánh giá)</div>
+                      <div className="text-sm font-bold text-brand-text">{res.name}</div>
+                      <div className="text-[10px] text-brand-text-muted font-bold">★ {res.rating.toFixed(1)} ({res.reviewCount} đánh giá)</div>
                     </div>
                   </div>
                   <div className="text-sm font-black text-[#A04F2D]">{formatCurrency(res.revenue)}</div>
                 </div>
               )) : (
-                <div className="text-center py-4 text-sm text-[#8C6B5D] font-medium">Chưa có dữ liệu nhà hàng</div>
+                <div className="text-center py-4 text-sm text-brand-text-muted font-medium">Chưa có dữ liệu nhà hàng</div>
               )}
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="bg-brand-surface p-6 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-[#5C3D2E]">Món ăn bán chạy {timeFilter.toLowerCase()}</h3>
+              <h3 className="text-sm font-bold text-brand-text">Món ăn bán chạy {timeFilter.toLowerCase()}</h3>
             </div>
             <div className="space-y-4">
               {topFoods.length > 0 ? topFoods.map((food, i) => (
                 <div key={food.id} className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden text-lg font-black text-[#8C6B5D] flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full bg-brand-border overflow-hidden text-lg font-black text-brand-text-muted flex items-center justify-center">
                       {i + 1}
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-slate-100 overflow-hidden">
+                    <div className="w-10 h-10 rounded-full bg-brand-border overflow-hidden">
                       <img src={food.image} alt="Dish" className="w-full h-full object-cover"/>
                     </div>
                     <div>
-                      <div className="text-sm font-bold text-[#5C3D2E] line-clamp-1 max-w-[150px]">{food.name}</div>
-                      <div className="text-[10px] text-[#8C6B5D] font-bold line-clamp-1 max-w-[150px]">{food.restaurantName}</div>
+                      <div className="text-sm font-bold text-brand-text line-clamp-1 max-w-[150px]">{food.name}</div>
+                      <div className="text-[10px] text-brand-text-muted font-bold line-clamp-1 max-w-[150px]">{food.restaurantName}</div>
                     </div>
                   </div>
-                  <div className="text-xs font-black text-[#5C3D2E]">{food.count} <span className="font-medium text-[#8C6B5D]">phần</span></div>
+                  <div className="text-xs font-black text-brand-text">{food.count} <span className="font-medium text-brand-text-muted">phần</span></div>
                 </div>
               )) : (
-                <div className="text-center py-4 text-sm text-[#8C6B5D] font-medium">Chưa có dữ liệu món ăn</div>
+                <div className="text-center py-4 text-sm text-brand-text-muted font-medium">Chưa có dữ liệu món ăn</div>
               )}
             </div>
           </div>

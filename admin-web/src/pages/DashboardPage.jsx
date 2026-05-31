@@ -212,7 +212,7 @@ const DashboardPage = () => {
     <AdminLayout title="Tổng quan hệ thống">
       <div className="space-y-8">
         <div className="flex items-center justify-between">
-          <p className="text-sm text-slate-500 font-medium">Hệ thống quản trị thời gian thực</p>
+          <p className="text-sm text-brand-text-muted font-medium">Hệ thống quản trị thời gian thực</p>
         </div>
 
         {/* Stats Grid */}
@@ -220,7 +220,7 @@ const DashboardPage = () => {
           {stats.map((stat) => {
             const Icon = iconMap[stat.icon];
             return (
-              <div key={stat.title} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 group">
+              <div key={stat.title} className="bg-brand-surface p-6 rounded-3xl shadow-sm border border-brand-border hover:shadow-premium transition-all duration-300 group">
                 <div className="flex items-start justify-between mb-4">
                   <div className={`p-3 rounded-2xl ${stat.color} transition-transform group-hover:scale-110 duration-300`}>
                     <Icon size={24} />
@@ -230,9 +230,9 @@ const DashboardPage = () => {
                     {stat.trend}
                   </div>
                 </div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{stat.title}</div>
+                <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest mb-1">{stat.title}</div>
                 <div className="text-2xl font-black text-brand-text">{stat.value}</div>
-                <div className="mt-2 text-[10px] text-slate-400 font-medium">cập nhật trực tiếp</div>
+                <div className="mt-2 text-[10px] text-brand-text-muted font-medium">cập nhật trực tiếp</div>
               </div>
             );
           })}
@@ -240,20 +240,20 @@ const DashboardPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Revenue Chart */}
-          <div className="lg:col-span-2 bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="lg:col-span-2 bg-brand-surface p-8 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-8">
               <div>
                 <h3 className="text-lg font-bold text-brand-text">Phân tích Doanh thu</h3>
-                <p className="text-sm text-slate-400">Biến động theo giờ trong ngày</p>
+                <p className="text-sm text-brand-text-muted">Biến động theo giờ trong ngày</p>
               </div>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-brand-primary"></div>
-                  <span className="text-xs font-bold text-slate-500">Thực tế</span>
+                  <span className="text-xs font-bold text-brand-text-muted">Thực tế</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-orange-200"></div>
-                  <span className="text-xs font-bold text-slate-500">Dự báo</span>
+                  <span className="text-xs font-bold text-brand-text-muted">Dự báo</span>
                 </div>
               </div>
             </div>
@@ -340,7 +340,7 @@ const DashboardPage = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Top Restaurants */}
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="bg-brand-surface p-8 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-50 text-brand-primary rounded-xl">
@@ -363,17 +363,17 @@ const DashboardPage = () => {
                       )}
                       <h4 className="font-bold text-brand-text truncate">{res.name}</h4>
                     </div>
-                    <p className="text-xs text-slate-400">{res.category}</p>
+                    <p className="text-xs text-brand-text-muted">{res.category}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <div className="flex items-center text-yellow-500">
                         <Star size={10} fill="currentColor" />
                         <span className="text-[10px] font-bold ml-1">{res.rating}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400">{res.reviews} đơn</span>
+                      <span className="text-[10px] text-brand-text-muted">{res.reviews} đơn</span>
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-[10px] font-bold text-slate-400 uppercase">DOANH THU</div>
+                    <div className="text-[10px] font-bold text-brand-text-muted uppercase">DOANH THU</div>
                     <div className="font-black text-brand-primary">{res.revenue}</div>
                   </div>
                 </div>
@@ -382,7 +382,7 @@ const DashboardPage = () => {
           </div>
 
           {/* Top Dishes */}
-          <div className="bg-white p-8 rounded-[32px] shadow-sm border border-slate-100">
+          <div className="bg-brand-surface p-8 rounded-[32px] shadow-sm border border-brand-border">
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-50 text-brand-primary rounded-xl">
@@ -405,7 +405,7 @@ const DashboardPage = () => {
                   </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-brand-text truncate">{dish.name}</h4>
-                    <p className="text-xs text-slate-400">{dish.description}</p>
+                    <p className="text-xs text-brand-text-muted">{dish.description}</p>
                     <div className="mt-1">
                       <span className="text-xs font-black text-brand-primary">{dish.price}</span>
                     </div>

@@ -47,10 +47,10 @@ const Header = ({ title, onMenuClick }) => {
   };
 
   return (
-    <header className="h-16 bg-white/80 backdrop-blur-md border-b border-slate-100 flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 w-full">
+    <header className="h-16 bg-brand-surface/80 backdrop-blur-md border-b border-brand-border flex items-center justify-between px-4 lg:px-8 sticky top-0 z-30 w-full">
       <div className="flex items-center gap-2 lg:gap-4">
         <button 
-          className="lg:hidden p-2 -ml-2 text-slate-500 hover:bg-slate-100 rounded-lg transition-colors"
+          className="lg:hidden p-2 -ml-2 text-brand-text-muted hover:bg-brand-bg rounded-lg transition-colors"
           onClick={onMenuClick}
         >
           <Menu size={24} />
@@ -60,7 +60,7 @@ const Header = ({ title, onMenuClick }) => {
 
       <div className="flex items-center gap-6">
         <div className="relative group hidden md:block">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
             <Search size={18} />
           </div>
           <input 
@@ -72,7 +72,7 @@ const Header = ({ title, onMenuClick }) => {
 
         <div className="flex items-center gap-2 relative">
           <button 
-            className="p-2 text-slate-500 hover:bg-brand-bg hover:text-brand-primary rounded-full transition-colors relative"
+            className="p-2 text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary rounded-full transition-colors relative"
             onClick={handleOpenDropdown}
           >
             <Bell size={20} />
@@ -85,20 +85,20 @@ const Header = ({ title, onMenuClick }) => {
 
           {/* Notification Dropdown */}
           {showDropdown && (
-            <div className="absolute top-12 right-0 w-80 bg-white rounded-2xl shadow-premium border border-slate-100 overflow-hidden z-50">
-              <div className="p-4 border-b border-slate-100 bg-slate-50 flex justify-between items-center">
+            <div className="absolute top-12 right-0 w-80 bg-brand-surface rounded-2xl shadow-premium border border-brand-border overflow-hidden z-50">
+              <div className="p-4 border-b border-brand-border bg-brand-bg flex justify-between items-center">
                 <h3 className="font-bold text-brand-text">Thông báo</h3>
                 <span className="text-xs text-brand-primary cursor-pointer hover:underline" onClick={() => setLimit(5)}>Mới nhất</span>
               </div>
               <div className="max-h-96 overflow-y-auto">
                 {notifications.length === 0 ? (
-                  <div className="p-6 text-center text-slate-400 text-sm">Chưa có thông báo nào.</div>
+                  <div className="p-6 text-center text-brand-text-muted text-sm">Chưa có thông báo nào.</div>
                 ) : (
                   notifications.map(notif => (
-                    <div key={notif._id} className={`p-4 border-b border-slate-50 hover:bg-slate-50 cursor-pointer ${!notif.isRead ? 'bg-orange-50/30' : ''}`}>
+                    <div key={notif._id} className={`p-4 border-b border-brand-border hover:bg-brand-bg cursor-pointer ${!notif.isRead ? 'bg-orange-50/10' : ''}`}>
                       <div className="font-bold text-sm text-brand-text">{notif.title}</div>
-                      <div className="text-xs text-slate-500 mt-1">{notif.message}</div>
-                      <div className="text-[10px] text-slate-400 mt-2">
+                      <div className="text-xs text-brand-text-muted mt-1">{notif.message}</div>
+                      <div className="text-[10px] text-brand-text-muted mt-2">
                         {new Date(notif.createdAt).toLocaleString('vi-VN')}
                       </div>
                     </div>
@@ -116,7 +116,7 @@ const Header = ({ title, onMenuClick }) => {
             </div>
           )}
 
-          <button className="p-2 text-slate-500 hover:bg-brand-bg hover:text-brand-primary rounded-full transition-colors">
+          <button className="p-2 text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary rounded-full transition-colors">
             <HelpCircle size={20} />
           </button>
         </div>

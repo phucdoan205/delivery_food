@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import AdminLayout from "../layouts/AdminLayout";
+import { useTheme } from "../store/ThemeContext";
 import { request } from "../api/client";
 import toast from "react-hot-toast";
 import {
@@ -25,7 +26,7 @@ const SettingsPage = () => {
   const [activeView, setActiveView] = useState("main"); // 'main' or 'change-password'
 
   // Toggles state
-  const [darkMode, setDarkMode] = useState(false);
+  const { isDarkMode: darkMode, toggleTheme: setDarkMode } = useTheme();
   const [notifOrder, setNotifOrder] = useState(true);
   const [notifRevenue, setNotifRevenue] = useState(true);
   const [notifSecurity, setNotifSecurity] = useState(false);
@@ -78,15 +79,15 @@ const SettingsPage = () => {
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => setActiveView("main")}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-all"
+              className="p-2 hover:bg-brand-border rounded-xl transition-all"
             >
-              <ArrowLeft size={24} className="text-slate-600" />
+              <ArrowLeft size={24} className="text-brand-text-muted" />
             </button>
             <div>
               <h2 className="text-2xl font-black text-brand-text">
                 Đổi mật khẩu
               </h2>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-brand-text-muted">
                 Cập nhật mật khẩu mới để bảo vệ tài khoản của bạn.
               </p>
             </div>
@@ -104,9 +105,9 @@ const SettingsPage = () => {
             </ul>
           </div>
 
-          <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 p-8 space-y-6">
+          <div className="bg-brand-surface rounded-[32px] shadow-sm border border-brand-border p-8 space-y-6">
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+              <label className="text-xs font-bold text-brand-text-muted uppercase tracking-widest ml-1">
                 Mật khẩu hiện tại
               </label>
               <input
@@ -119,7 +120,7 @@ const SettingsPage = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+              <label className="text-xs font-bold text-brand-text-muted uppercase tracking-widest ml-1">
                 Mật khẩu mới
               </label>
               <input
@@ -129,14 +130,14 @@ const SettingsPage = () => {
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="w-full px-4 py-3 bg-brand-bg border-transparent rounded-2xl text-sm font-medium focus:ring-brand-primary/20 transition-all"
               />
-              <p className="text-[10px] text-slate-400 ml-1">
+              <p className="text-[10px] text-brand-text-muted ml-1">
                 Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và
                 số.
               </p>
             </div>
 
             <div className="space-y-2">
-              <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">
+              <label className="text-xs font-bold text-brand-text-muted uppercase tracking-widest ml-1">
                 Xác nhận mật khẩu mới
               </label>
               <input
@@ -148,10 +149,10 @@ const SettingsPage = () => {
               />
             </div>
 
-            <div className="pt-6 border-t border-slate-50 flex justify-end gap-3">
+            <div className="pt-6 border-t border-brand-border flex justify-end gap-3">
               <button
                 onClick={() => setActiveView("main")}
-                className="px-6 py-3 bg-brand-bg text-slate-600 rounded-2xl text-sm font-bold hover:bg-slate-200 transition-all"
+                className="px-6 py-3 bg-brand-bg text-brand-text-muted rounded-2xl text-sm font-bold hover:bg-brand-border transition-all"
               >
                 Hủy bỏ
               </button>
@@ -177,15 +178,15 @@ const SettingsPage = () => {
           <div className="flex items-center gap-4 mb-6">
             <button
               onClick={() => setActiveView("main")}
-              className="p-2 hover:bg-slate-100 rounded-xl transition-all"
+              className="p-2 hover:bg-brand-border rounded-xl transition-all"
             >
-              <ArrowLeft size={24} className="text-slate-600" />
+              <ArrowLeft size={24} className="text-brand-text-muted" />
             </button>
             <div>
               <h2 className="text-2xl font-black text-brand-text">
                 Cài đặt hệ thống
               </h2>
-              <p className="text-sm text-slate-400">Quay lại</p>
+              <p className="text-sm text-brand-text-muted">Quay lại</p>
             </div>
           </div>
 
@@ -206,7 +207,7 @@ const SettingsPage = () => {
           </div>
 
           {/* Content Body */}
-          <div className="bg-white rounded-[32px] p-10 shadow-sm border border-slate-50 space-y-12">
+          <div className="bg-brand-surface rounded-[32px] p-10 shadow-sm border border-brand-border space-y-12">
             {/* Section 1 */}
             <div>
               <div className="flex items-center gap-4 mb-6">
@@ -242,7 +243,7 @@ const SettingsPage = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
                 <div className="bg-[#FFF5F2] p-8 rounded-3xl">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#2E7D32] mb-4">
+                  <div className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-[#2E7D32] mb-4">
                     <ShieldCheck size={20} />
                   </div>
                   <h4 className="text-base font-bold text-[#5C3D2E] mb-3">
@@ -254,7 +255,7 @@ const SettingsPage = () => {
                   </p>
                 </div>
                 <div className="bg-[#FFF5F2] p-8 rounded-3xl">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-[#A04F2D] mb-4">
+                  <div className="w-10 h-10 rounded-full bg-brand-surface flex items-center justify-center text-[#A04F2D] mb-4">
                     <Store size={20} />
                   </div>
                   <h4 className="text-base font-bold text-[#5C3D2E] mb-3">
@@ -294,7 +295,7 @@ const SettingsPage = () => {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Ngôn ngữ & Hiển thị - Col span 2 */}
-          <div className="md:col-span-2 bg-white rounded-[32px] p-8 shadow-sm border border-slate-50">
+          <div className="md:col-span-2 bg-brand-surface rounded-[32px] p-8 shadow-sm border border-brand-border">
             <div className="flex items-start justify-between mb-8">
               <div>
                 <h3 className="text-lg font-bold text-[#5C3D2E] mb-1">
@@ -331,8 +332,8 @@ const SettingsPage = () => {
                 </div>
                 {/* Toggle switch */}
                 <button
-                  onClick={() => setDarkMode(!darkMode)}
-                  className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${darkMode ? "bg-brand-primary" : "bg-[#FFCCBC]"}`}
+                  onClick={setDarkMode}
+                  className={`w-12 h-6 rounded-full p-1 transition-colors duration-300 ${darkMode ? "bg-brand-primary" : "bg-brand-border"}`}
                 >
                   <div
                     className={`w-4 h-4 bg-white rounded-full transition-transform duration-300 ${darkMode ? "translate-x-6" : "translate-x-0"}`}
@@ -430,7 +431,7 @@ const SettingsPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4">
           <button
             onClick={() => setActiveView("change-password")}
-            className="flex items-center justify-between p-5 bg-white rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+            className="flex items-center justify-between p-5 bg-brand-surface rounded-[24px] border border-brand-border shadow-sm hover:shadow-md transition-all group"
           >
             <div className="flex items-center gap-3">
               <Lock className="text-[#8C6B5D]" size={20} />
@@ -446,7 +447,7 @@ const SettingsPage = () => {
 
           <button
             onClick={() => setActiveView("terms")}
-            className="flex items-center justify-between p-5 bg-white rounded-[24px] border border-slate-100 shadow-sm hover:shadow-md transition-all group"
+            className="flex items-center justify-between p-5 bg-brand-surface rounded-[24px] border border-brand-border shadow-sm hover:shadow-md transition-all group"
           >
             <div className="flex items-center gap-3">
               <FileText className="text-[#8C6B5D]" size={20} />

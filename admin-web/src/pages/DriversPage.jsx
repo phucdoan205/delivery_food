@@ -159,13 +159,13 @@ const DriversPage = () => {
             <h2 className="text-2xl font-black text-brand-text">
               Quản lý Tài xế
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-brand-text-muted mt-1">
               Phê duyệt đối tác mới và quản lý đội ngũ giao hàng của bạn.
             </p>
           </div>
           {activeTab === "info" && (
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold text-slate-500 hover:bg-brand-bg hover:text-brand-primary transition-all">
+              <button className="flex items-center gap-2 px-4 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs font-bold text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary transition-all">
                 <Download size={16} />
                 Xuất dữ liệu
               </button>
@@ -207,13 +207,13 @@ const DriversPage = () => {
           ].map((item) => (
             <div
               key={item.label}
-              className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4"
+              className="bg-brand-surface p-5 rounded-3xl shadow-sm border border-brand-border flex items-center gap-4"
             >
               <div className={`p-3 rounded-2xl ${item.color}`}>
                 <item.icon size={22} />
               </div>
               <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">
                   {item.label}
                 </div>
                 <div className="text-2xl font-black text-brand-text">
@@ -225,9 +225,9 @@ const DriversPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="bg-brand-surface rounded-[32px] shadow-sm border border-brand-border overflow-hidden">
           {/* Tab Bar */}
-          <div className="flex border-b border-slate-100 px-6 pt-4 gap-1">
+          <div className="flex border-b border-brand-border px-6 pt-4 gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -235,7 +235,7 @@ const DriversPage = () => {
                 className={`relative flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-t-2xl transition-all duration-200 ${
                   activeTab === tab.id
                     ? "text-brand-primary bg-brand-bg"
-                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                    : "text-brand-text-muted hover:text-brand-text-muted hover:bg-brand-bg"
                 }`}
               >
                 {tab.label}
@@ -243,7 +243,7 @@ const DriversPage = () => {
                   className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                     activeTab === tab.id
                       ? "bg-brand-primary text-white"
-                      : "bg-slate-100 text-slate-500"
+                      : "bg-brand-border text-brand-text-muted"
                   }`}
                 >
                   {tab.count}
@@ -266,7 +266,7 @@ const DriversPage = () => {
                   <h3 className="text-xl font-black text-brand-text mb-1">
                     Quản lý yêu cầu đăng ký tài xế 👋
                   </h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-brand-text-muted">
                     Bạn có{" "}
                     <span className="font-bold text-brand-primary">
                       {pendingList.length} yêu cầu
@@ -286,7 +286,7 @@ const DriversPage = () => {
 
               {/* Search */}
               <div className="relative mb-6">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted">
                   <Search size={16} />
                 </div>
                 <input
@@ -300,7 +300,7 @@ const DriversPage = () => {
 
               {/* Driver Cards Grid */}
               {loading ? (
-                <div className="text-center py-16 text-slate-400 text-sm">Đang tải dữ liệu...</div>
+                <div className="text-center py-16 text-brand-text-muted text-sm">Đang tải dữ liệu...</div>
               ) : filteredPending.length === 0 ? (
                 <div className="text-center py-16">
                   <CheckCircle
@@ -310,7 +310,7 @@ const DriversPage = () => {
                   <h4 className="text-lg font-black text-brand-text mb-2">
                     Tất cả đã được xử lý!
                   </h4>
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-brand-text-muted text-sm">
                     Không còn yêu cầu phê duyệt nào đang chờ.
                   </p>
                 </div>
@@ -319,7 +319,7 @@ const DriversPage = () => {
                   {paginatedPending.map((driver) => (
                     <div
                       key={driver._id}
-                      className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
+                      className="bg-brand-surface border border-brand-border rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
                     >
                       <div className="p-5">
                         <div className="flex items-center gap-4 mb-4">
@@ -330,7 +330,7 @@ const DriversPage = () => {
                           />
                           <div>
                             <h3 className="text-lg font-black text-brand-text">{driver.fullName}</h3>
-                            <div className="flex items-center gap-2 text-slate-500 mt-1">
+                            <div className="flex items-center gap-2 text-brand-text-muted mt-1">
                               <Phone size={13} className="text-brand-primary" />
                               <span className="text-xs font-medium">{driver.phone}</span>
                             </div>
@@ -338,7 +338,7 @@ const DriversPage = () => {
                         </div>
 
                         <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-brand-text-muted">
                             <MapPin
                               size={13}
                               className="text-brand-primary flex-shrink-0"
@@ -347,7 +347,7 @@ const DriversPage = () => {
                               {driver.address || 'Quận 1, TP. HCM'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-brand-text-muted">
                             <Truck
                               size={13}
                               className="text-brand-primary flex-shrink-0"
@@ -366,7 +366,7 @@ const DriversPage = () => {
                                 size={12}
                                 className="text-brand-primary"
                               />
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                              <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider">
                                 Giấy phép lái xe
                               </span>
                             </div>
@@ -380,7 +380,7 @@ const DriversPage = () => {
                                 size={12}
                                 className="text-brand-primary"
                               />
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                              <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider">
                                 Ngày đăng ký
                               </span>
                             </div>
@@ -407,7 +407,7 @@ const DriversPage = () => {
                           </button>
                           <button
                             onClick={() => handleReject(driver)}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-600 rounded-2xl text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-border text-brand-text-muted rounded-2xl text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:scale-[1.02] active:scale-[0.98] transition-all"
                           >
                             <XCircle size={16} />
                             Từ chối
@@ -422,7 +422,7 @@ const DriversPage = () => {
               {/* Pagination Pending */}
               {!loading && totalPendingPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-brand-text-muted font-medium">
                     Hiển thị{" "}
                     <span className="font-bold text-brand-text">
                       {((currentPagePending - 1) * itemsPerPage) + 1}-{Math.min(currentPagePending * itemsPerPage, filteredPending.length)}
@@ -437,7 +437,7 @@ const DriversPage = () => {
                     <button 
                       onClick={() => setCurrentPagePending(prev => Math.max(prev - 1, 1))}
                       disabled={currentPagePending === 1}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronLeft size={16} />
                     </button>
@@ -447,7 +447,7 @@ const DriversPage = () => {
                     <button 
                       onClick={() => setCurrentPagePending(prev => Math.min(prev + 1, totalPendingPages))}
                       disabled={currentPagePending === totalPendingPages}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronRight size={16} />
                     </button>
@@ -465,7 +465,7 @@ const DriversPage = () => {
               {/* Filters */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div className="relative group w-full md:w-96">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
                     <Search size={18} />
                   </div>
                   <input
@@ -480,7 +480,7 @@ const DriversPage = () => {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-slate-500 focus:ring-0 px-4 py-3 cursor-pointer"
+                    className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-brand-text-muted focus:ring-0 px-4 py-3 cursor-pointer"
                   >
                     <option value="all">Tất cả trạng thái</option>
                     <option value="active">Đang hoạt động</option>
@@ -492,14 +492,14 @@ const DriversPage = () => {
               {/* Table or Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {loading ? (
-                  <div className="col-span-1 lg:col-span-2 text-center py-12 text-slate-400 text-sm">Đang tải...</div>
+                  <div className="col-span-1 lg:col-span-2 text-center py-12 text-brand-text-muted text-sm">Đang tải...</div>
                 ) : filteredApproved.length === 0 ? (
-                  <div className="col-span-1 lg:col-span-2 text-center py-12 text-slate-400 text-sm">
+                  <div className="col-span-1 lg:col-span-2 text-center py-12 text-brand-text-muted text-sm">
                     Không tìm thấy tài xế nào.
                   </div>
                 ) : (
                   paginatedApproved.map((driver) => (
-                    <div key={driver._id} className="bg-white p-6 rounded-3xl shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 relative overflow-hidden group">
+                    <div key={driver._id} className="bg-brand-surface p-6 rounded-3xl shadow-sm border border-brand-border hover:shadow-premium transition-all duration-300 relative overflow-hidden group">
                       <div className="flex items-start gap-5 relative z-10">
                         <div className="relative">
                           <img src={driver.avatar || `https://api.dicebear.com/7.x/adventurer/svg?seed=${driver.fullName}`} alt={driver.fullName} className="w-20 h-20 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform duration-500" />
@@ -517,24 +517,24 @@ const DriversPage = () => {
                           </div>
                           
                           <div className="grid grid-cols-2 gap-y-2 gap-x-3 mb-4">
-                            <div className="flex items-center gap-1.5 text-slate-400">
+                            <div className="flex items-center gap-1.5 text-brand-text-muted">
                               <Phone size={13} className="text-brand-primary" />
                               <span className="text-xs font-medium">{driver.phone}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-slate-400">
+                            <div className="flex items-center gap-1.5 text-brand-text-muted">
                               <Star size={13} className="text-yellow-500 fill-yellow-500" />
                               <span className="text-xs font-bold text-brand-text">{driver.rating || '5.0'}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 text-slate-400 col-span-2">
+                            <div className="flex items-center gap-1.5 text-brand-text-muted col-span-2">
                               <Truck size={13} className="text-brand-primary" />
                               <span className="text-xs font-medium">{driver.vehicleType ? `${driver.vehicleType} - ${driver.licensePlate}` : 'Chưa cập nhật'}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between pt-4 border-t border-slate-50">
+                          <div className="flex items-center justify-between pt-4 border-t border-brand-border">
                             <div className="flex items-center gap-6">
                               <div>
-                                <div className="text-[9px] font-bold text-slate-400 uppercase">TỔNG ĐƠN</div>
+                                <div className="text-[9px] font-bold text-brand-text-muted uppercase">TỔNG ĐƠN</div>
                                 <div className="text-sm font-black text-brand-text">{driver.orders || 0}</div>
                               </div>
                             </div>
@@ -573,7 +573,7 @@ const DriversPage = () => {
               {/* Pagination Approved */}
               {!loading && totalApprovedPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-brand-text-muted font-medium">
                     Hiển thị{" "}
                     <span className="font-bold text-brand-text">
                       {((currentPageApproved - 1) * itemsPerPage) + 1}-{Math.min(currentPageApproved * itemsPerPage, filteredApproved.length)}
@@ -588,7 +588,7 @@ const DriversPage = () => {
                     <button 
                       onClick={() => setCurrentPageApproved(prev => Math.max(prev - 1, 1))}
                       disabled={currentPageApproved === 1}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronLeft size={16} />
                     </button>
@@ -598,7 +598,7 @@ const DriversPage = () => {
                     <button 
                       onClick={() => setCurrentPageApproved(prev => Math.min(prev + 1, totalApprovedPages))}
                       disabled={currentPageApproved === totalApprovedPages}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronRight size={16} />
                     </button>

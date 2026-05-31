@@ -97,7 +97,7 @@ const Sidebar = ({ isOpen, onClose }) => {
 
   return (
     <aside
-      className={`w-64 h-screen bg-white border-r border-slate-100 flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
+      className={`w-64 h-screen bg-brand-surface border-r border-brand-border flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 ${isOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"}`}
     >
       <div className="p-6 flex items-center gap-3">
         <div className="w-10 h-10 bg-brand-primary rounded-xl flex items-center justify-center text-white shadow-premium">
@@ -109,7 +109,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       </div>
 
       <nav className="flex-1 px-4 py-2 space-y-1 overflow-y-auto">
-        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-4 mb-2">
+        <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest px-4 mb-2">
           QUẢN LÝ CHÍNH
         </div>
         {menuItems.map((item) => {
@@ -121,7 +121,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               className={`flex items-center justify-between px-4 py-3 rounded-xl transition-all duration-200 group ${
                 isActive
                   ? "bg-brand-primary text-white shadow-premium"
-                  : "text-slate-500 hover:bg-brand-bg hover:text-brand-primary"
+                  : "text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary"
               }`}
               onClick={onClose}
             >
@@ -131,7 +131,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                   className={
                     isActive
                       ? "text-white"
-                      : "text-slate-400 group-hover:text-brand-primary"
+                      : "text-brand-text-muted group-hover:text-brand-primary"
                   }
                 />
                 <span className="font-medium text-sm">{item.label}</span>
@@ -148,10 +148,10 @@ const Sidebar = ({ isOpen, onClose }) => {
         })}
       </nav>
 
-      <div className="p-4 border-t border-slate-100">
+      <div className="p-4 border-t border-brand-border">
         <button
           onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-200"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-brand-text-muted hover:bg-red-50 hover:text-red-600 transition-all duration-200"
         >
           <LogOut size={20} />
           <span className="font-medium text-sm">Đăng xuất</span>

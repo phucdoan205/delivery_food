@@ -34,7 +34,7 @@ const CATEGORY_STYLES = {
   traditional: "bg-amber-100 text-amber-700",
   japanese: "bg-pink-100 text-pink-700",
   fastfood: "bg-blue-100 text-blue-700",
-  default: "bg-slate-100 text-slate-600",
+  default: "bg-brand-border text-brand-text-muted",
 };
 
 const RestaurantsPage = () => {
@@ -157,13 +157,13 @@ const RestaurantsPage = () => {
             <h2 className="text-2xl font-black text-brand-text">
               Quản lý Nhà hàng
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-sm text-brand-text-muted mt-1">
               Phê duyệt đối tác mới và quản lý thông tin nhà hàng trên nền tảng.
             </p>
           </div>
           {activeTab === "info" && (
             <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-100 rounded-xl text-xs font-bold text-slate-500 hover:bg-brand-bg hover:text-brand-primary transition-all">
+              <button className="flex items-center gap-2 px-4 py-2 bg-brand-surface border border-brand-border rounded-xl text-xs font-bold text-brand-text-muted hover:bg-brand-bg hover:text-brand-primary transition-all">
                 <Download size={16} />
                 Xuất Excel
               </button>
@@ -205,13 +205,13 @@ const RestaurantsPage = () => {
           ].map((item) => (
             <div
               key={item.label}
-              className="bg-white p-5 rounded-3xl shadow-sm border border-slate-100 flex items-center gap-4"
+              className="bg-brand-surface p-5 rounded-3xl shadow-sm border border-brand-border flex items-center gap-4"
             >
               <div className={`p-3 rounded-2xl ${item.color}`}>
                 <item.icon size={22} />
               </div>
               <div>
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                <div className="text-[10px] font-bold text-brand-text-muted uppercase tracking-widest">
                   {item.label}
                 </div>
                 <div className="text-2xl font-black text-brand-text">
@@ -223,9 +223,9 @@ const RestaurantsPage = () => {
         </div>
 
         {/* Tabs */}
-        <div className="bg-white rounded-[32px] shadow-sm border border-slate-100 overflow-hidden">
+        <div className="bg-brand-surface rounded-[32px] shadow-sm border border-brand-border overflow-hidden">
           {/* Tab Bar */}
-          <div className="flex border-b border-slate-100 px-6 pt-4 gap-1">
+          <div className="flex border-b border-brand-border px-6 pt-4 gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -233,7 +233,7 @@ const RestaurantsPage = () => {
                 className={`relative flex items-center gap-2 px-5 py-3 text-sm font-bold rounded-t-2xl transition-all duration-200 ${
                   activeTab === tab.id
                     ? "text-brand-primary bg-brand-bg"
-                    : "text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+                    : "text-brand-text-muted hover:text-brand-text-muted hover:bg-brand-bg"
                 }`}
               >
                 {tab.label}
@@ -241,7 +241,7 @@ const RestaurantsPage = () => {
                   className={`text-[10px] font-black px-2 py-0.5 rounded-full ${
                     activeTab === tab.id
                       ? "bg-brand-primary text-white"
-                      : "bg-slate-100 text-slate-500"
+                      : "bg-brand-border text-brand-text-muted"
                   }`}
                 >
                   {tab.count}
@@ -264,7 +264,7 @@ const RestaurantsPage = () => {
                   <h3 className="text-xl font-black text-brand-text mb-1">
                     Chào buổi sáng, Admin Culinary 👋
                   </h3>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-brand-text-muted">
                     Bạn có{" "}
                     <span className="font-bold text-brand-primary">
                       {pendingList.length} yêu cầu
@@ -293,7 +293,7 @@ const RestaurantsPage = () => {
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                           i === 0
                             ? "bg-brand-primary text-white shadow-premium"
-                            : "bg-brand-bg text-slate-500 hover:bg-orange-100 hover:text-brand-primary"
+                            : "bg-brand-bg text-brand-text-muted hover:bg-orange-100 hover:text-brand-primary"
                         }`}
                       >
                         {f}
@@ -302,11 +302,11 @@ const RestaurantsPage = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <button className="flex items-center gap-1.5 px-3 py-2 bg-brand-bg text-slate-500 rounded-xl text-xs font-bold hover:text-brand-primary transition-colors">
+                  <button className="flex items-center gap-1.5 px-3 py-2 bg-brand-bg text-brand-text-muted rounded-xl text-xs font-bold hover:text-brand-primary transition-colors">
                     <Filter size={14} />
                     Bộ lọc
                   </button>
-                  <button className="flex items-center gap-1.5 px-3 py-2 bg-brand-bg text-slate-500 rounded-xl text-xs font-bold hover:text-brand-primary transition-colors">
+                  <button className="flex items-center gap-1.5 px-3 py-2 bg-brand-bg text-brand-text-muted rounded-xl text-xs font-bold hover:text-brand-primary transition-colors">
                     Sắp xếp
                   </button>
                 </div>
@@ -314,7 +314,7 @@ const RestaurantsPage = () => {
 
               {/* Search */}
               <div className="relative mb-6">
-                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400">
+                <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted">
                   <Search size={16} />
                 </div>
                 <input
@@ -328,7 +328,7 @@ const RestaurantsPage = () => {
 
               {/* Restaurant Cards Grid */}
               {loading ? (
-                <div className="text-center py-16 text-slate-400 text-sm">Đang tải dữ liệu...</div>
+                <div className="text-center py-16 text-brand-text-muted text-sm">Đang tải dữ liệu...</div>
               ) : filteredPending.length === 0 ? (
                 <div className="text-center py-16">
                   <CheckCircle
@@ -338,7 +338,7 @@ const RestaurantsPage = () => {
                   <h4 className="text-lg font-black text-brand-text mb-2">
                     Tất cả đã được xử lý!
                   </h4>
-                  <p className="text-slate-400 text-sm">
+                  <p className="text-brand-text-muted text-sm">
                     Không còn yêu cầu phê duyệt nào đang chờ.
                   </p>
                 </div>
@@ -347,7 +347,7 @@ const RestaurantsPage = () => {
                   {paginatedPending.map((res) => (
                     <div
                       key={res._id}
-                      className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
+                      className="bg-brand-surface border border-brand-border rounded-3xl overflow-hidden shadow-sm hover:shadow-premium transition-all duration-300 group"
                     >
                       {/* Image */}
                       <div className="relative h-44 overflow-hidden">
@@ -364,7 +364,7 @@ const RestaurantsPage = () => {
                           {res.category || 'Đồ ăn'}
                         </div>
                         {/* Rating */}
-                        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <div className="absolute top-3 right-3 bg-brand-surface/90 backdrop-blur px-2.5 py-1 rounded-full flex items-center gap-1">
                           <Star
                             size={12}
                             className="text-yellow-500 fill-yellow-500"
@@ -384,7 +384,7 @@ const RestaurantsPage = () => {
                       {/* Details */}
                       <div className="p-5">
                         <div className="space-y-2 mb-4">
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-brand-text-muted">
                             <MapPin
                               size={13}
                               className="text-brand-primary flex-shrink-0"
@@ -393,7 +393,7 @@ const RestaurantsPage = () => {
                               {res.address || 'Quận 1, TP. HCM'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-brand-text-muted">
                             <Phone
                               size={13}
                               className="text-brand-primary flex-shrink-0"
@@ -402,7 +402,7 @@ const RestaurantsPage = () => {
                               {res.phone || '0901234567'}
                             </span>
                           </div>
-                          <div className="flex items-center gap-2 text-slate-500">
+                          <div className="flex items-center gap-2 text-brand-text-muted">
                             <Mail
                               size={13}
                               className="text-brand-primary flex-shrink-0"
@@ -421,7 +421,7 @@ const RestaurantsPage = () => {
                                 size={12}
                                 className="text-brand-primary"
                               />
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                              <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider">
                                 Giấy phép KD
                               </span>
                             </div>
@@ -435,7 +435,7 @@ const RestaurantsPage = () => {
                                 size={12}
                                 className="text-brand-primary"
                               />
-                              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider">
+                              <span className="text-[9px] font-black text-brand-text-muted uppercase tracking-wider">
                                 Dự báo ĐTM
                               </span>
                             </div>
@@ -446,7 +446,7 @@ const RestaurantsPage = () => {
                         </div>
 
                         {/* Submitted date */}
-                        <div className="flex items-center gap-1.5 text-slate-400 mb-4">
+                        <div className="flex items-center gap-1.5 text-brand-text-muted mb-4">
                           <Clock size={12} />
                           <span className="text-[11px] font-medium">
                             Nộp ngày {res.createdAt ? new Date(res.createdAt).toLocaleDateString('vi-VN') : '20/05/2026'}
@@ -470,7 +470,7 @@ const RestaurantsPage = () => {
                           </button>
                           <button
                             onClick={() => handleReject(res)}
-                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-100 text-slate-600 rounded-2xl text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            className="flex-1 flex items-center justify-center gap-2 py-3 bg-brand-border text-brand-text-muted rounded-2xl text-sm font-bold hover:bg-red-50 hover:text-red-600 hover:scale-[1.02] active:scale-[0.98] transition-all"
                           >
                             <XCircle size={16} />
                             Từ chối
@@ -485,7 +485,7 @@ const RestaurantsPage = () => {
               {/* Pagination Pending */}
               {!loading && totalPendingPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-brand-text-muted font-medium">
                     Hiển thị{" "}
                     <span className="font-bold text-brand-text">
                       {((currentPagePending - 1) * itemsPerPage) + 1}-{Math.min(currentPagePending * itemsPerPage, filteredPending.length)}
@@ -500,7 +500,7 @@ const RestaurantsPage = () => {
                     <button 
                       onClick={() => setCurrentPagePending(prev => Math.max(prev - 1, 1))}
                       disabled={currentPagePending === 1}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronLeft size={16} />
                     </button>
@@ -510,7 +510,7 @@ const RestaurantsPage = () => {
                     <button 
                       onClick={() => setCurrentPagePending(prev => Math.min(prev + 1, totalPendingPages))}
                       disabled={currentPagePending === totalPendingPages}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronRight size={16} />
                     </button>
@@ -528,7 +528,7 @@ const RestaurantsPage = () => {
               {/* Filters */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
                 <div className="relative group w-full md:w-96">
-                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+                  <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
                     <Search size={18} />
                   </div>
                   <input
@@ -543,7 +543,7 @@ const RestaurantsPage = () => {
                   <select
                     value={filterStatus}
                     onChange={(e) => setFilterStatus(e.target.value)}
-                    className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-slate-500 focus:ring-0 px-4 py-3 cursor-pointer"
+                    className="bg-brand-bg border-transparent rounded-xl text-xs font-bold text-brand-text-muted focus:ring-0 px-4 py-3 cursor-pointer"
                   >
                     <option value="all">Tất cả trạng thái</option>
                     <option value="active">Hoạt động</option>
@@ -553,26 +553,26 @@ const RestaurantsPage = () => {
               </div>
 
               {/* Table */}
-              <div className="overflow-x-auto rounded-2xl border border-slate-100">
+              <div className="overflow-x-auto rounded-2xl border border-brand-border">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="bg-brand-bg/50">
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest">
                         NHÀ HÀNG
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">
                         DANH MỤC
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">
                         ĐÁNH GIÁ
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-center">
                         TRẠNG THÁI
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest">
                         NGÀY DUYỆT
                       </th>
-                      <th className="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">
+                      <th className="px-6 py-4 text-[10px] font-black text-brand-text-muted uppercase tracking-widest text-right">
                         THAO TÁC
                       </th>
                     </tr>
@@ -580,13 +580,13 @@ const RestaurantsPage = () => {
                   <tbody className="divide-y divide-slate-50">
                     {loading ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-12 text-center text-slate-400 text-sm">Đang tải...</td>
+                        <td colSpan={6} className="px-6 py-12 text-center text-brand-text-muted text-sm">Đang tải...</td>
                       </tr>
                     ) : filteredApproved.length === 0 ? (
                       <tr>
                         <td
                           colSpan={6}
-                          className="px-6 py-12 text-center text-slate-400 text-sm"
+                          className="px-6 py-12 text-center text-brand-text-muted text-sm"
                         >
                           Không tìm thấy nhà hàng nào.
                         </td>
@@ -608,7 +608,7 @@ const RestaurantsPage = () => {
                                 <div className="text-sm font-bold text-brand-text">
                                   {res.name}
                                 </div>
-                                <div className="text-[10px] text-slate-400 font-medium">
+                                <div className="text-[10px] text-brand-text-muted font-medium">
                                   {res.ownerId?.email || 'merchant@culinarycurator.com'}
                                 </div>
                               </div>
@@ -650,7 +650,7 @@ const RestaurantsPage = () => {
                               </span>
                             </div>
                           </td>
-                          <td className="px-6 py-4 text-xs font-bold text-slate-500">
+                          <td className="px-6 py-4 text-xs font-bold text-brand-text-muted">
                             {res.updatedAt ? new Date(res.updatedAt).toLocaleDateString('vi-VN') : '20/05/2026'}
                           </td>
                           <td className="px-6 py-4 text-right">
@@ -689,7 +689,7 @@ const RestaurantsPage = () => {
               {/* Pagination Approved */}
               {!loading && totalApprovedPages > 1 && (
                 <div className="mt-6 flex items-center justify-between">
-                  <p className="text-xs text-slate-400 font-medium">
+                  <p className="text-xs text-brand-text-muted font-medium">
                     Hiển thị{" "}
                     <span className="font-bold text-brand-text">
                       {((currentPageApproved - 1) * itemsPerPage) + 1}-{Math.min(currentPageApproved * itemsPerPage, filteredApproved.length)}
@@ -704,7 +704,7 @@ const RestaurantsPage = () => {
                     <button 
                       onClick={() => setCurrentPageApproved(prev => Math.max(prev - 1, 1))}
                       disabled={currentPageApproved === 1}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronLeft size={16} />
                     </button>
@@ -714,7 +714,7 @@ const RestaurantsPage = () => {
                     <button 
                       onClick={() => setCurrentPageApproved(prev => Math.min(prev + 1, totalApprovedPages))}
                       disabled={currentPageApproved === totalApprovedPages}
-                      className="p-2 rounded-xl border border-slate-200 text-slate-600 disabled:opacity-50 hover:bg-slate-50 transition-colors"
+                      className="p-2 rounded-xl border border-brand-border text-brand-text-muted disabled:opacity-50 hover:bg-brand-bg transition-colors"
                     >
                       <ChevronRight size={16} />
                     </button>

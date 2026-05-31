@@ -47,7 +47,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex w-full max-w-6xl h-[800px] bg-white rounded-[40px] overflow-hidden shadow-premium animate-in zoom-in-95 duration-700">
+    <div className="flex w-full max-w-6xl h-[800px] bg-brand-surface rounded-[40px] overflow-hidden shadow-premium animate-in zoom-in-95 duration-700">
       {/* Left Side: Image & Glass Card */}
       <div className="hidden lg:block w-3/5 relative">
         <img 
@@ -78,7 +78,7 @@ const LoginPage = () => {
         <div className="mb-12">
           <h1 className="text-4xl font-black text-brand-text mb-3">Hệ thống Quản trị</h1>
           <h2 className="text-3xl font-bold text-brand-primary mb-6">Culinary Curator</h2>
-          <p className="text-slate-500">Vui lòng đăng nhập để quản lý nền tảng của bạn.</p>
+          <p className="text-brand-text-muted">Vui lòng đăng nhập để quản lý nền tảng của bạn.</p>
         </div>
 
         {errorMessage && (
@@ -89,9 +89,9 @@ const LoginPage = () => {
 
         <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-2">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wider ml-1">Email hoặc Tên đăng nhập</label>
+            <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider ml-1">Email hoặc Tên đăng nhập</label>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
                 <Mail size={18} />
               </div>
               <input 
@@ -99,7 +99,7 @@ const LoginPage = () => {
                 placeholder="admin@culinarycurator.com" 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-12 pr-4 py-4 bg-white border border-slate-100 rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
+                className="w-full pl-12 pr-4 py-4 bg-brand-surface border border-brand-border rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
                 required
               />
             </div>
@@ -107,10 +107,10 @@ const LoginPage = () => {
 
           <div className="space-y-2">
             <div className="flex items-center justify-between ml-1">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Mật khẩu</label>
+              <label className="text-xs font-bold text-brand-text-muted uppercase tracking-wider">Mật khẩu</label>
             </div>
             <div className="relative group">
-              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-brand-primary">
+              <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none text-brand-text-muted group-focus-within:text-brand-primary">
                 <Lock size={18} />
               </div>
               <input 
@@ -118,13 +118,13 @@ const LoginPage = () => {
                 placeholder="••••••••••••" 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-12 pr-12 py-4 bg-white border border-slate-100 rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
+                className="w-full pl-12 pr-12 py-4 bg-brand-surface border border-brand-border rounded-2xl focus:border-brand-primary focus:ring-4 focus:ring-brand-primary/5 transition-all duration-200 outline-none text-sm shadow-sm"
                 required
               />
               <button 
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-brand-primary"
+                className="absolute inset-y-0 right-4 flex items-center text-brand-text-muted hover:text-brand-primary"
               >
                 <Eye size={18} />
               </button>
@@ -142,7 +142,7 @@ const LoginPage = () => {
         </form>
 
         <div className="mt-16 text-center">
-          <p className="text-[10px] text-slate-400 leading-relaxed uppercase tracking-widest font-bold">
+          <p className="text-[10px] text-brand-text-muted leading-relaxed uppercase tracking-widest font-bold">
             © 2024 Culinary Curator Admin Console. Bảo mật bởi chuẩn mã hóa 256-bit.
           </p>
         </div>

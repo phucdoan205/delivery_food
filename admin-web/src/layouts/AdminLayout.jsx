@@ -6,7 +6,7 @@ const AdminLayout = ({ children, title }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-brand-bg flex relative">
+    <div className="min-h-screen bg-brand-bg text-brand-text flex relative">
       <Sidebar 
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 

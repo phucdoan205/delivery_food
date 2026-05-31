@@ -115,15 +115,15 @@ const OrdersPage = () => {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-black text-brand-text">Đơn hàng</h2>
-            <p className="text-sm text-slate-400">Theo dõi và quản lý các đơn hàng đang diễn ra.</p>
+            <p className="text-sm text-brand-text-muted">Theo dõi và quản lý các đơn hàng đang diễn ra.</p>
           </div>
-          <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+          <div className="flex bg-brand-surface p-1 rounded-xl shadow-sm border border-brand-border">
             {tabs.map((tab, i) => (
               <button 
                 key={tab} 
                 onClick={() => { setActiveTab(i); setCurrentPage(1); }}
                 className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
-                  activeTab === i ? "bg-brand-primary text-white shadow-premium" : "text-slate-500 hover:text-brand-primary"
+                  activeTab === i ? "bg-brand-primary text-white shadow-premium" : "text-brand-text-muted hover:text-brand-primary"
                 }`}
               >
                 {tab}
@@ -134,13 +134,13 @@ const OrdersPage = () => {
 
         <div className="space-y-4">
           {loading ? (
-            <div className="text-center py-16 text-slate-400 text-sm font-medium">Đang tải danh sách đơn hàng...</div>
+            <div className="text-center py-16 text-brand-text-muted text-sm font-medium">Đang tải danh sách đơn hàng...</div>
           ) : paginatedOrders.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 text-sm font-medium">Không tìm thấy đơn hàng nào.</div>
+            <div className="text-center py-16 text-brand-text-muted text-sm font-medium">Không tìm thấy đơn hàng nào.</div>
           ) : (
             paginatedOrders.map((group) => {
               return (
-                <div key={group._id} className="bg-white p-6 rounded-[32px] shadow-sm border border-slate-100 hover:shadow-premium transition-all duration-300 group">
+                <div key={group._id} className="bg-brand-surface p-6 rounded-[32px] shadow-sm border border-brand-border hover:shadow-premium transition-all duration-300 group">
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-start gap-4">
                       <div className="p-4 bg-orange-50 text-brand-primary rounded-2xl group-hover:scale-110 transition-transform duration-300">
@@ -150,39 +150,39 @@ const OrdersPage = () => {
                         <div className="flex items-center gap-3 mb-1">
                           <span className="text-sm font-black text-brand-text">#{group._id.substring(group._id.length - 6).toUpperCase()}</span>
                           <span className={`text-[10px] font-black px-2 py-0.5 rounded-full uppercase ${
-                            statusColors[group.status] || "bg-slate-100 text-slate-600"
+                            statusColors[group.status] || "bg-brand-border text-brand-text-muted"
                           }`}>
                             {statusLabels[group.status] || group.status}
                           </span>
                         </div>
-                        <div className="text-sm font-bold text-slate-600">{group.userId?.fullName || 'Khách hàng ẩn danh'}</div>
-                        <div className="text-xs text-slate-400">{group.restaurantNames.join(' & ')} • {group.itemsCount} món</div>
+                        <div className="text-sm font-bold text-brand-text-muted">{group.userId?.fullName || 'Khách hàng ẩn danh'}</div>
+                        <div className="text-xs text-brand-text-muted">{group.restaurantNames.join(' & ')} • {group.itemsCount} món</div>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-8 flex-1 lg:max-w-xl">
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">THỜI GIAN</div>
+                        <div className="text-[10px] font-bold text-brand-text-muted uppercase mb-1">THỜI GIAN</div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-brand-text">
                           <Clock size={14} className="text-brand-primary" />
                           {group.createdAt ? new Date(group.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">THANH TOÁN</div>
+                        <div className="text-[10px] font-bold text-brand-text-muted uppercase mb-1">THANH TOÁN</div>
                         <div className="flex items-center gap-1.5 text-xs font-bold text-brand-text">
                           <CreditCard size={14} className="text-brand-primary" />
                           {paymentMethodLabels[group.paymentMethod] || 'Tiền mặt'}
                         </div>
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold text-slate-400 uppercase mb-1">TỔNG TIỀN</div>
+                        <div className="text-[10px] font-bold text-brand-text-muted uppercase mb-1">TỔNG TIỀN</div>
                         <div className="text-sm font-black text-brand-primary">{group.totalPrice ? group.totalPrice.toLocaleString('vi-VN') : '0'}đ</div>
                       </div>
                     </div>
                     <button 
                       onClick={() => { setSelectedOrder(group); setIsModalOpen(true); }}
-                      className="p-3 bg-slate-50 text-slate-400 hover:text-brand-primary hover:bg-orange-50 rounded-xl transition-colors"
+                      className="p-3 bg-brand-bg text-brand-text-muted hover:text-brand-primary hover:bg-orange-50 rounded-xl transition-colors"
                       title="Xem chi tiết"
                     >
                       <Eye size={20} />
@@ -199,19 +199,19 @@ const OrdersPage = () => {
             <button
               onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === 1 ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-brand-primary border border-slate-200 hover:bg-orange-50'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === 1 ? 'bg-brand-border text-brand-text-muted cursor-not-allowed' : 'bg-brand-surface text-brand-primary border border-brand-border hover:bg-orange-50'}`}
             >
               Trước
             </button>
             
-            <div className="flex items-center justify-center min-w-[100px] text-sm font-bold text-slate-600">
+            <div className="flex items-center justify-center min-w-[100px] text-sm font-bold text-brand-text-muted">
               Trang {currentPage} / {totalPages}
             </div>
 
             <button
               onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === totalPages ? 'bg-slate-100 text-slate-400 cursor-not-allowed' : 'bg-white text-brand-primary border border-slate-200 hover:bg-orange-50'}`}
+              className={`px-4 py-2 rounded-lg text-sm font-bold ${currentPage === totalPages ? 'bg-brand-border text-brand-text-muted cursor-not-allowed' : 'bg-brand-surface text-brand-primary border border-brand-border hover:bg-orange-50'}`}
             >
               Sau
             </button>
@@ -221,15 +221,15 @@ const OrdersPage = () => {
 
       {isModalOpen && selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+          <div className="bg-brand-surface rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-brand-border flex items-center justify-between bg-brand-bg">
               <div>
                 <h3 className="text-xl font-black text-brand-text">Chi tiết Đơn hàng #{selectedOrder._id.substring(selectedOrder._id.length - 6).toUpperCase()}</h3>
-                <p className="text-sm text-slate-500 mt-1">{new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}</p>
+                <p className="text-sm text-brand-text-muted mt-1">{new Date(selectedOrder.createdAt).toLocaleString('vi-VN')}</p>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 text-slate-400 hover:text-brand-primary bg-white rounded-full shadow-sm hover:shadow-md transition-all"
+                className="p-2 text-brand-text-muted hover:text-brand-primary bg-brand-surface rounded-full shadow-sm hover:shadow-md transition-all"
               >
                 <X size={20} />
               </button>
@@ -237,43 +237,43 @@ const OrdersPage = () => {
             
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-slate-50 p-4 rounded-2xl">
-                  <div className="text-xs font-bold text-slate-400 uppercase mb-2">Khách hàng</div>
+                <div className="bg-brand-bg p-4 rounded-2xl">
+                  <div className="text-xs font-bold text-brand-text-muted uppercase mb-2">Khách hàng</div>
                   <div className="font-bold text-brand-text">{selectedOrder.userId?.fullName || 'Khách hàng ẩn danh'}</div>
-                  <div className="text-sm text-slate-500">{selectedOrder.userId?.phone || 'Chưa cập nhật SĐT'}</div>
+                  <div className="text-sm text-brand-text-muted">{selectedOrder.userId?.phone || 'Chưa cập nhật SĐT'}</div>
                 </div>
               </div>
 
               <div>
-                <div className="text-sm font-bold text-slate-700 mb-3 border-b border-slate-100 pb-2">Chi tiết nhà hàng</div>
+                <div className="text-sm font-bold text-brand-text mb-3 border-b border-brand-border pb-2">Chi tiết nhà hàng</div>
                 
                 {selectedOrder.orders.map((order, orderIdx) => (
-                  <div key={order._id} className="mb-6 pb-6 border-b border-slate-100 last:border-0 last:pb-0 last:mb-0">
+                  <div key={order._id} className="mb-6 pb-6 border-b border-brand-border last:border-0 last:pb-0 last:mb-0">
                     <div className="mb-3">
                       <div className="font-bold text-brand-primary text-base flex items-center gap-2">
                         <ShoppingBag size={18} />
                         {order.restaurantId?.name || 'Nhà hàng đối tác'}
                       </div>
-                      <div className="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
-                        <MapPin size={14} className="text-slate-400" />
+                      <div className="text-sm text-brand-text-muted mt-1 flex items-center gap-1.5">
+                        <MapPin size={14} className="text-brand-text-muted" />
                         {order.restaurantId?.address || 'Chưa cập nhật địa chỉ'}
                       </div>
                     </div>
                     
                     <div className="space-y-3 mb-4">
                       {order.items?.map((item, idx) => (
-                        <div key={idx} className="flex justify-between items-center bg-white p-3 border border-slate-100 rounded-xl">
+                        <div key={idx} className="flex justify-between items-center bg-brand-surface p-3 border border-brand-border rounded-xl">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
+                            <div className="w-10 h-10 bg-brand-border rounded-lg overflow-hidden flex-shrink-0">
                               {item.foodId?.image ? (
                                 <img src={item.foodId.image} alt="" className="w-full h-full object-cover" />
                               ) : (
-                                <div className="w-full h-full bg-slate-200"></div>
+                                <div className="w-full h-full bg-brand-border"></div>
                               )}
                             </div>
                             <div>
                               <div className="font-bold text-sm text-brand-text">{item.foodId?.name || 'Món ăn'}</div>
-                              <div className="text-xs text-slate-500">{item.quantity} x {item.price?.toLocaleString('vi-VN')}đ</div>
+                              <div className="text-xs text-brand-text-muted">{item.quantity} x {item.price?.toLocaleString('vi-VN')}đ</div>
                             </div>
                           </div>
                           <div className="font-bold text-brand-text">
@@ -283,19 +283,19 @@ const OrdersPage = () => {
                       ))}
                     </div>
 
-                    <div className="bg-slate-50 p-4 rounded-xl space-y-2 text-sm">
+                    <div className="bg-brand-bg p-4 rounded-xl space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-slate-600">Phí giao hàng</span>
+                        <span className="text-brand-text-muted">Phí giao hàng</span>
                         <span className="font-bold">{order.shippingFee?.toLocaleString('vi-VN') || 0}đ</span>
                       </div>
                       {order.discountAmount > 0 && (
                         <div className="flex justify-between">
-                          <span className="text-slate-600">Giảm giá</span>
+                          <span className="text-brand-text-muted">Giảm giá</span>
                           <span className="font-bold text-green-600">-{order.discountAmount?.toLocaleString('vi-VN')}đ</span>
                         </div>
                       )}
-                      <div className="flex justify-between pt-2 mt-2 border-t border-slate-200">
-                        <span className="font-bold text-slate-600">Tạm tính nhà hàng này</span>
+                      <div className="flex justify-between pt-2 mt-2 border-t border-brand-border">
+                        <span className="font-bold text-brand-text-muted">Tạm tính nhà hàng này</span>
                         <span className="font-bold text-brand-text">{order.totalPrice?.toLocaleString('vi-VN') || 0}đ</span>
                       </div>
                     </div>
@@ -304,7 +304,7 @@ const OrdersPage = () => {
               </div>
 
               <div className="bg-orange-50/50 p-4 rounded-2xl space-y-2">
-                <div className="flex justify-between text-base border-slate-200">
+                <div className="flex justify-between text-base border-brand-border">
                   <span className="font-black text-brand-text">Tổng thanh toán toàn bộ đơn</span>
                   <span className="font-black text-brand-primary">{selectedOrder.totalPrice?.toLocaleString('vi-VN') || 0}đ</span>
                 </div>
