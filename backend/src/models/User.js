@@ -40,6 +40,15 @@ const userSchema = new mongoose.Schema({
   dob: {
     type: String
   },
+  vehicleType: {
+    type: String
+  },
+  licensePlate: {
+    type: String
+  },
+  driverLicense: {
+    type: String
+  },
   role: {
     type: String,
     enum: ['user', 'merchant', 'shipper', 'admin', 'staff'],

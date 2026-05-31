@@ -9,9 +9,9 @@ import {
   TextInput,
   Switch,
   ActivityIndicator,
-  Alert
+  Alert,
 } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect } from "@react-navigation/native";
 import { request } from "../../api/client";
 import {
@@ -22,7 +22,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   Trash2,
-  Plus
+  Plus,
 } from "lucide-react-native";
 import { Colors } from "../../constants/colors";
 
@@ -31,7 +31,9 @@ const PAYOUT_HISTORY = [];
 
 const PaymentSettingsScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
-  const [restaurant, setRestaurant] = useState(route?.params?.restaurant || null);
+  const [restaurant, setRestaurant] = useState(
+    route?.params?.restaurant || null,
+  );
   const [bankAccounts, setBankAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -45,11 +47,11 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
 
   const fetchRestaurant = async () => {
     try {
-      const data = await request('/restaurants/mine');
+      const data = await request("/restaurants/mine");
       setRestaurant(data);
       setBankAccounts(data.bankAccounts || []);
     } catch (e) {
-      console.log('Error fetching restaurant', e);
+      console.log("Error fetching restaurant", e);
     } finally {
       setLoading(false);
     }
@@ -58,7 +60,7 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
   useFocusEffect(
     React.useCallback(() => {
       fetchRestaurant();
-    }, [])
+    }, []),
   );
 
   const openAddModal = () => {
@@ -88,9 +90,15 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
     try {
       const body = { bankName, accountNumber, accountHolder, isDefault };
       if (editingId) {
-        await request(`/restaurants/${restaurant._id}/bank-accounts/${editingId}`, { method: 'PUT', body });
+        await request(
+          `/restaurants/${restaurant._id}/bank-accounts/${editingId}`,
+          { method: "PUT", body },
+        );
       } else {
-        await request(`/restaurants/${restaurant._id}/bank-accounts`, { method: 'POST', body });
+        await request(`/restaurants/${restaurant._id}/bank-accounts`, {
+          method: "POST",
+          body,
+        });
       }
       setModalVisible(false);
       fetchRestaurant();
@@ -104,20 +112,32 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
   const deleteBankAccount = (id) => {
     Alert.alert("Xác nhận", "Bạn có chắc muốn xóa tài khoản này?", [
       { text: "Hủy", style: "cancel" },
-      { text: "Xóa", style: "destructive", onPress: async () => {
-        try {
-          await request(`/restaurants/${restaurant._id}/bank-accounts/${id}`, { method: 'DELETE' });
-          fetchRestaurant();
-        } catch (e) {
-          Alert.alert("Lỗi", "Không thể xóa tài khoản");
-        }
-      }}
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await request(
+              `/restaurants/${restaurant._id}/bank-accounts/${id}`,
+              { method: "DELETE" },
+            );
+            fetchRestaurant();
+          } catch (e) {
+            Alert.alert("Lỗi", "Không thể xóa tài khoản");
+          }
+        },
+      },
     ]);
   };
 
   if (loading) {
     return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
         <ActivityIndicator size="large" color={Colors.primary} />
       </View>
     );
@@ -125,132 +145,98 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-      <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.headerBtn}
-        >
-          <ArrowLeft size={22} color={Colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Bell size={20} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.panel}>
-          <View style={styles.panelHeader}>
-            <View>
-              <Text style={styles.panelTitle}>Tài khoản thụ hưởng</Text>
-              <Text style={styles.panelSubtext}>
-                Nơi nhận doanh thu sau đối soát
-              </Text>
-            </View>
-            <TouchableOpacity onPress={openAddModal} style={styles.addBtn}>
-              <Plus size={16} color={Colors.primary} />
-              <Text style={styles.addBtnText}>Thêm mới</Text>
-            </TouchableOpacity>
-          </View>
-
-          {bankAccounts.length === 0 ? (
-            <Text style={{ textAlign: 'center', color: Colors.textSecondary, marginVertical: 20 }}>Chưa có tài khoản nào</Text>
-          ) : (
-            bankAccounts.map(acc => (
-              <View key={acc._id} style={styles.bankCard}>
-                <View style={styles.bankIcon}>
-                  <Wallet size={18} color={Colors.textSecondary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <Text style={styles.bankName}>{acc.bankName}</Text>
-                    {acc.isDefault && (
-                      <View style={styles.defaultTagSmall}>
-                        <Text style={styles.defaultTagTextSmall}>Mặc định</Text>
-                      </View>
-                    )}
-                  </View>
-                  <Text style={styles.bankMeta}>•••••••• {acc.accountNumber.slice(-4)}</Text>
-                  <Text style={styles.bankMeta}>{acc.accountHolder}</Text>
-                </View>
-                <View style={styles.bankActions}>
-                  <TouchableOpacity onPress={() => openEditModal(acc)} style={styles.actionBtn}>
-                    <PencilLine size={16} color={Colors.primary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => deleteBankAccount(acc._id)} style={styles.actionBtn}>
-                    <Trash2 size={16} color="#E53935" />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ))
-          )}
-        </View>
-
-        <View style={styles.panel}>
-          <Text style={styles.panelTitle}>Ví xử lý thanh toán</Text>
-          {PAYMENT_METHODS.map((item) => (
-            <TouchableOpacity key={item.id} style={styles.methodCard}>
-              <View
-                style={[styles.methodIcon, { backgroundColor: item.color }]}
-              >
-                <CircleDollarSign size={18} color={Colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.methodName}>{item.name}</Text>
-                <Text style={styles.methodDetail}>{item.detail}</Text>
-              </View>
-              <ChevronRight size={18} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        <View style={styles.panel}>
-          <View style={styles.historyTitleRow}>
-            <Text style={styles.panelTitle}>Lịch sử đối soát</Text>
-            <Text style={styles.historyLink}>Xem tất cả →</Text>
-          </View>
-          {PAYOUT_HISTORY.map((item) => (
-            <View key={item.id} style={styles.historyRow}>
-              <View
-                style={[
-                  styles.statusCircle,
-                  item.status === "success"
-                    ? styles.successCircle
-                    : styles.pendingCircle,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.statusDot,
-                    item.status === "success"
-                      ? styles.successDot
-                      : styles.pendingDot,
-                  ]}
-                />
-              </View>
-              <Text style={styles.historyPeriod}>
-                Kỳ thanh toán {item.period}
-              </Text>
-              <Text style={styles.historyAmount}>{item.amount}</Text>
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.supportCard}>
-          <Text style={styles.supportTitle}>Cần hỗ trợ về thanh toán?</Text>
-          <Text style={styles.supportText}>
-            Nếu bạn gặp lỗi rút tiền, chậm đối soát hoặc cần xác minh giấy tờ,
-            đội ngũ hỗ trợ luôn sẵn sàng.
+        <View style={styles.header}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={styles.headerBtn}
+          >
+            <ArrowLeft size={22} color={Colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.brand}>
+            {restaurant?.name || "Cửa hàng của tôi"}
           </Text>
-          <Text style={styles.supportLink}>Chat ngay</Text>
-          <Text style={styles.supportLink}>Gửi yêu cầu</Text>
+          <TouchableOpacity style={styles.headerBtn}>
+            <Bell size={20} color={Colors.text} />
+          </TouchableOpacity>
         </View>
-      </View>
-    </ScrollView>
+
+        <View style={styles.content}>
+          <View style={styles.panel}>
+            <View style={styles.panelHeader}>
+              <View>
+                <Text style={styles.panelTitle}>Tài khoản thụ hưởng</Text>
+                <Text style={styles.panelSubtext}>
+                  Nơi nhận doanh thu sau đối soát
+                </Text>
+              </View>
+              <TouchableOpacity onPress={openAddModal} style={styles.addBtn}>
+                <Plus size={16} color={Colors.primary} />
+                <Text style={styles.addBtnText}>Thêm mới</Text>
+              </TouchableOpacity>
+            </View>
+
+            {bankAccounts.length === 0 ? (
+              <Text
+                style={{
+                  textAlign: "center",
+                  color: Colors.textSecondary,
+                  marginVertical: 20,
+                }}
+              >
+                Chưa có tài khoản nào
+              </Text>
+            ) : (
+              bankAccounts.map((acc) => (
+                <View key={acc._id} style={styles.bankCard}>
+                  <View style={styles.bankIcon}>
+                    <Wallet size={18} color={Colors.textSecondary} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        marginBottom: 4,
+                      }}
+                    >
+                      <Text style={styles.bankName}>{acc.bankName}</Text>
+                      {acc.isDefault && (
+                        <View style={styles.defaultTagSmall}>
+                          <Text style={styles.defaultTagTextSmall}>
+                            Mặc định
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    <Text style={styles.bankMeta}>
+                      •••••••• {acc.accountNumber.slice(-4)}
+                    </Text>
+                    <Text style={styles.bankMeta}>{acc.accountHolder}</Text>
+                  </View>
+                  <View style={styles.bankActions}>
+                    <TouchableOpacity
+                      onPress={() => openEditModal(acc)}
+                      style={styles.actionBtn}
+                    >
+                      <PencilLine size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => deleteBankAccount(acc._id)}
+                      style={styles.actionBtn}
+                    >
+                      <Trash2 size={16} color="#E53935" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      </ScrollView>
 
       <Modal
         visible={modalVisible}
@@ -260,7 +246,9 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>{editingId ? 'Sửa thông tin tài khoản' : 'Thêm tài khoản mới'}</Text>
+            <Text style={styles.modalTitle}>
+              {editingId ? "Sửa thông tin tài khoản" : "Thêm tài khoản mới"}
+            </Text>
 
             <Text style={styles.inputLabel}>Tên ngân hàng</Text>
             <TextInput
@@ -290,15 +278,30 @@ const PaymentSettingsScreen = ({ route, navigation }) => {
 
             <View style={styles.switchRow}>
               <Text style={styles.switchLabel}>Đặt làm tài khoản mặc định</Text>
-              <Switch value={isDefault} onValueChange={setIsDefault} trackColor={{ true: Colors.primary }} />
+              <Switch
+                value={isDefault}
+                onValueChange={setIsDefault}
+                trackColor={{ true: Colors.primary }}
+              />
             </View>
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setModalVisible(false)}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setModalVisible(false)}
+              >
                 <Text style={styles.cancelBtnText}>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.saveBtn} onPress={saveBankAccount} disabled={isSaving}>
-                {isSaving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveBtnText}>Lưu</Text>}
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={saveBankAccount}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.saveBtnText}>Lưu</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -371,14 +374,19 @@ const styles = StyleSheet.create({
   panelSubtext: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
   panelSubtext: { fontSize: 12, color: Colors.textSecondary, marginTop: 4 },
   addBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FDECE7',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FDECE7",
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
   },
-  addBtnText: { color: Colors.primary, fontSize: 12, fontWeight: "700", marginLeft: 4 },
+  addBtnText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    marginLeft: 4,
+  },
   defaultTagSmall: {
     backgroundColor: "#B8F5C7",
     borderRadius: 8,
@@ -418,7 +426,7 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     padding: 8,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: "#F7F7F7",
     borderRadius: 8,
     marginLeft: 6,
   },

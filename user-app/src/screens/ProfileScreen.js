@@ -10,9 +10,19 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { COLORS, SIZES, SHADOWS } from "../constants/theme";
-import { LogOut, ArrowLeft, Heart, Bell, Tag, MapPin as MapPinIcon, User, ChevronRight, MapPin } from "lucide-react-native";
+import {
+  LogOut,
+  ArrowLeft,
+  Heart,
+  Bell,
+  Tag,
+  MapPin as MapPinIcon,
+  User,
+  ChevronRight,
+  MapPin,
+} from "lucide-react-native";
 import { request, setToken } from "../api/client";
-import io from 'socket.io-client';
+import io from "socket.io-client";
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
@@ -188,13 +198,6 @@ const ProfileScreen = ({ navigation }) => {
             </View>
             <Text style={styles.logoutText}>Đăng xuất</Text>
           </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>THE CULINARY CURATOR</Text>
-          <Text style={styles.versionText}>
-            Phiên bản 2.4.0 — Được tạo ra với đam mê cho người sành ăn
-          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>

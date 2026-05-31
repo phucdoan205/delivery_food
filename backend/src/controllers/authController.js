@@ -3,12 +3,13 @@ const bcrypt = require('bcryptjs')
 const generateToken = require('../utils/generateToken')
 const { sendNotification } = require('../utils/notify')
 const nodemailer = require('nodemailer')
+const { uploadImageBase64 } = require('../utils/cloudinary')
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-  const { fullName, email, password, phone, role, dob } = req.body
+  const { fullName, email, password, phone, role, dob, cccd, vehicleType, licensePlate, driverLicense, address } = req.body
 
   const userExists = await User.findOne({ email })
 
@@ -28,7 +29,12 @@ const registerUser = async (req, res) => {
     phone,
     role: role || 'user',
     status: userStatus,
-    dob
+    dob,
+    cccd,
+    vehicleType,
+    licensePlate,
+    driverLicense,
+    address
   })
 
   if (user) {
@@ -117,7 +123,10 @@ const getUserProfile = async (req, res) => {
       cccd: user.cccd,
       dob: user.dob,
       status: user.status,
-      restaurantId: user.restaurantId
+      restaurantId: user.restaurantId,
+      vehicleType: user.vehicleType,
+      licensePlate: user.licensePlate,
+      driverLicense: user.driverLicense
     })
   } else {
     res.status(404).json({ message: 'User not found' })
@@ -170,9 +179,14 @@ const updateUserProfile = async (req, res) => {
   if (user) {
     user.fullName = req.body.fullName || user.fullName
     user.phone = req.body.phone || user.phone
-    user.avatar = req.body.avatar || user.avatar
+    if (req.body.avatar) {
+      user.avatar = await uploadImageBase64(req.body.avatar)
+    }
     user.cccd = req.body.cccd || user.cccd
     user.dob = req.body.dob || user.dob
+    user.vehicleType = req.body.vehicleType || user.vehicleType
+    user.licensePlate = req.body.licensePlate || user.licensePlate
+    user.driverLicense = req.body.driverLicense || user.driverLicense
 
     if (req.body.addresses !== undefined) {
       user.addresses = req.body.addresses;
@@ -235,7 +249,10 @@ const updateUserProfile = async (req, res) => {
       bankAccounts: updatedUser.bankAccounts,
       cccd: updatedUser.cccd,
       dob: updatedUser.dob,
-      status: updatedUser.status
+      status: updatedUser.status,
+      vehicleType: updatedUser.vehicleType,
+      licensePlate: updatedUser.licensePlate,
+      driverLicense: updatedUser.driverLicense
     })
   } else {
     res.status(404).json({ message: 'User not found' })

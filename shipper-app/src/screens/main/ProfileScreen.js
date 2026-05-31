@@ -1,36 +1,85 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, FONTS, SIZES } from '../../constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-import Header from '../../components/Header';
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { COLORS, FONTS, SIZES } from "../../constants/theme";
+import { Ionicons } from "@expo/vector-icons";
+import Header from "../../components/Header";
 
-import { request, setToken } from '../../api/client';
+import { request, setToken, API_URL } from "../../api/client";
+import io from "socket.io-client/dist/socket.io.js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const ProfileScreen = ({ navigation }) => {
   const [profile, setProfile] = React.useState(null);
   const [loading, setLoading] = React.useState(true);
+  const [unreadCount, setUnreadCount] = React.useState(0);
 
   const fetchProfile = async () => {
     try {
-      const data = await request('/auth/profile');
+      const data = await request("/auth/profile");
       setProfile(data);
     } catch (err) {
-      console.log('Error fetching profile', err);
+      console.log("Error fetching profile", err);
     } finally {
       setLoading(false);
     }
   };
 
   React.useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
+    let socket;
+
+    const unsubscribe = navigation.addListener("focus", () => {
       fetchProfile();
+      fetchUnreadCount();
     });
-    return unsubscribe;
+
+    const initSocket = async () => {
+      try {
+        const userInfo = await AsyncStorage.getItem("userInfo");
+        if (userInfo) {
+          const user = JSON.parse(userInfo);
+          const socketUrl = API_URL.replace("/api", "");
+          socket = io(socketUrl);
+          socket.emit("join", user._id);
+          socket.on("new_notification", () => {
+            setUnreadCount((prev) => prev + 1);
+          });
+          socket.on("profile_updated", () => {
+            fetchProfile();
+          });
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    };
+    initSocket();
+
+    return () => {
+      unsubscribe();
+      if (socket) socket.disconnect();
+    };
   }, [navigation]);
+
+  const fetchUnreadCount = async () => {
+    try {
+      const unreadData = await request("/notifications/unread");
+      if (unreadData && unreadData.count !== undefined) {
+        setUnreadCount(unreadData.count);
+      }
+    } catch (err) {
+      console.log("Error fetching unread count", err);
+    }
+  };
   const MenuItem = ({ icon, title, onPress, color = COLORS.text }) => (
     <TouchableOpacity style={styles.menuItem} onPress={onPress}>
-      <View style={[styles.menuIconBox, { backgroundColor: color + '10' }]}>
+      <View style={[styles.menuIconBox, { backgroundColor: color + "10" }]}>
         <Ionicons name={icon} size={22} color={color} />
       </View>
       <Text style={styles.menuTitle}>{title}</Text>
@@ -39,32 +88,81 @@ const ProfileScreen = ({ navigation }) => {
   );
 
   const handleLogout = () => {
-    setToken('');
+    setToken("");
     navigation.reset({
       index: 0,
-      routes: [{ name: 'Login' }],
+      routes: [{ name: "Login" }],
     });
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <Header 
-        showBack={false} 
-        title="Hồ sơ" 
+    <SafeAreaView style={styles.container} edges={["top"]}>
+      <Header
+        showBack={false}
+        title="Hồ sơ"
         rightComponent={
-          <TouchableOpacity style={styles.notifButton}>
-            <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
-            <View style={styles.notifBadge} />
+          <TouchableOpacity
+            style={styles.notifButton}
+            onPress={() => navigation.navigate("Notification")}
+          >
+            <Ionicons
+              name="notifications-outline"
+              size={24}
+              color={COLORS.text}
+            />
+            {unreadCount > 0 && (
+              <View
+                style={{
+                  position: "absolute",
+                  top: 2,
+                  right: 2,
+                  backgroundColor: COLORS.error,
+                  width: 16,
+                  height: 16,
+                  borderRadius: 8,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  borderWidth: 1,
+                  borderColor: COLORS.white,
+                }}
+              >
+                <Text
+                  style={{
+                    color: COLORS.white,
+                    fontSize: 10,
+                    fontWeight: "bold",
+                  }}
+                >
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Text>
+              </View>
+            )}
           </TouchableOpacity>
         }
       />
-      
-      <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         <View style={styles.profileHeader}>
-          <Image source={{ uri: profile?.avatar || 'https://api.dicebear.com/7.x/adventurer/svg?seed=' + (profile?.fullName || 'Driver') }} style={styles.avatar} />
+          <Image
+            source={{
+              uri:
+                profile?.avatar ||
+                "https://api.dicebear.com/7.x/adventurer/svg?seed=" +
+                  (profile?.fullName || "Driver"),
+            }}
+            style={styles.avatar}
+          />
           <View style={styles.profileInfo}>
-            <Text style={styles.userName}>{profile?.fullName || 'Đang tải...'}</Text>
-            <Text style={styles.userId}>ID: {profile?._id?.substring(0,8).toUpperCase() || '---'}</Text>
+            <Text style={styles.userName}>
+              {profile?.fullName || "Đang tải..."}
+            </Text>
+            <Text style={styles.userId}>
+              ID: {profile?._id?.substring(0, 8).toUpperCase() || "---"}
+            </Text>
             <View style={styles.ratingBadge}>
               <Ionicons name="star" size={14} color="#F1C40F" />
               <Text style={styles.ratingText}>5.0 (0 đánh giá)</Text>
@@ -73,64 +171,75 @@ const ProfileScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.vehicleCard}>
-           <View style={styles.vehicleInfo}>
-              <Text style={styles.vehicleLabel}>THÔNG TIN PHƯƠNG TIỆN</Text>
-              <Text style={styles.vehicleName}>{profile?.bike || 'Chưa cập nhật'}</Text>
-              <Text style={styles.vehiclePlate}>{profile?.plate || 'Chưa cập nhật'}</Text>
-              <View style={styles.statusBadge}>
-                 <Text style={styles.statusText}>{profile?.status === 'active' ? 'Sẵn sàng' : 'Chưa kích hoạt'}</Text>
-              </View>
-           </View>
-           <Ionicons name="bicycle" size={80} color="rgba(255,255,255,0.1)" style={styles.vehicleIcon} />
+          <View style={styles.vehicleInfo}>
+            <Text style={styles.vehicleLabel}>THÔNG TIN PHƯƠNG TIỆN</Text>
+            <Text style={styles.vehicleName}>
+              {profile?.vehicleType || "Chưa cập nhật"}
+            </Text>
+            <Text style={styles.vehiclePlate}>
+              {profile?.licensePlate || "Chưa cập nhật"}
+            </Text>
+            <View style={styles.statusBadge}>
+              <Text style={styles.statusText}>
+                {profile?.status === "active" ? "Sẵn sàng" : "Chưa kích hoạt"}
+              </Text>
+            </View>
+          </View>
+          <Ionicons
+            name="bicycle"
+            size={80}
+            color="rgba(255,255,255,0.1)"
+            style={styles.vehicleIcon}
+          />
         </View>
 
         <View style={styles.experienceCard}>
-           <Ionicons name="ribbon" size={24} color={COLORS.primary} />
-           <View style={styles.expInfo}>
-              <Text style={styles.expLabel}>Thâm niên</Text>
-              <Text style={styles.expValue}>Thành viên mới</Text>
-            </View>
-            <Ionicons name="checkmark-circle" size={24} color={COLORS.secondary} />
+          <Ionicons name="ribbon" size={24} color={COLORS.primary} />
+          <View style={styles.expInfo}>
+            <Text style={styles.expLabel}>Thâm niên</Text>
+            <Text style={styles.expValue}>Thành viên mới</Text>
+          </View>
+          <Ionicons
+            name="checkmark-circle"
+            size={24}
+            color={COLORS.secondary}
+          />
         </View>
 
         <View style={styles.section}>
-           <Text style={styles.sectionTitle}>CÀI ĐẶT & HỖ TRỢ</Text>
-           <View style={styles.menuList}>
-              <MenuItem 
-                icon="person-outline" 
-                title="Thông tin cá nhân" 
-                color={COLORS.success}
-                onPress={() => navigation.navigate('PersonalInfo')}
-              />
-              <MenuItem 
-                icon="card-outline" 
-                title="Tài khoản ngân hàng" 
-                color="#8E44AD"
-                onPress={() => navigation.navigate('BankAccounts')}
-              />
-              <MenuItem 
-                icon="settings-outline" 
-                title="Cài đặt ứng dụng" 
-                color={COLORS.secondary}
-                onPress={() => navigation.navigate('Settings')}
-              />
-              <MenuItem 
-                icon="help-circle-outline" 
-                title="Trung tâm trợ giúp" 
-                color={COLORS.error}
-                onPress={() => navigation.navigate('HelpCenter')}
-              />
-           </View>
+          <Text style={styles.sectionTitle}>CÀI ĐẶT & HỖ TRỢ</Text>
+          <View style={styles.menuList}>
+            <MenuItem
+              icon="person-outline"
+              title="Thông tin cá nhân"
+              color={COLORS.success}
+              onPress={() => navigation.navigate("PersonalInfo")}
+            />
+            <MenuItem
+              icon="card-outline"
+              title="Tài khoản ngân hàng"
+              color="#8E44AD"
+              onPress={() => navigation.navigate("BankAccounts")}
+            />
+            <MenuItem
+              icon="settings-outline"
+              title="Cài đặt ứng dụng"
+              color={COLORS.secondary}
+              onPress={() => navigation.navigate("Settings")}
+            />
+            <MenuItem
+              icon="help-circle-outline"
+              title="Trung tâm trợ giúp"
+              color={COLORS.error}
+              onPress={() => navigation.navigate("HelpCenter")}
+            />
+          </View>
         </View>
 
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-           <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
-           <Text style={styles.logoutText}>Đăng xuất</Text>
+          <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
-
-        <View style={styles.footer}>
-           <Text style={styles.footerText}>The Culinary Curator</Text>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -149,11 +258,11 @@ const styles = StyleSheet.create({
   notifButton: {
     width: 40,
     height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   notifBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 10,
     right: 10,
     width: 8,
@@ -164,8 +273,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.white,
   },
   profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: SIZES.padding,
     backgroundColor: COLORS.white,
     padding: SIZES.padding / 1.5,
@@ -190,10 +299,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   ratingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FEF9E7',
-    alignSelf: 'flex-start',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF9E7",
+    alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 15,
@@ -202,15 +311,15 @@ const styles = StyleSheet.create({
   ratingText: {
     ...FONTS.h4,
     fontSize: 11,
-    color: '#9A7D0A',
+    color: "#9A7D0A",
     marginLeft: 4,
   },
   vehicleCard: {
     backgroundColor: COLORS.secondary,
     borderRadius: 30,
     padding: SIZES.padding,
-    flexDirection: 'row',
-    overflow: 'hidden',
+    flexDirection: "row",
+    overflow: "hidden",
     marginBottom: SIZES.padding,
   },
   vehicleInfo: {
@@ -219,7 +328,7 @@ const styles = StyleSheet.create({
   },
   vehicleLabel: {
     ...FONTS.body4,
-    color: 'rgba(255,255,255,0.7)',
+    color: "rgba(255,255,255,0.7)",
     fontSize: 10,
     letterSpacing: 1,
   },
@@ -230,12 +339,12 @@ const styles = StyleSheet.create({
   },
   vehiclePlate: {
     ...FONTS.body3,
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     marginTop: 2,
   },
   statusBadge: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignSelf: 'flex-start',
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignSelf: "flex-start",
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
@@ -247,16 +356,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   vehicleIcon: {
-    position: 'absolute',
+    position: "absolute",
     right: -10,
     bottom: -10,
   },
   experienceCard: {
-    backgroundColor: '#FDF2F0',
+    backgroundColor: "#FDF2F0",
     borderRadius: 20,
     padding: SIZES.padding / 1.5,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: SIZES.padding,
   },
   expInfo: {
@@ -286,11 +395,11 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white,
     borderRadius: 25,
     paddingHorizontal: SIZES.base,
-    overflow: 'hidden',
+    overflow: "hidden",
   },
   menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: SIZES.padding / 1.5,
     borderBottomWidth: 1,
     borderBottomColor: COLORS.border,
@@ -299,8 +408,8 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: SIZES.padding / 2,
   },
   menuTitle: {
@@ -309,10 +418,10 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FDEDEC',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#FDEDEC",
     paddingVertical: 15,
     borderRadius: 20,
     marginTop: SIZES.base,
@@ -324,14 +433,14 @@ const styles = StyleSheet.create({
     marginLeft: SIZES.base,
   },
   footer: {
-    alignItems: 'center',
+    alignItems: "center",
     marginBottom: SIZES.padding * 2,
   },
   footerText: {
     ...FONTS.h2,
     fontSize: 24,
     color: COLORS.border,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });
 

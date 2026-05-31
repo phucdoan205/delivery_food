@@ -14,6 +14,23 @@ const HomeScreen = ({ navigation }) => {
   const [foodItems, setFoodItems] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
+
+  const getCategoryIcon = (name) => {
+    if (!name) return 'Utensils';
+    const lowerName = name.toLowerCase();
+    if (lowerName.includes('uống') || lowerName.includes('nước') || lowerName.includes('trà') || lowerName.includes('coffee') || lowerName.includes('cafe')) return 'CupSoda';
+    if (lowerName.includes('tráng miệng') || lowerName.includes('ngọt') || lowerName.includes('bánh')) return 'CakeSlice';
+    if (lowerName.includes('khai vị')) return 'UtensilsCrossed';
+    if (lowerName.includes('combo')) return 'Layers';
+    if (lowerName.includes('ăn vặt')) return 'Cookie';
+    if (lowerName.includes('pizza')) return 'Pizza';
+    if (lowerName.includes('bún') || lowerName.includes('phở') || lowerName.includes('mì')) return 'Soup';
+    if (lowerName.includes('cơm')) return 'ChefHat';
+    if (lowerName.includes('chay') || lowerName.includes('rau')) return 'Vegan';
+    if (lowerName.includes('thịt') || lowerName.includes('nướng')) return 'Beef';
+    if (lowerName.includes('hải sản') || lowerName.includes('cá')) return 'Fish';
+    return 'Utensils';
+  };
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [cartCount, setCartCount] = useState(0);
@@ -66,15 +83,23 @@ const HomeScreen = ({ navigation }) => {
       fetchHomeData();
     });
 
-    let socket;
+    const socketUrl = API_URL.replace('/api', '');
+    const socket = io(socketUrl);
+
     if (profile && profile._id) {
-      const socketUrl = API_URL.replace('/api', '');
-      socket = io(socketUrl);
       socket.emit('join', profile._id);
       socket.on('new_notification', () => {
         setUnreadCount(prev => prev + 1);
       });
     }
+
+    socket.on('category_created', (newCategory) => {
+      setCategories(prev => {
+        const exists = prev.find(c => (c._id || c.id) === (newCategory._id || newCategory.id));
+        if (exists) return prev;
+        return [...prev, newCategory];
+      });
+    });
 
     return () => {
       unsubscribe();
@@ -168,8 +193,19 @@ const HomeScreen = ({ navigation }) => {
     price: food.price,
     image: food.image,
     restaurantId: food.restaurantId?._id || food.restaurantId || '',
+    categoryId: food.categoryId?._id || food.categoryId || '',
     isPopular: food.isPopular || true
   }));
+
+  const filteredFoods = selectedCategory 
+    ? normalizedFoods.filter(f => f.categoryId === selectedCategory)
+    : normalizedFoods;
+
+  const validRestaurantIds = new Set(filteredFoods.map(f => f.restaurantId));
+
+  const filteredRestaurants = selectedCategory
+    ? normalizedRestaurants.filter(r => validRestaurantIds.has(r.id))
+    : normalizedRestaurants;
 
   return (
     <SafeAreaView edges={['top']} style={styles.container}>
@@ -184,9 +220,9 @@ const HomeScreen = ({ navigation }) => {
             keyExtractor={(item) => item._id || item.id}
             renderItem={({ item }) => (
               <CategoryChip
-                category={{ id: item._id || item.id, name: item.name, icon: item.icon || 'utensils' }}
+                category={{ id: item._id || item.id, name: item.name, icon: item.icon && item.icon !== 'utensils' ? item.icon : getCategoryIcon(item.name) }}
                 isSelected={selectedCategory === (item._id || item.id)}
-                onPress={() => setSelectedCategory(item._id || item.id)}
+                onPress={() => setSelectedCategory(prev => prev === (item._id || item.id) ? null : (item._id || item.id))}
               />
             )}
             contentContainerStyle={styles.categoryList}
@@ -203,7 +239,7 @@ const HomeScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
           <FlatList
-            data={normalizedFoods}
+            data={filteredFoods}
             horizontal
             showsHorizontalScrollIndicator={false}
             keyExtractor={(item) => item.id}
@@ -228,7 +264,7 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.sectionTitle}>Dành cho bạn</Text>
             <Text style={styles.sectionSubtitle}>Dựa trên thói quen</Text>
           </View>
-          {normalizedFoods.slice(0, 2).map((item) => (
+          {filteredFoods.slice(0, 2).map((item) => (
             <FoodCard 
               key={item.id} 
               item={item} 
@@ -242,7 +278,7 @@ const HomeScreen = ({ navigation }) => {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Nhà hàng nổi bật</Text>
           </View>
-          {normalizedRestaurants.map((restaurant) => (
+          {filteredRestaurants.map((restaurant) => (
             <RestaurantCard 
               key={restaurant.id} 
               restaurant={restaurant} 

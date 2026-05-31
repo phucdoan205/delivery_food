@@ -23,7 +23,7 @@ const PersonalInfoScreen = ({ navigation }) => {
   const [profile, setProfile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [formData, setFormData] = useState({ fullName: '', phone: '', address: '', avatar: '', cccd: '', dob: '', newPassword: '' });
+  const [formData, setFormData] = useState({ fullName: '', phone: '', address: '', avatar: '', cccd: '', dob: '', newPassword: '', vehicleType: '', licensePlate: '', driverLicense: '' });
 
   const fetchProfile = async () => {
     try {
@@ -49,7 +49,10 @@ const PersonalInfoScreen = ({ navigation }) => {
       avatar: profile?.avatar || '',
       cccd: profile?.cccd || '',
       dob: profile?.dob || '',
-      newPassword: ''
+      newPassword: '',
+      vehicleType: profile?.vehicleType || '',
+      licensePlate: profile?.licensePlate || '',
+      driverLicense: profile?.driverLicense || ''
     });
     setIsEditing(true);
   };
@@ -144,6 +147,17 @@ const PersonalInfoScreen = ({ navigation }) => {
               <Text style={styles.addressText}>{profile?.address || 'Chưa cập nhật'}</Text>
            </View>
         </View>
+
+        <View style={styles.card}>
+           <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Thông tin phương tiện</Text>
+           </View>
+           <View style={styles.infoList}>
+              <InfoItem icon={profile?.vehicleType === 'Ô tô' ? 'car-outline' : 'bicycle-outline'} label="Loại phương tiện" value={profile?.vehicleType || 'Chưa cập nhật'} />
+              <InfoItem icon="pricetag-outline" label="Biển số xe" value={profile?.licensePlate || 'Chưa cập nhật'} />
+              <InfoItem icon="id-card-outline" label="Giấy phép lái xe" value={profile?.driverLicense || 'Chưa cập nhật'} />
+           </View>
+        </View>
       </ScrollView>
 
       {/* Edit Profile Modal */}
@@ -201,6 +215,38 @@ const PersonalInfoScreen = ({ navigation }) => {
                 value={formData.dob}
                 onChangeText={(t) => setFormData({...formData, dob: t})}
                 placeholder="VD: 15/05/1992"
+              />
+
+              <Text style={styles.inputLabel}>Loại phương tiện</Text>
+              <View style={{flexDirection: 'row', marginBottom: 15, gap: 10}}>
+                <TouchableOpacity 
+                  style={[styles.inputField, {flex: 1, marginBottom: 0, backgroundColor: formData.vehicleType === 'Xe máy' ? COLORS.primary + '20' : COLORS.background, borderColor: formData.vehicleType === 'Xe máy' ? COLORS.primary : COLORS.border}]}
+                  onPress={() => setFormData({...formData, vehicleType: 'Xe máy'})}
+                >
+                  <Text style={{textAlign: 'center', color: formData.vehicleType === 'Xe máy' ? COLORS.primary : COLORS.text, ...FONTS.body3}}>Xe máy</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.inputField, {flex: 1, marginBottom: 0, backgroundColor: formData.vehicleType === 'Ô tô' ? COLORS.primary + '20' : COLORS.background, borderColor: formData.vehicleType === 'Ô tô' ? COLORS.primary : COLORS.border}]}
+                  onPress={() => setFormData({...formData, vehicleType: 'Ô tô'})}
+                >
+                  <Text style={{textAlign: 'center', color: formData.vehicleType === 'Ô tô' ? COLORS.primary : COLORS.text, ...FONTS.body3}}>Ô tô</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.inputLabel}>Biển số xe</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.licensePlate}
+                onChangeText={(t) => setFormData({...formData, licensePlate: t})}
+                placeholder="VD: 59-X1 12345"
+              />
+
+              <Text style={styles.inputLabel}>Giấy phép lái xe</Text>
+              <TextInput
+                style={styles.inputField}
+                value={formData.driverLicense}
+                onChangeText={(t) => setFormData({...formData, driverLicense: t})}
+                placeholder="Nhập số giấy phép lái xe"
               />
 
               <Text style={styles.inputLabel}>Mật khẩu mới (Để trống nếu không đổi)</Text>

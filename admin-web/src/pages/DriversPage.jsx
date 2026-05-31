@@ -23,7 +23,7 @@ import {
   Truck,
   Eye
 } from "lucide-react";
-import { request } from "../api/client";
+import { request, API_URL } from "../api/client";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 import useNotificationStore from "../store/useNotificationStore";
@@ -48,6 +48,15 @@ const DriversPage = () => {
   useEffect(() => {
     setCurrentPageApproved(1);
   }, [searchApproved, filterStatus]);
+  useEffect(() => {
+    if (selectedDriver) {
+      const updatedDriver = drivers.find(d => d._id === selectedDriver._id);
+      if (updatedDriver) {
+        setSelectedDriver(updatedDriver);
+      }
+    }
+  }, [drivers]);
+
   const { decrementPendingDrivers } = useNotificationStore();
 
   const fetchDrivers = async () => {
@@ -64,7 +73,8 @@ const DriversPage = () => {
 
   useEffect(() => {
     fetchDrivers();
-    const socket = io("http://localhost:5000");
+    const socketUrl = API_URL.replace('/api', '');
+    const socket = io(socketUrl);
     socket.on("new_user_registered", () => {
       fetchDrivers();
     });
@@ -343,7 +353,7 @@ const DriversPage = () => {
                               className="text-brand-primary flex-shrink-0"
                             />
                             <span className="text-xs font-medium">
-                              {driver.bike || 'Honda Wave - 59-X1 234.56'}
+                              {driver.vehicleType ? `${driver.vehicleType} - ${driver.licensePlate}` : 'Chưa cập nhật'}
                             </span>
                           </div>
                         </div>
@@ -361,7 +371,7 @@ const DriversPage = () => {
                               </span>
                             </div>
                             <div className="text-xs font-black text-brand-text">
-                              {driver.license || 'GPLX-123456'}
+                              {driver.driverLicense || 'Chưa cập nhật'}
                             </div>
                           </div>
                           <div className="bg-brand-bg rounded-2xl p-3">
@@ -517,7 +527,7 @@ const DriversPage = () => {
                             </div>
                             <div className="flex items-center gap-1.5 text-slate-400 col-span-2">
                               <Truck size={13} className="text-brand-primary" />
-                              <span className="text-xs font-medium">{driver.bike || 'Honda Wave - 59-X1 234.56'}</span>
+                              <span className="text-xs font-medium">{driver.vehicleType ? `${driver.vehicleType} - ${driver.licensePlate}` : 'Chưa cập nhật'}</span>
                             </div>
                           </div>
 

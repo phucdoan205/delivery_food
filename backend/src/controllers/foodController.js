@@ -84,7 +84,7 @@ const createFood = async (req, res) => {
 // @route   PUT /api/foods/:id
 // @access  Private/Merchant
 const updateFood = async (req, res) => {
-  const { name, description, image, price, isAvailable } = req.body
+  const { name, description, image, price, isAvailable, categoryId } = req.body
 
   const food = await Food.findById(req.params.id)
 
@@ -106,6 +106,7 @@ const updateFood = async (req, res) => {
     food.description = description || food.description
     food.price = price || food.price
     food.isAvailable = isAvailable !== undefined ? isAvailable : food.isAvailable
+    if (categoryId) food.categoryId = categoryId
     
     if (image) {
       try {
@@ -116,6 +117,7 @@ const updateFood = async (req, res) => {
     }
 
     const updatedFood = await food.save()
+    await updatedFood.populate('categoryId')
 
     const io = req.app.get('io');
     if (io) {
@@ -162,6 +164,12 @@ const createCategory = async (req, res) => {
   })
 
   const createdCategory = await category.save()
+
+  const io = req.app.get('io');
+  if (io) {
+    io.emit('category_created', createdCategory);
+  }
+
   res.status(201).json(createdCategory)
 }
 

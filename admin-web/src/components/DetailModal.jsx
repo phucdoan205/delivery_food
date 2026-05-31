@@ -108,8 +108,8 @@ const DetailModal = ({ isOpen, onClose, data, type = "user" }) => {
               <DetailRow icon={CreditCard} label="Số CCCD" value={data.cccd} />
               <DetailRow icon={Calendar} label="Ngày sinh" value={data.dob} />
               <DetailRow icon={MapPin} label="Địa chỉ" value={data.address} />
-              <DetailRow icon={Truck} label="Phương tiện" value={data.bike} />
-              <DetailRow icon={Shield} label="Giấy phép lái xe" value={data.license} />
+              <DetailRow icon={Truck} label="Phương tiện" value={data.vehicleType ? `${data.vehicleType} - ${data.licensePlate}` : 'Chưa cập nhật'} />
+              <DetailRow icon={Shield} label="Giấy phép lái xe" value={data.driverLicense || 'Chưa cập nhật'} />
               <DetailRow icon={Star} label="Đánh giá" value={data.rating || "5.0"} color="text-amber-500" />
               <DetailRow icon={Clock} label="Ngày đăng ký" value={data.createdAt ? new Date(data.createdAt).toLocaleString("vi-VN") : null} />
             </>
