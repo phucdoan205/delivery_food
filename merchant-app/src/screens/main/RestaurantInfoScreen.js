@@ -153,9 +153,7 @@ const RestaurantInfoScreen = ({ navigation }) => {
           <ArrowLeft size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerBrand}>{restaurant?.name || 'Đang tải...'}</Text>
-        <TouchableOpacity style={styles.notifBtn}>
-          <Bell size={24} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 44 }} />
       </View>
 
       <View style={styles.content}>

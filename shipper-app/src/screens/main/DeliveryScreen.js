@@ -226,7 +226,7 @@ const DeliveryScreen = ({ navigation }) => {
             <Ionicons name="notifications-outline" size={24} color={COLORS.text} />
             {unreadCount > 0 && (
               <View style={{
-                position: 'absolute', top: 2, right: 2, backgroundColor: COLORS.primary, 
+                position: 'absolute', top: 0, right: 0, backgroundColor: COLORS.error, 
                 width: 16, height: 16, borderRadius: 8, justifyContent: 'center', alignItems: 'center',
                 borderWidth: 1, borderColor: COLORS.white
               }}>

@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  TouchableOpacity, Image, TextInput, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { COLORS, SIZES, SHADOWS } from '../constants/theme';
@@ -7,6 +7,7 @@ import { request, API_URL } from '../api/client';
 import io from 'socket.io-client/dist/socket.io.js';
 
 const ReviewScreen = ({ route, navigation }) => {
+  const insets = useSafeAreaInsets();
   const { order } = route.params;
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -213,7 +214,7 @@ const ReviewScreen = ({ route, navigation }) => {
       </ScrollView>
 
       {!isReviewed && (
-        <View style={styles.footer}>
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, SIZES.padding) }]}>
           <TouchableOpacity 
             style={[styles.submitBtn, rating === 0 && { backgroundColor: COLORS.lightGray }]}
             onPress={handleSubmit}

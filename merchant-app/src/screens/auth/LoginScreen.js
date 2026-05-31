@@ -52,7 +52,7 @@ const LoginScreen = ({ navigation }) => {
         />
       </View>
 
-      <View style={styles.formCard}>
+      <View style={[styles.formCard, { paddingBottom: Math.max(insets.bottom, 20) + 20 }]}>
         <Text style={styles.title}>Chào mừng Đối tác</Text>
         
         {errorMessage ? (
@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 20,
     elevation: 5,
+    paddingBottom: 40,
   },
   title: {
     fontSize: 28,

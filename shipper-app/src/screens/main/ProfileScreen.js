@@ -114,8 +114,8 @@ const ProfileScreen = ({ navigation }) => {
               <View
                 style={{
                   position: "absolute",
-                  top: 2,
-                  right: 2,
+                  top: 0,
+                  right: 0,
                   backgroundColor: COLORS.error,
                   width: 16,
                   height: 16,

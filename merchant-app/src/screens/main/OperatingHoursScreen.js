@@ -80,9 +80,7 @@ const OperatingHoursScreen = ({ route, navigation }) => {
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Bell size={20} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 42 }} />
       </View>
 
       <View style={styles.content}>

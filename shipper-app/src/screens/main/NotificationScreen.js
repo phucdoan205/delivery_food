@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SIZES, FONTS } from '../../constants/theme';
 import { request } from '../../api/client';
@@ -49,7 +49,7 @@ const NotificationScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <Header title="Thông báo" />
 
       {loading ? (
@@ -72,7 +72,7 @@ const NotificationScreen = ({ navigation }) => {
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

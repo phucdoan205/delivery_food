@@ -8,7 +8,7 @@ import {
   Image,
   TextInput,
 } from "react-native";
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   ArrowLeft,
   Bell,
@@ -92,12 +92,12 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
   });
 
   return (
-    <ScrollView 
-      style={[styles.container, { paddingTop: insets.top }]} 
-      contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
+    <SafeAreaView edges={['top']} style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.headerBtn}
@@ -105,9 +105,7 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
           <ArrowLeft size={22} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.brand}>{restaurant?.name || 'Cửa hàng của tôi'}</Text>
-        <TouchableOpacity style={styles.headerBtn}>
-          <Bell size={20} color={Colors.text} />
-        </TouchableOpacity>
+        <View style={{ width: 42 }} />
       </View>
 
       <View style={styles.content}>
@@ -257,15 +255,16 @@ const CustomerFeedbackScreen = ({ route, navigation }) => {
             )}
           </View>
         ))}
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#FFF9F8" },
   header: {
-    paddingTop: 60,
+    paddingTop: 10,
     paddingHorizontal: 20,
     flexDirection: "row",
     justifyContent: "space-between",

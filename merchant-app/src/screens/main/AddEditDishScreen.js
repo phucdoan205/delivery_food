@@ -1,4 +1,4 @@
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet,  ScrollView, TouchableOpacity, TextInput, Switch, Image, Alert, ActivityIndicator, Modal } from 'react-native';
 import { ChevronLeft, Camera, Plus, Trash2, ChevronRight } from 'lucide-react-native';
@@ -10,6 +10,7 @@ import * as ImagePicker from 'expo-image-picker';
 const AddEditDishScreen = ({ navigation, route }) => {
   const { dish, restaurantId } = route.params || {};
   const isEdit = dish !== undefined;
+  const insets = useSafeAreaInsets();
 
   const [name, setName] = useState(dish?.name || '');
   const [price, setPrice] = useState(dish?.price?.toString() || '');
@@ -158,7 +159,7 @@ const AddEditDishScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView edges={['top']} style={styles.container}>
+    <SafeAreaView edges={['top', 'bottom']} style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <ChevronLeft size={24} color={Colors.text} />
@@ -275,7 +276,7 @@ const AddEditDishScreen = ({ navigation, route }) => {
       {/* Category Modal */}
       <Modal visible={showCategoryModal} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: Math.max(insets.bottom, 20) }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Chọn danh mục</Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
