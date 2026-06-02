@@ -34,7 +34,7 @@ const SplashScreen = ({ navigation }) => {
             style={styles.logo}
           />
         </View>
-        <Text style={styles.title}>Crave & Co.</Text>
+        <Text style={styles.title}>Crave & Go</Text>
         <Text style={styles.subtitle}>
           Trải nghiệm nghệ thuật ẩm thực,{"\n"}
           được giao đến tận cửa nhà bạn với{"\n"}

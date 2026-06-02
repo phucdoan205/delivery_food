@@ -26,7 +26,7 @@ const OnboardingScreen = ({ navigation }) => {
               </View>
             </View>
 
-            <Text style={styles.title}>Crave & Co.</Text>
+            <Text style={styles.title}>Crave & Go</Text>
             <Text style={styles.subtitle}>
               Trải nghiệm nghệ thuật ẩm thực, được giao đến tận cửa nhà bạn với sự chăm sóc tỉ mỉ.
             </Text>

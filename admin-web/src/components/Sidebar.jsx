@@ -104,7 +104,7 @@ const Sidebar = ({ isOpen, onClose }) => {
           <UtensilsCrossed size={24} />
         </div>
         <span className="text-xl font-bold tracking-tight text-brand-primary">
-          CRAVE & CO.
+          CRAVE & GO
         </span>
       </div>
 

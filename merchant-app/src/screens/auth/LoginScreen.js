@@ -45,7 +45,7 @@ const LoginScreen = ({ navigation }) => {
   return (
     <ScrollView style={[styles.container, Platform.OS === 'web' && { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }]} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
       <View style={styles.header}>
-        <Text style={styles.brand}>Crave & Co.</Text>
+        <Text style={styles.brand}>Crave & Go</Text>
         <Image 
           source={{ uri: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400' }} 
           style={styles.heroImage} 

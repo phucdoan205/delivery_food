@@ -83,7 +83,7 @@ const RegisterMerchantScreen = ({ navigation }) => {
 
       <View style={styles.formCard}>
         <Text style={styles.title}>Trở thành Đối tác</Text>
-        <Text style={styles.subtitle}>Tham gia cùng Crave & Co. để mở rộng kinh doanh</Text>
+        <Text style={styles.subtitle}>Tham gia cùng Crave & Go để mở rộng kinh doanh</Text>
         
         <CustomInput
           label="Tên nhà hàng"

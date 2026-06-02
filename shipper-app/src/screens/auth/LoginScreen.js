@@ -51,7 +51,7 @@ const LoginScreen = ({ navigation }) => {
             style={styles.headerImage}
           />
           <View style={[styles.logoContainer, { top: Math.max(insets.top + 10, 50) }]}>
-             <Text style={styles.logoText}>CRAVE & CO.</Text>
+             <Text style={styles.logoText}>CRAVE & GO</Text>
           </View>
         </View>
 
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   },
   logoText: {
     ...FONTS.h2,
-    color: COLORS.white,
+    color: COLORS.black,
     letterSpacing: 2,
   },
   formContainer: {
